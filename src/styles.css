@@ -214,6 +214,58 @@ button:disabled {
   color: #fff9ed;
 }
 
+
+.mode-selector {
+  margin: 0 0 18px;
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 221, 154, 0.24);
+  background: rgba(255, 241, 208, 0.06);
+}
+
+.mode-selector legend {
+  padding: 0 8px;
+  color: #fff3d4;
+  font-weight: 800;
+}
+
+.mode-selector-copy {
+  margin-bottom: 14px;
+  color: #ffe3af;
+}
+
+.mode-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.mode-option {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 221, 154, 0.24);
+  background: rgba(76, 12, 10, 0.5);
+  cursor: pointer;
+}
+
+.mode-option input {
+  margin-top: 4px;
+}
+
+.mode-option-body {
+  display: grid;
+  gap: 4px;
+  color: #ffe8bf;
+}
+
+.mode-option-selected {
+  border-color: rgba(255, 231, 154, 0.7);
+  box-shadow: 0 10px 24px rgba(24, 4, 4, 0.16);
+  background: rgba(123, 24, 18, 0.72);
+}
 .game-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.85fr) minmax(290px, 0.72fr);
@@ -228,6 +280,23 @@ button:disabled {
 .board-header {
   align-items: center;
   margin-bottom: 14px;
+}
+
+.board-header-status {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.board-mode-copy {
+  margin-bottom: 0;
+  color: #ffe4ab;
+}
+
+.status-chip-mode {
+  background: rgba(255, 231, 158, 0.18);
 }
 
 .board-bank,
@@ -306,6 +375,8 @@ button:disabled {
   color: inherit;
   text-align: left;
   border-radius: 20px;
+  overflow: hidden;
+  isolation: isolate;
 }
 
 .board-zone:hover,
@@ -318,6 +389,8 @@ button:disabled {
   position: absolute;
   inset: 0;
   border-radius: 20px;
+  clip-path: inherit;
+  -webkit-clip-path: inherit;
   border: 2px solid rgba(255, 244, 214, 0.2);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(86, 12, 10, 0.06));
   box-shadow:
@@ -743,6 +816,15 @@ button:disabled {
 .market-box {
   display: grid;
   gap: 14px;
+}
+
+.market-message {
+  margin-bottom: 0;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 241, 208, 0.1);
+  border: 1px solid rgba(255, 226, 157, 0.26);
+  color: #ffebbc;
 }
 
 @keyframes dieShake {
