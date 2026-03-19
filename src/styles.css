@@ -387,15 +387,15 @@ button:disabled {
 
 .board-zone-hit {
   position: absolute;
-  inset: 0;
-  border-radius: 20px;
+  inset: 2.5%;
+  border-radius: 18px;
   clip-path: inherit;
   -webkit-clip-path: inherit;
-  border: 2px solid rgba(255, 244, 214, 0.2);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(86, 12, 10, 0.06));
+  border: 1.5px solid rgba(255, 244, 214, 0.16);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.015), rgba(86, 12, 10, 0.045));
   box-shadow:
-    inset 0 0 0 1px rgba(69, 16, 12, 0.2),
-    0 10px 22px rgba(23, 4, 4, 0.1);
+    inset 0 0 0 1px rgba(69, 16, 12, 0.16),
+    0 4px 12px rgba(23, 4, 4, 0.08);
   transition:
     border-color 0.16s ease,
     background 0.16s ease,
@@ -406,66 +406,67 @@ button:disabled {
 
 .board-zone-bubble-visual {
   position: absolute;
-  inset: 11% 10% 13%;
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  display: flex;
   align-items: center;
-  justify-items: center;
-  gap: 4px;
+  justify-content: center;
   z-index: 1;
   pointer-events: none;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+    0 6px 16px rgba(23, 4, 4, 0.08);
 }
 
 .board-zone-bubble-image {
-  width: 100%;
-  height: 100%;
+  width: 82%;
+  height: 82%;
   object-fit: contain;
-  filter: drop-shadow(0 8px 14px rgba(20, 4, 4, 0.18));
+  object-position: center;
+  filter: drop-shadow(0 4px 8px rgba(20, 4, 4, 0.16));
 }
 
-.board-zone-bubble-caption {
-  max-width: 100%;
-  padding: 3px 7px;
-  border-radius: 999px;
-  background: rgba(82, 16, 13, 0.86);
-  color: #fff5da;
-  font-size: clamp(0.34rem, 0.48vw, 0.58rem);
-  font-weight: 900;
-  letter-spacing: 0.06em;
-  line-height: 1.15;
-  text-align: center;
-  text-wrap: balance;
-  box-shadow: 0 8px 16px rgba(20, 4, 4, 0.2);
+.board-zone-bubble-tile-3 .board-zone-bubble-image,
+.board-zone-bubble-tile-8 .board-zone-bubble-image,
+.board-zone-bubble-tile-10 .board-zone-bubble-image {
+  width: 76%;
+  height: 76%;
+}
+
+.board-zone-bubble-tile-7 .board-zone-bubble-image {
+  width: 72%;
+  height: 72%;
 }
 
 .board-zone:hover .board-zone-hit,
 .board-zone:focus-visible .board-zone-hit,
 .board-zone-focused .board-zone-hit {
-  border-color: rgba(255, 235, 170, 0.68);
-  background: linear-gradient(180deg, rgba(255, 250, 230, 0.1), rgba(131, 25, 20, 0.12));
+  border-color: rgba(255, 235, 170, 0.52);
+  background: linear-gradient(180deg, rgba(255, 250, 230, 0.06), rgba(131, 25, 20, 0.08));
 }
 
 .board-zone-current .board-zone-hit {
   box-shadow:
-    inset 0 0 0 2px rgba(255, 255, 255, 0.25),
-    0 0 0 4px rgba(106, 180, 255, 0.35),
-    0 16px 28px rgba(23, 4, 4, 0.16);
+    inset 0 0 0 2px rgba(255, 255, 255, 0.24),
+    0 0 0 3px rgba(106, 180, 255, 0.22),
+    0 8px 18px rgba(23, 4, 4, 0.12);
 }
 
 .board-zone-reachable .board-zone-hit {
-  border-color: rgba(255, 241, 186, 0.95);
+  border-color: rgba(255, 241, 186, 0.9);
   box-shadow:
-    inset 0 0 0 2px rgba(255, 255, 255, 0.35),
-    0 0 0 4px rgba(247, 206, 96, 0.42),
-    0 18px 30px rgba(23, 4, 4, 0.2);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.28),
+    0 0 0 3px rgba(247, 206, 96, 0.24),
+    0 8px 20px rgba(23, 4, 4, 0.12);
 }
 
 .board-zone-selected .board-zone-hit {
   border-color: rgba(255, 245, 198, 0.98);
   box-shadow:
-    inset 0 0 0 2px rgba(255, 255, 255, 0.42),
-    0 0 0 5px rgba(244, 106, 82, 0.34),
-    0 20px 34px rgba(23, 4, 4, 0.22);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.36),
+    0 0 0 4px rgba(244, 106, 82, 0.24),
+    0 10px 24px rgba(23, 4, 4, 0.14);
 }
 
 .board-zone-disabled {
