@@ -16,6 +16,18 @@
   box-sizing: border-box;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 body {
   margin: 0;
   min-width: 320px;
@@ -293,6 +305,7 @@ button:disabled {
   background: transparent;
   color: inherit;
   text-align: left;
+  border-radius: 20px;
 }
 
 .board-zone:hover,
@@ -304,30 +317,35 @@ button:disabled {
 .board-zone-hit {
   position: absolute;
   inset: 0;
-  border-radius: 18px;
-  border: 2px solid rgba(255, 244, 214, 0.26);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(86, 12, 10, 0.08));
+  border-radius: 20px;
+  border: 2px solid rgba(255, 244, 214, 0.2);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(86, 12, 10, 0.06));
   box-shadow:
     inset 0 0 0 1px rgba(69, 16, 12, 0.2),
-    0 12px 24px rgba(23, 4, 4, 0.12);
-  transition: border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+    0 10px 22px rgba(23, 4, 4, 0.1);
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    box-shadow 0.16s ease,
+    opacity 0.16s ease,
+    transform 0.16s ease;
 }
 
 .board-zone:hover .board-zone-hit,
 .board-zone:focus-visible .board-zone-hit,
 .board-zone-focused .board-zone-hit {
-  border-color: rgba(255, 235, 170, 0.72);
-  background: linear-gradient(180deg, rgba(255, 250, 230, 0.11), rgba(131, 25, 20, 0.14));
+  border-color: rgba(255, 235, 170, 0.68);
+  background: linear-gradient(180deg, rgba(255, 250, 230, 0.1), rgba(131, 25, 20, 0.12));
 }
 
 .board-zone-current .board-zone-hit {
   box-shadow:
     inset 0 0 0 2px rgba(255, 255, 255, 0.25),
-    0 0 0 3px rgba(241, 198, 95, 0.35),
+    0 0 0 4px rgba(106, 180, 255, 0.35),
     0 16px 28px rgba(23, 4, 4, 0.16);
 }
 
-.board-zone-pending .board-zone-hit {
+.board-zone-reachable .board-zone-hit {
   border-color: rgba(255, 241, 186, 0.95);
   box-shadow:
     inset 0 0 0 2px rgba(255, 255, 255, 0.35),
@@ -335,25 +353,39 @@ button:disabled {
     0 18px 30px rgba(23, 4, 4, 0.2);
 }
 
-.board-zone-label {
-  position: absolute;
-  left: 8px;
-  top: 8px;
-  display: grid;
-  gap: 2px;
-  max-width: calc(100% - 16px);
-  padding: 7px 9px;
-  border-radius: 14px;
-  background: rgba(81, 18, 14, 0.78);
-  color: #fff4da;
-  box-shadow: 0 8px 18px rgba(23, 4, 4, 0.22);
-  backdrop-filter: blur(3px);
+.board-zone-selected .board-zone-hit {
+  border-color: rgba(255, 245, 198, 0.98);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.42),
+    0 0 0 5px rgba(244, 106, 82, 0.34),
+    0 20px 34px rgba(23, 4, 4, 0.22);
 }
 
-.board-zone-label strong {
-  font-size: 0.84rem;
-  line-height: 1.05;
-  color: #fff7eb;
+.board-zone-disabled {
+  pointer-events: none;
+}
+
+.board-zone-disabled .board-zone-hit {
+  opacity: 0.18;
+  box-shadow: none;
+}
+
+.board-zone-badge {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(79, 17, 13, 0.82);
+  color: #fff3d5;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  box-shadow: 0 8px 18px rgba(23, 4, 4, 0.22);
 }
 
 .tile-index,
@@ -382,13 +414,11 @@ button:disabled {
 
 .board-zone-tokens {
   position: absolute;
-  right: 12px;
-  bottom: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  min-height: 52px;
-  min-width: 52px;
+  left: 50%;
+  top: 50%;
+  width: 56px;
+  height: 56px;
+  transform: translate(-50%, -50%);
 }
 
 .player-token,
@@ -414,6 +444,8 @@ button:disabled {
 
 .board-player-token {
   position: absolute;
+  left: 50%;
+  top: 50%;
   width: 46px;
   height: 46px;
   border: 3px solid #fff8e7;
@@ -522,6 +554,20 @@ button:disabled {
 .turn-actions {
   display: grid;
   gap: 12px;
+}
+
+.turn-helper {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 241, 208, 0.1);
+  border: 1px solid rgba(255, 226, 157, 0.26);
+  color: #ffebbc;
+}
+
+.turn-helper strong {
+  color: #fff8e3;
 }
 
 .die-face {
@@ -750,13 +796,12 @@ button:disabled {
     padding: 14px;
   }
 
-  .board-zone-label {
-    gap: 1px;
-    padding: 6px 7px;
-  }
-
-  .board-zone-label strong {
-    font-size: 0.74rem;
+  .board-zone-badge {
+    left: 8px;
+    top: 8px;
+    min-width: 24px;
+    height: 24px;
+    font-size: 0.66rem;
   }
 
   .board-player-token {
@@ -789,32 +834,9 @@ button:disabled {
     border-radius: 14px;
   }
 
-  .board-zone-label {
-    left: 5px;
-    top: 5px;
-    max-width: calc(100% - 10px);
-    padding: 4px 6px;
-    border-radius: 10px;
-  }
-
-  .board-zone-label strong {
-    font-size: 0.64rem;
-  }
-
-  .tile-index,
-  .tile-type {
-    font-size: 0.56rem;
-  }
-
-  .tile-family {
-    display: none;
-  }
-
   .board-zone-tokens {
-    right: 8px;
-    bottom: 8px;
-    min-width: 38px;
-    min-height: 38px;
+    width: 42px;
+    height: 42px;
   }
 
   .board-player-token {

@@ -45,6 +45,13 @@ type PendingAction = {
   roll: number;
 };
 
+type PendingMovement = {
+  playerId: string;
+  originTileId: number;
+  roll: number;
+  reachableTileIds: number[];
+};
+
 type GamePhase = 'welcome' | 'setup' | 'playing' | 'finished';
 
 type GameState = {
@@ -53,6 +60,7 @@ type GameState = {
   currentPlayerIndex: number;
   centralBank: number;
   history: string[];
+  pendingMovement: PendingMovement | null;
   pendingAction: PendingAction | null;
   lastRoll: number | null;
   winnerId: string | null;
@@ -77,19 +85,35 @@ const SALE_VALUES = [2, 3, 5] as const;
 const PLAYER_TOKEN_COLORS = ['#d9473f', '#2b6fdd', '#f59e0b', '#0f9d74'];
 
 const TILE_OVERLAYS: Record<number, TileOverlay> = {
-  0: { left: 3.4, top: 73.4, width: 17.6, height: 20.8 },
-  1: { left: 21.4, top: 79.8, width: 13.1, height: 13.7 },
-  2: { left: 35.3, top: 79.8, width: 13.1, height: 13.7 },
-  3: { left: 49.1, top: 79.8, width: 13.1, height: 13.7 },
-  4: { left: 76.9, top: 73.4, width: 17.7, height: 20.8 },
-  5: { left: 82.2, top: 53.3, width: 12.2, height: 19.1 },
-  6: { left: 82.2, top: 32.4, width: 12.2, height: 19.1 },
-  7: { left: 76.9, top: 5.8, width: 17.7, height: 20.8 },
-  8: { left: 49.1, top: 6.1, width: 13.1, height: 13.7 },
-  9: { left: 35.3, top: 6.1, width: 13.1, height: 13.7 },
-  10: { left: 3.4, top: 5.8, width: 17.6, height: 20.8 },
-  11: { left: 4.2, top: 31.8, width: 12.1, height: 19.3 },
-  12: { left: 4.2, top: 52.9, width: 12.1, height: 19.3 },
+  0: { left: 40.6, top: 39.2, width: 18.8, height: 20.6 },
+  1: { left: 43.3, top: 16.8, width: 13.4, height: 21.4 },
+  2: { left: 39.6, top: 0.6, width: 20.7, height: 16.2 },
+  3: { left: 78.3, top: 18.6, width: 17.4, height: 29.8 },
+  4: { left: 58.4, top: 35.0, width: 15.2, height: 16.9 },
+  5: { left: 68.3, top: 55.0, width: 18.6, height: 24.8 },
+  6: { left: 43.4, top: 60.4, width: 13.2, height: 22.0 },
+  7: { left: 39.6, top: 82.8, width: 20.8, height: 16.8 },
+  8: { left: 12.8, top: 55.0, width: 18.9, height: 24.8 },
+  9: { left: 26.7, top: 35.0, width: 15.1, height: 16.9 },
+  10: { left: 13.0, top: 18.2, width: 18.7, height: 29.8 },
+  11: { left: 29.1, top: 1.6, width: 10.8, height: 8.8 },
+  12: { left: 85.1, top: 52.0, width: 10.8, height: 8.8 },
+};
+
+const TILE_GRAPH: Record<number, number[]> = {
+  0: [1, 4, 6, 9],
+  1: [0, 2, 3, 11],
+  2: [1],
+  3: [1, 4],
+  4: [0, 3, 5, 12],
+  5: [4],
+  6: [0, 7, 8, 12],
+  7: [6],
+  8: [6, 9],
+  9: [0, 8, 10, 11],
+  10: [9],
+  11: [1, 9],
+  12: [4, 6],
 };
 
 const DIE_PIPS: Record<number, string[]> = {
@@ -250,6 +274,7 @@ const createInitialState = (): GameState => ({
   currentPlayerIndex: 0,
   centralBank: INITIAL_BANK,
   history: ['Bienvenue dans Monopoly des Services.'],
+  pendingMovement: null,
   pendingAction: null,
   lastRoll: null,
   winnerId: null,
@@ -305,6 +330,33 @@ const getPlayerInitials = (name: string) =>
     .map((part) => part[0]?.toUpperCase())
     .join('')
     .slice(0, 2) || '?';
+
+const getReachableTileIds = (originTileId: number, roll: number) => {
+  const destinations = new Set<number>();
+
+  const traverse = (tileId: number, stepsLeft: number, visited: Set<number>) => {
+    if (stepsLeft === 0) {
+      if (tileId !== originTileId) {
+        destinations.add(tileId);
+      }
+      return;
+    }
+
+    TILE_GRAPH[tileId]?.forEach((neighborId) => {
+      if (visited.has(neighborId)) {
+        return;
+      }
+
+      visited.add(neighborId);
+      traverse(neighborId, stepsLeft - 1, visited);
+      visited.delete(neighborId);
+    });
+  };
+
+  traverse(originTileId, roll, new Set([originTileId]));
+
+  return [...destinations].sort((left, right) => left - right);
+};
 
 const DieFace = ({ value, isRolling }: DieFaceProps) => {
   const safeValue = value && value >= 1 && value <= 6 ? value : null;
@@ -374,9 +426,16 @@ const App = () => {
 
   const currentPlayer = game.players[game.currentPlayerIndex] ?? null;
   const completeSets = useMemo(() => getCompleteSets(game.players), [game.players]);
-  const boardFocusTileId = inspectedTileId ?? game.pendingAction?.tile.id ?? currentPlayer?.position ?? 0;
+  const boardFocusTileId =
+    inspectedTileId ??
+    game.pendingAction?.tile.id ??
+    game.pendingMovement?.originTileId ??
+    currentPlayer?.position ??
+    0;
   const focusTile = board[boardFocusTileId] ?? board[0];
   const focusTileService = getService(focusTile.serviceId);
+  const reachableTileIds = game.pendingMovement?.reachableTileIds ?? [];
+  const isChoosingDestination = Boolean(game.pendingMovement);
 
   const startSetup = () => {
     setGame((currentGame) => ({
@@ -430,6 +489,7 @@ const App = () => {
       currentPlayerIndex: 0,
       centralBank: INITIAL_BANK,
       history: [`La partie commence. ${players[0].name} ouvre le jeu.`],
+      pendingMovement: null,
       pendingAction: null,
       lastRoll: null,
       winnerId: null,
@@ -437,13 +497,17 @@ const App = () => {
   };
 
   const rollDie = () => {
-    if (!currentPlayer || game.pendingAction || game.phase === 'finished' || isRolling) {
+    if (
+      !currentPlayer ||
+      game.pendingMovement ||
+      game.pendingAction ||
+      game.phase === 'finished' ||
+      isRolling
+    ) {
       return;
     }
 
     const finalRoll = Math.floor(Math.random() * 6) + 1;
-    const nextPosition = (currentPlayer.position + finalRoll) % board.length;
-    const tile = board[nextPosition];
 
     if (rollIntervalRef.current) {
       window.clearInterval(rollIntervalRef.current);
@@ -464,26 +528,65 @@ const App = () => {
         window.clearInterval(rollIntervalRef.current);
       }
 
+      const reachableDestinations = getReachableTileIds(currentPlayer.position, finalRoll);
+
       setDisplayRoll(finalRoll);
-      setInspectedTileId(nextPosition);
+      setInspectedTileId(currentPlayer.position);
       setIsRolling(false);
       setGame((currentGame) => ({
         ...currentGame,
-        players: currentGame.players.map((player) =>
-          player.id === currentPlayer.id ? { ...player, position: nextPosition } : player,
-        ),
         lastRoll: finalRoll,
-        pendingAction: {
-          tile,
+        pendingMovement: {
           playerId: currentPlayer.id,
+          originTileId: currentPlayer.position,
           roll: finalRoll,
+          reachableTileIds: reachableDestinations,
         },
         history: appendHistoryEntry(
           currentGame.history,
-          `${currentPlayer.name} lance un ${finalRoll} et arrive sur ${tile.title}.`,
+          `${currentPlayer.name} lance un ${finalRoll}. Choisissez maintenant une case de destination.`,
         ),
       }));
     }, 900);
+  };
+
+  const handleDestinationSelection = (tileId: number) => {
+    if (!game.pendingMovement) {
+      return;
+    }
+
+    setInspectedTileId(tileId);
+
+    setGame((currentGame) => {
+      const pendingMovement = currentGame.pendingMovement;
+      if (!pendingMovement || !pendingMovement.reachableTileIds.includes(tileId)) {
+        return currentGame;
+      }
+
+      const player = currentGame.players.find((candidate) => candidate.id === pendingMovement.playerId);
+      const tile = board[tileId];
+
+      if (!player || !tile) {
+        return { ...currentGame, pendingMovement: null };
+      }
+
+      return {
+        ...currentGame,
+        players: currentGame.players.map((candidate) =>
+          candidate.id === player.id ? { ...candidate, position: tileId } : candidate,
+        ),
+        pendingMovement: null,
+        pendingAction: {
+          tile,
+          playerId: player.id,
+          roll: pendingMovement.roll,
+        },
+        history: appendHistoryEntry(
+          currentGame.history,
+          `${player.name} choisit ${tile.title} comme destination après un ${pendingMovement.roll}.`,
+        ),
+      };
+    });
   };
 
   const resolveTurn = (state: GameState, players: Player[], centralBank: number, message: string): GameState => {
@@ -496,6 +599,7 @@ const App = () => {
         players,
         centralBank,
         history,
+        pendingMovement: null,
         pendingAction: null,
         phase: 'finished',
         winnerId: winner?.id ?? null,
@@ -507,6 +611,7 @@ const App = () => {
       players,
       centralBank,
       history,
+      pendingMovement: null,
       pendingAction: null,
       currentPlayerIndex: (state.currentPlayerIndex + 1) % players.length,
     };
@@ -525,7 +630,7 @@ const App = () => {
 
       const player = currentGame.players.find((candidate) => candidate.id === pendingAction.playerId);
       if (!player) {
-        return { ...currentGame, pendingAction: null };
+        return { ...currentGame, pendingMovement: null, pendingAction: null };
       }
 
       let players = currentGame.players;
@@ -722,16 +827,20 @@ const App = () => {
                     const service = getService(tile.serviceId);
                     const tileLabel = tile.type === 'service' && service ? service.name : tile.title;
                     const isFocused = tile.id === boardFocusTileId;
-                    const isPending = tile.id === game.pendingAction?.tile.id;
+                    const isSelectedTile = tile.id === game.pendingAction?.tile.id;
                     const isCurrentPlayerTile = tile.id === currentPlayer?.position;
+                    const isReachable = reachableTileIds.includes(tile.id);
+                    const isDisabled = isChoosingDestination && !isReachable;
 
                     return (
                       <button
                         type="button"
                         className={`board-zone tile-${tile.type} tile-color-${tile.color ?? 'neutral'} ${
                           isFocused ? 'board-zone-focused' : ''
-                        } ${isPending ? 'board-zone-pending' : ''} ${
+                        } ${isSelectedTile ? 'board-zone-selected' : ''} ${
                           isCurrentPlayerTile ? 'board-zone-current' : ''
+                        } ${isReachable ? 'board-zone-reachable' : ''} ${
+                          isDisabled ? 'board-zone-disabled' : ''
                         }`}
                         key={tile.id}
                         style={{
@@ -740,21 +849,27 @@ const App = () => {
                           width: `${overlay.width}%`,
                           height: `${overlay.height}%`,
                         }}
-                        onClick={() => setInspectedTileId(tile.id)}
+                        onClick={() =>
+                          isChoosingDestination ? handleDestinationSelection(tile.id) : setInspectedTileId(tile.id)
+                        }
                         title={`${tileLabel} · ${tile.description}`}
+                        aria-label={`${tileLabel}. ${isReachable ? 'Destination atteignable.' : tile.description}`}
+                        disabled={isDisabled}
                       >
                         <span className="board-zone-hit" />
-                        <span className="board-zone-label">
-                          <span className="tile-index">Case {tile.id}</span>
-                          <strong>{tileLabel}</strong>
-                          <span className="tile-type">{tileTypeLabels[tile.type]}</span>
-                          {tile.color && <span className="tile-family">{colorLabels[tile.color]}</span>}
+                        <span className="board-zone-badge" aria-hidden="true">
+                          {tile.id}
+                        </span>
+                        <span className="board-zone-label sr-only">
+                          Case {tile.id} · {tileLabel} · {tileTypeLabels[tile.type]}
                         </span>
                         <span className="board-zone-tokens" aria-hidden={occupants.length === 0}>
                           {occupants.map((player, occupantIndex) => {
                             const playerIndex = game.players.findIndex((entry) => entry.id === player.id);
-                            const offsetX = occupantIndex % 2 === 0 ? occupantIndex * 12 : -occupantIndex * 10;
-                            const offsetY = occupantIndex > 1 ? 10 : 0;
+                            const columnOffset = occupantIndex % 2 === 0 ? -1 : 1;
+                            const rowOffset = Math.floor(occupantIndex / 2);
+                            const offsetX = occupantIndex === 0 ? 0 : columnOffset * (12 + rowOffset * 2);
+                            const offsetY = rowOffset * 13;
 
                             return (
                               <span
@@ -803,7 +918,13 @@ const App = () => {
                 <div>
                   <p className="eyebrow">Tour actuel</p>
                   <h2>{currentPlayer ? currentPlayer.name : 'En attente'}</h2>
-                  <p>{currentPlayer ? 'Lancez le dé pour avancer sur le plateau.' : 'Configurez une partie pour commencer.'}</p>
+                  <p>
+                    {isChoosingDestination
+                      ? 'Choisissez votre case de destination.'
+                      : currentPlayer
+                        ? 'Lancez le dé puis sélectionnez une case atteignable sur le plateau.'
+                        : 'Configurez une partie pour commencer.'}
+                  </p>
                 </div>
                 <DieFace value={displayRoll} isRolling={isRolling} />
               </div>
@@ -811,11 +932,32 @@ const App = () => {
                 <button
                   className="primary-button"
                   onClick={rollDie}
-                  disabled={Boolean(game.pendingAction) || game.phase === 'finished' || isRolling}
+                  disabled={
+                    Boolean(game.pendingMovement) ||
+                    Boolean(game.pendingAction) ||
+                    game.phase === 'finished' ||
+                    isRolling
+                  }
                 >
                   {isRolling ? 'Le dé roule...' : 'Lancer le dé'}
                 </button>
                 <div className="status-chip">Dernier résultat : {game.lastRoll ?? '-'}</div>
+                {game.pendingMovement && (
+                  <div className="turn-helper">
+                    <strong>Choisissez votre case de destination</strong>
+                    <span>
+                      Départ : case {game.pendingMovement.originTileId} · {game.pendingMovement.roll} déplacement
+                      {game.pendingMovement.roll > 1 ? 's' : ''} possible
+                      {game.pendingMovement.roll > 1 ? 's' : ''}.
+                    </span>
+                  </div>
+                )}
+                {game.pendingAction && (
+                  <div className="turn-helper">
+                    <strong>Destination choisie : {game.pendingAction.tile.title}</strong>
+                    <span>Validez maintenant l’action de la case pour terminer le tour.</span>
+                  </div>
+                )}
               </div>
             </section>
 
