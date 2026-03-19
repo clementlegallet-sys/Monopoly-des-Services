@@ -14,6 +14,7 @@ type TileType =
   | 'objection';
 
 type ServiceColor = 'blue' | 'green' | 'orange';
+type TrainingMode = 'arguments' | 'objections';
 
 type ServicePiece = {
   id: string;
@@ -37,6 +38,7 @@ type Player = {
   position: number;
   clients: number;
   pieces: string[];
+  rollsTaken: number;
 };
 
 type PendingAction = {
@@ -64,6 +66,7 @@ type GameState = {
   pendingAction: PendingAction | null;
   lastRoll: number | null;
   winnerId: string | null;
+  trainingMode: TrainingMode | null;
 };
 
 type DieFaceProps = {
@@ -76,6 +79,7 @@ type TileOverlay = {
   top: number;
   width: number;
   height: number;
+  clipPath: string;
 };
 
 const STORAGE_KEY = 'monopoly-des-services-state';
@@ -85,19 +89,97 @@ const SALE_VALUES = [2, 3, 5] as const;
 const PLAYER_TOKEN_COLORS = ['#d9473f', '#2b6fdd', '#f59e0b', '#0f9d74'];
 
 const TILE_OVERLAYS: Record<number, TileOverlay> = {
-  0: { left: 40.6, top: 39.2, width: 18.8, height: 20.6 },
-  1: { left: 43.3, top: 16.8, width: 13.4, height: 21.4 },
-  2: { left: 39.6, top: 0.6, width: 20.7, height: 16.2 },
-  3: { left: 78.3, top: 18.6, width: 17.4, height: 29.8 },
-  4: { left: 58.4, top: 35.0, width: 15.2, height: 16.9 },
-  5: { left: 68.3, top: 55.0, width: 18.6, height: 24.8 },
-  6: { left: 43.4, top: 60.4, width: 13.2, height: 22.0 },
-  7: { left: 39.6, top: 82.8, width: 20.8, height: 16.8 },
-  8: { left: 12.8, top: 55.0, width: 18.9, height: 24.8 },
-  9: { left: 26.7, top: 35.0, width: 15.1, height: 16.9 },
-  10: { left: 13.0, top: 18.2, width: 18.7, height: 29.8 },
-  11: { left: 29.1, top: 1.6, width: 10.8, height: 8.8 },
-  12: { left: 85.1, top: 52.0, width: 10.8, height: 8.8 },
+  0: {
+    left: 40.6,
+    top: 39.2,
+    width: 18.8,
+    height: 20.6,
+    clipPath: 'polygon(17% 14%, 50% 0%, 83% 14%, 100% 50%, 83% 87%, 50% 100%, 17% 87%, 0% 50%)',
+  },
+  1: {
+    left: 43.3,
+    top: 16.8,
+    width: 13.4,
+    height: 21.4,
+    clipPath: 'polygon(50% 0%, 89% 12%, 82% 100%, 18% 100%, 11% 12%)',
+  },
+  2: {
+    left: 39.6,
+    top: 0.6,
+    width: 20.7,
+    height: 16.2,
+    clipPath: 'polygon(14% 100%, 0% 30%, 24% 0%, 76% 0%, 100% 30%, 86% 100%)',
+  },
+  3: {
+    left: 78.3,
+    top: 18.6,
+    width: 17.4,
+    height: 29.8,
+    clipPath: 'polygon(0% 18%, 39% 0%, 100% 8%, 92% 84%, 49% 100%, 0% 84%)',
+  },
+  4: {
+    left: 58.4,
+    top: 35,
+    width: 15.2,
+    height: 16.9,
+    clipPath: 'polygon(0% 17%, 57% 0%, 100% 20%, 100% 82%, 44% 100%, 0% 80%)',
+  },
+  5: {
+    left: 68.3,
+    top: 55,
+    width: 18.6,
+    height: 24.8,
+    clipPath: 'polygon(0% 11%, 56% 0%, 100% 18%, 88% 100%, 29% 93%, 0% 74%)',
+  },
+  6: {
+    left: 43.4,
+    top: 60.4,
+    width: 13.2,
+    height: 22,
+    clipPath: 'polygon(18% 0%, 82% 0%, 89% 86%, 50% 100%, 11% 86%)',
+  },
+  7: {
+    left: 39.6,
+    top: 82.8,
+    width: 20.8,
+    height: 16.8,
+    clipPath: 'polygon(14% 0%, 86% 0%, 100% 70%, 76% 100%, 24% 100%, 0% 70%)',
+  },
+  8: {
+    left: 12.8,
+    top: 55,
+    width: 18.9,
+    height: 24.8,
+    clipPath: 'polygon(44% 0%, 100% 12%, 100% 76%, 70% 93%, 12% 100%, 0% 18%)',
+  },
+  9: {
+    left: 26.7,
+    top: 35,
+    width: 15.1,
+    height: 16.9,
+    clipPath: 'polygon(43% 0%, 100% 18%, 100% 82%, 56% 100%, 0% 80%, 0% 20%)',
+  },
+  10: {
+    left: 13,
+    top: 18.2,
+    width: 18.7,
+    height: 29.8,
+    clipPath: 'polygon(51% 0%, 100% 16%, 100% 82%, 61% 100%, 0% 84%, 8% 8%)',
+  },
+  11: {
+    left: 29.1,
+    top: 1.6,
+    width: 10.8,
+    height: 8.8,
+    clipPath: 'polygon(21% 100%, 0% 44%, 44% 0%, 100% 16%, 80% 100%)',
+  },
+  12: {
+    left: 85.1,
+    top: 52,
+    width: 10.8,
+    height: 8.8,
+    clipPath: 'polygon(0% 18%, 56% 0%, 100% 55%, 79% 100%, 19% 87%)',
+  },
 };
 
 const TILE_GRAPH: Record<number, number[]> = {
@@ -268,6 +350,32 @@ const tileTypeLabels: Record<TileType, string> = {
   objection: 'Objection',
 };
 
+const trainingModeLabels: Record<TrainingMode, string> = {
+  arguments: 'Arguments de vente',
+  objections: 'Objections',
+};
+
+const bubbleModeCopy: Record<
+  TrainingMode,
+  {
+    label: string;
+    description: string;
+    success: string;
+  }
+> = {
+  arguments: {
+    label: 'Argument de vente',
+    description: 'Développer un argument BAC clair, concret et orienté bénéfices client.',
+    success: 'Challenge argumentaire réussi.',
+  },
+  objections: {
+    label: 'Traitement d’objection',
+    description:
+      'Répondre à une objection client avec une reformulation claire et une réponse rassurante.',
+    success: 'Challenge objection réussi.',
+  },
+};
+
 const createInitialState = (): GameState => ({
   phase: 'welcome',
   players: [],
@@ -278,6 +386,7 @@ const createInitialState = (): GameState => ({
   pendingAction: null,
   lastRoll: null,
   winnerId: null,
+  trainingMode: null,
 });
 
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -286,6 +395,23 @@ const getService = (serviceId?: string) =>
   servicePieces.find((piece) => piece.id === serviceId) ?? null;
 
 const appendHistoryEntry = (history: string[], message: string) => [message, ...history].slice(0, 12);
+
+const isSpeechBubbleTile = (tile: Tile) =>
+  tile.type === 'question' || tile.type === 'story' || tile.type === 'pitch' || tile.type === 'objection';
+
+const getTilePresentation = (tile: Tile, trainingMode: TrainingMode | null) => {
+  if (!trainingMode || !isSpeechBubbleTile(tile)) {
+    return tile;
+  }
+
+  const modeCopy = bubbleModeCopy[trainingMode];
+
+  return {
+    ...tile,
+    title: modeCopy.label,
+    description: modeCopy.description,
+  };
+};
 
 const getServicesByColor = () =>
   servicePieces.reduce<Record<ServiceColor, string[]>>(
@@ -388,12 +514,21 @@ const App = () => {
     }
 
     try {
-      return JSON.parse(savedGame) as GameState;
+      const parsedGame = JSON.parse(savedGame) as Partial<GameState>;
+      return {
+        ...createInitialState(),
+        ...parsedGame,
+        players: (parsedGame.players ?? []).map((player) => ({
+          ...player,
+          rollsTaken: player.rollsTaken ?? 0,
+        })) as Player[],
+      };
     } catch {
       return createInitialState();
     }
   });
   const [playerNames, setPlayerNames] = useState<string[]>(['', '']);
+  const [selectedTrainingMode, setSelectedTrainingMode] = useState<TrainingMode | null>(null);
   const [selectedPieceId, setSelectedPieceId] = useState<string>('');
   const [saleValue, setSaleValue] = useState<number>(SALE_VALUES[0]);
   const [displayRoll, setDisplayRoll] = useState<number | null>(game.lastRoll);
@@ -426,13 +561,14 @@ const App = () => {
 
   const currentPlayer = game.players[game.currentPlayerIndex] ?? null;
   const completeSets = useMemo(() => getCompleteSets(game.players), [game.players]);
+  const activeTrainingMode = game.trainingMode ?? selectedTrainingMode;
   const boardFocusTileId =
     inspectedTileId ??
     game.pendingAction?.tile.id ??
     game.pendingMovement?.originTileId ??
     currentPlayer?.position ??
     0;
-  const focusTile = board[boardFocusTileId] ?? board[0];
+  const focusTile = getTilePresentation(board[boardFocusTileId] ?? board[0], activeTrainingMode);
   const focusTileService = getService(focusTile.serviceId);
   const reachableTileIds = game.pendingMovement?.reachableTileIds ?? [];
   const isChoosingDestination = Boolean(game.pendingMovement);
@@ -454,6 +590,7 @@ const App = () => {
     }
 
     setPlayerNames(['', '']);
+    setSelectedTrainingMode(null);
     setSelectedPieceId('');
     setSaleValue(SALE_VALUES[0]);
     setDisplayRoll(null);
@@ -473,12 +610,24 @@ const App = () => {
       return;
     }
 
+    if (!selectedTrainingMode) {
+      setGame((currentGame) => ({
+        ...currentGame,
+        history: appendHistoryEntry(
+          currentGame.history,
+          'Choisissez un mode d’entraînement avant de lancer la partie.',
+        ),
+      }));
+      return;
+    }
+
     const players = names.map<Player>((name) => ({
       id: uid(),
       name,
       position: 0,
       clients: INITIAL_CLIENTS,
       pieces: [],
+      rollsTaken: 0,
     }));
 
     setDisplayRoll(null);
@@ -488,11 +637,12 @@ const App = () => {
       players,
       currentPlayerIndex: 0,
       centralBank: INITIAL_BANK,
-      history: [`La partie commence. ${players[0].name} ouvre le jeu.`],
+      history: [`La partie commence. ${players[0].name} ouvre le jeu en mode ${trainingModeLabels[selectedTrainingMode]}.`],
       pendingMovement: null,
       pendingAction: null,
       lastRoll: null,
       winnerId: null,
+      trainingMode: selectedTrainingMode,
     });
   };
 
@@ -550,45 +700,6 @@ const App = () => {
     }, 900);
   };
 
-  const handleDestinationSelection = (tileId: number) => {
-    if (!game.pendingMovement) {
-      return;
-    }
-
-    setInspectedTileId(tileId);
-
-    setGame((currentGame) => {
-      const pendingMovement = currentGame.pendingMovement;
-      if (!pendingMovement || !pendingMovement.reachableTileIds.includes(tileId)) {
-        return currentGame;
-      }
-
-      const player = currentGame.players.find((candidate) => candidate.id === pendingMovement.playerId);
-      const tile = board[tileId];
-
-      if (!player || !tile) {
-        return { ...currentGame, pendingMovement: null };
-      }
-
-      return {
-        ...currentGame,
-        players: currentGame.players.map((candidate) =>
-          candidate.id === player.id ? { ...candidate, position: tileId } : candidate,
-        ),
-        pendingMovement: null,
-        pendingAction: {
-          tile,
-          playerId: player.id,
-          roll: pendingMovement.roll,
-        },
-        history: appendHistoryEntry(
-          currentGame.history,
-          `${player.name} choisit ${tile.title} comme destination après un ${pendingMovement.roll}.`,
-        ),
-      };
-    });
-  };
-
   const resolveTurn = (state: GameState, players: Player[], centralBank: number, message: string): GameState => {
     const history = appendHistoryEntry(state.history, message);
 
@@ -615,6 +726,64 @@ const App = () => {
       pendingAction: null,
       currentPlayerIndex: (state.currentPlayerIndex + 1) % players.length,
     };
+  };
+
+  const handleDestinationSelection = (tileId: number) => {
+    if (!game.pendingMovement) {
+      return;
+    }
+
+    setInspectedTileId(tileId);
+
+    setGame((currentGame) => {
+      const pendingMovement = currentGame.pendingMovement;
+      if (!pendingMovement || !pendingMovement.reachableTileIds.includes(tileId)) {
+        return currentGame;
+      }
+
+      const player = currentGame.players.find((candidate) => candidate.id === pendingMovement.playerId);
+      const tile = board[tileId];
+      const presentedTile = tile ? getTilePresentation(tile, currentGame.trainingMode) : null;
+
+      if (!player || !tile || !presentedTile) {
+        return { ...currentGame, pendingMovement: null };
+      }
+
+      const movedPlayers = currentGame.players.map((candidate) =>
+        candidate.id === player.id
+          ? { ...candidate, position: tileId, rollsTaken: candidate.rollsTaken + 1 }
+          : candidate,
+      );
+
+      if (tile.type === 'market' && player.rollsTaken === 0 && pendingMovement.roll === 1) {
+        return resolveTurn(
+          {
+            ...currentGame,
+            players: movedPlayers,
+            pendingMovement: null,
+            pendingAction: null,
+          },
+          movedPlayers,
+          currentGame.centralBank,
+          'Aucune action sur Place du Marché au premier lancer.',
+        );
+      }
+
+      return {
+        ...currentGame,
+        players: movedPlayers,
+        pendingMovement: null,
+        pendingAction: {
+          tile: presentedTile,
+          playerId: player.id,
+          roll: pendingMovement.roll,
+        },
+        history: appendHistoryEntry(
+          currentGame.history,
+          `${player.name} choisit ${presentedTile.title} comme destination après un ${pendingMovement.roll}.`,
+        ),
+      };
+    });
   };
 
   const handleValidatedAction = () => {
@@ -654,6 +823,10 @@ const App = () => {
         players = result.players;
         centralBank -= result.awarded;
         message = `${player.name} gagne ${result.awarded} client après validation de ${pendingAction.tile.title}.`;
+
+        if (currentGame.trainingMode) {
+          message += ` ${bubbleModeCopy[currentGame.trainingMode].success}`;
+        }
 
         if (pendingAction.tile.color) {
           const sets = getCompleteSets(players);
@@ -798,6 +971,34 @@ const App = () => {
               </label>
             ))}
           </div>
+
+          <fieldset className="mode-selector">
+            <legend>Mode d’entraînement obligatoire</legend>
+            <p className="mode-selector-copy">
+              Ce choix pilote les cases BD / bulles du plateau pendant toute la partie.
+            </p>
+            <div className="mode-options">
+              {(Object.keys(trainingModeLabels) as TrainingMode[]).map((mode) => (
+                <label
+                  key={mode}
+                  className={`mode-option ${selectedTrainingMode === mode ? 'mode-option-selected' : ''}`}
+                >
+                  <input
+                    type="radio"
+                    name="training-mode"
+                    value={mode}
+                    checked={selectedTrainingMode === mode}
+                    onChange={() => setSelectedTrainingMode(mode)}
+                  />
+                  <span className="mode-option-body">
+                    <strong>{trainingModeLabels[mode]}</strong>
+                    <span>{bubbleModeCopy[mode].description}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
           <button className="primary-button" onClick={launchGame}>
             Lancer la partie
           </button>
@@ -811,8 +1012,16 @@ const App = () => {
               <div>
                 <p className="eyebrow">Plateau principal</p>
                 <h2>Le tapis de jeu</h2>
+                {game.trainingMode && (
+                  <p className="board-mode-copy">Mode actif : {trainingModeLabels[game.trainingMode]}</p>
+                )}
               </div>
-              <div className="board-bank">Banque centrale : {game.centralBank} clients</div>
+              <div className="board-header-status">
+                {game.trainingMode && (
+                  <div className="status-chip status-chip-mode">{trainingModeLabels[game.trainingMode]}</div>
+                )}
+                <div className="board-bank">Banque centrale : {game.centralBank} clients</div>
+              </div>
             </div>
 
             <div className="board-frame">
@@ -823,9 +1032,10 @@ const App = () => {
                 <div className="board-overlays" aria-label="Cases du plateau">
                   {board.map((tile) => {
                     const overlay = TILE_OVERLAYS[tile.id];
+                    const presentedTile = getTilePresentation(tile, game.trainingMode);
                     const occupants = game.players.filter((player) => player.position === tile.id);
                     const service = getService(tile.serviceId);
-                    const tileLabel = tile.type === 'service' && service ? service.name : tile.title;
+                    const tileLabel = tile.type === 'service' && service ? service.name : presentedTile.title;
                     const isFocused = tile.id === boardFocusTileId;
                     const isSelectedTile = tile.id === game.pendingAction?.tile.id;
                     const isCurrentPlayerTile = tile.id === currentPlayer?.position;
@@ -848,12 +1058,14 @@ const App = () => {
                           top: `${overlay.top}%`,
                           width: `${overlay.width}%`,
                           height: `${overlay.height}%`,
+                          clipPath: overlay.clipPath,
+                          WebkitClipPath: overlay.clipPath,
                         }}
                         onClick={() =>
                           isChoosingDestination ? handleDestinationSelection(tile.id) : setInspectedTileId(tile.id)
                         }
-                        title={`${tileLabel} · ${tile.description}`}
-                        aria-label={`${tileLabel}. ${isReachable ? 'Destination atteignable.' : tile.description}`}
+                        title={`${tileLabel} · ${presentedTile.description}`}
+                        aria-label={`${tileLabel}. ${isReachable ? 'Destination atteignable.' : presentedTile.description}`}
                         disabled={isDisabled}
                       >
                         <span className="board-zone-hit" />
@@ -925,6 +1137,7 @@ const App = () => {
                         ? 'Lancez le dé puis sélectionnez une case atteignable sur le plateau.'
                         : 'Configurez une partie pour commencer.'}
                   </p>
+                  {game.trainingMode && <p>Mode : {trainingModeLabels[game.trainingMode]}</p>}
                 </div>
                 <DieFace value={displayRoll} isRolling={isRolling} />
               </div>
@@ -986,6 +1199,7 @@ const App = () => {
                     <div className="score-stats">
                       <strong>{player.clients} clients</strong>
                       <span>{player.pieces.length} pièce(s)</span>
+                      <span>Premier lancer : {player.rollsTaken === 0 ? 'pas encore joué' : 'effectué'}</span>
                       <span>
                         Enseignes :{' '}
                         {completeSets[player.id]?.length
@@ -1044,6 +1258,16 @@ const App = () => {
 
             {game.pendingAction.tile.type === 'market' && currentPlayer && (
               <div className="market-box">
+                {currentPlayer.pieces.length === 0 && (
+                  <p className="market-message">
+                    Aucun échange automatique possible : {currentPlayer.name} ne possède encore aucune pièce à vendre.
+                  </p>
+                )}
+                {game.centralBank === 0 && (
+                  <p className="market-message">
+                    La banque centrale ne peut plus racheter de pièce : aucun client disponible.
+                  </p>
+                )}
                 <label className="field">
                   <span>Pièce à vendre</span>
                   <select value={selectedPieceId} onChange={(event) => setSelectedPieceId(event.target.value)}>
@@ -1070,7 +1294,11 @@ const App = () => {
                   automatiquement ici.
                 </p>
                 <div className="modal-actions">
-                  <button className="primary-button" onClick={handleMarketSale} disabled={currentPlayer.pieces.length === 0}>
+                  <button
+                    className="primary-button"
+                    onClick={handleMarketSale}
+                    disabled={currentPlayer.pieces.length === 0 || game.centralBank === 0}
+                  >
                     Vendre à la banque
                   </button>
                   <button className="secondary-button" onClick={handleRejectedAction}>
