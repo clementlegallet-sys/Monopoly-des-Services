@@ -63,26 +63,33 @@ type DieFaceProps = {
   isRolling: boolean;
 };
 
+type TileOverlay = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+};
+
 const STORAGE_KEY = 'monopoly-des-services-state';
 const INITIAL_CLIENTS = 2;
 const INITIAL_BANK = 40;
 const SALE_VALUES = [2, 3, 5] as const;
 const PLAYER_TOKEN_COLORS = ['#d9473f', '#2b6fdd', '#f59e0b', '#0f9d74'];
 
-const BOARD_LAYOUT: Record<number, string> = {
-  0: 'slot-bottom-left',
-  1: 'slot-bottom-a',
-  2: 'slot-bottom-b',
-  3: 'slot-bottom-c',
-  4: 'slot-bottom-right',
-  5: 'slot-right-bottom',
-  6: 'slot-right-top',
-  7: 'slot-top-right',
-  8: 'slot-top-b',
-  9: 'slot-top-a',
-  10: 'slot-top-left',
-  11: 'slot-left-top',
-  12: 'slot-left-bottom',
+const TILE_OVERLAYS: Record<number, TileOverlay> = {
+  0: { left: 3.4, top: 73.4, width: 17.6, height: 20.8 },
+  1: { left: 21.4, top: 79.8, width: 13.1, height: 13.7 },
+  2: { left: 35.3, top: 79.8, width: 13.1, height: 13.7 },
+  3: { left: 49.1, top: 79.8, width: 13.1, height: 13.7 },
+  4: { left: 76.9, top: 73.4, width: 17.7, height: 20.8 },
+  5: { left: 82.2, top: 53.3, width: 12.2, height: 19.1 },
+  6: { left: 82.2, top: 32.4, width: 12.2, height: 19.1 },
+  7: { left: 76.9, top: 5.8, width: 17.7, height: 20.8 },
+  8: { left: 49.1, top: 6.1, width: 13.1, height: 13.7 },
+  9: { left: 35.3, top: 6.1, width: 13.1, height: 13.7 },
+  10: { left: 3.4, top: 5.8, width: 17.6, height: 20.8 },
+  11: { left: 4.2, top: 31.8, width: 12.1, height: 19.3 },
+  12: { left: 4.2, top: 52.9, width: 12.1, height: 19.3 },
 };
 
 const DIE_PIPS: Record<number, string[]> = {
@@ -339,6 +346,7 @@ const App = () => {
   const [saleValue, setSaleValue] = useState<number>(SALE_VALUES[0]);
   const [displayRoll, setDisplayRoll] = useState<number | null>(game.lastRoll);
   const [isRolling, setIsRolling] = useState(false);
+  const [inspectedTileId, setInspectedTileId] = useState<number | null>(null);
   const rollIntervalRef = useRef<number | null>(null);
   const rollTimeoutRef = useRef<number | null>(null);
 
@@ -366,6 +374,9 @@ const App = () => {
 
   const currentPlayer = game.players[game.currentPlayerIndex] ?? null;
   const completeSets = useMemo(() => getCompleteSets(game.players), [game.players]);
+  const boardFocusTileId = inspectedTileId ?? game.pendingAction?.tile.id ?? currentPlayer?.position ?? 0;
+  const focusTile = board[boardFocusTileId] ?? board[0];
+  const focusTileService = getService(focusTile.serviceId);
 
   const startSetup = () => {
     setGame((currentGame) => ({
@@ -388,6 +399,7 @@ const App = () => {
     setSaleValue(SALE_VALUES[0]);
     setDisplayRoll(null);
     setIsRolling(false);
+    setInspectedTileId(null);
     setGame(createInitialState());
   };
 
@@ -411,6 +423,7 @@ const App = () => {
     }));
 
     setDisplayRoll(null);
+    setInspectedTileId(0);
     setGame({
       phase: 'playing',
       players,
@@ -452,6 +465,7 @@ const App = () => {
       }
 
       setDisplayRoll(finalRoll);
+      setInspectedTileId(nextPosition);
       setIsRolling(false);
       setGame((currentGame) => ({
         ...currentGame,
@@ -618,7 +632,6 @@ const App = () => {
 
       const message = `${player.name} vend ${getService(selectedPieceId)?.name ?? 'une pièce'} pour ${awarded} clients.`;
       setSelectedPieceId('');
-      setSaleValue(SALE_VALUES[0]);
       return resolveTurn(currentGame, players, currentGame.centralBank - awarded, message);
     });
   };
@@ -632,8 +645,9 @@ const App = () => {
           <p className="eyebrow">Plateau interactif · React + TypeScript + Vite</p>
           <h1>Monopoly des Services</h1>
           <p className="hero-copy">
-            Une version digitale qui reprend davantage l’esprit du plateau physique&nbsp;: circuit autour du
-            board, couleurs de famille, pions visibles et dé animé au centre de l’action.
+            Une version digitale recentrée sur le tapis de jeu d’origine&nbsp;: le plateau devient la
+            surface principale, les zones restent collées au visuel et les pions se repèrent
+            immédiatement sur les cases.
           </p>
         </div>
         <div className="hero-actions">
@@ -691,70 +705,95 @@ const App = () => {
             <div className="board-header">
               <div>
                 <p className="eyebrow">Plateau principal</p>
-                <h2>Le plateau des services</h2>
+                <h2>Le tapis de jeu</h2>
               </div>
               <div className="board-bank">Banque centrale : {game.centralBank} clients</div>
             </div>
 
             <div className="board-frame">
               <div className="board-surface">
-                {board.map((tile) => {
-                  const occupants = game.players.filter((player) => player.position === tile.id);
-                  const service = getService(tile.serviceId);
-                  const tileLabel = tile.type === 'service' && service ? service.name : tile.title;
+                <img src={boardReferenceImage} alt="Plateau Monopoly des Services" className="board-base-image" />
+                <div className="board-image-shade" />
 
-                  return (
-                    <article
-                      className={`board-tile tile-${tile.type} tile-color-${tile.color ?? 'neutral'} ${BOARD_LAYOUT[tile.id]}`}
-                      key={tile.id}
-                    >
-                      <div className="tile-color-band" />
-                      <div className="tile-index">{tile.id}</div>
-                      <p className="tile-type">{tileTypeLabels[tile.type]}</p>
-                      <h3>{tileLabel}</h3>
-                      <p className="tile-description">{tile.description}</p>
-                      <div className="tile-footer">
-                        {tile.color && <span className="tile-family">{colorLabels[tile.color]}</span>}
-                        <div className="token-stack">
-                          {occupants.length > 0 ? (
-                            occupants.map((player) => {
-                              const playerIndex = game.players.findIndex((entry) => entry.id === player.id);
+                <div className="board-overlays" aria-label="Cases du plateau">
+                  {board.map((tile) => {
+                    const overlay = TILE_OVERLAYS[tile.id];
+                    const occupants = game.players.filter((player) => player.position === tile.id);
+                    const service = getService(tile.serviceId);
+                    const tileLabel = tile.type === 'service' && service ? service.name : tile.title;
+                    const isFocused = tile.id === boardFocusTileId;
+                    const isPending = tile.id === game.pendingAction?.tile.id;
+                    const isCurrentPlayerTile = tile.id === currentPlayer?.position;
 
-                              return (
-                                <span
-                                  className="player-token"
-                                  key={player.id}
-                                  style={{ background: PLAYER_TOKEN_COLORS[playerIndex % PLAYER_TOKEN_COLORS.length] }}
-                                  title={player.name}
-                                >
-                                  {getPlayerInitials(player.name)}
-                                </span>
-                              );
-                            })
-                          ) : (
-                            <span className="tile-empty">Libre</span>
-                          )}
-                        </div>
-                      </div>
-                    </article>
-                  );
-                })}
+                    return (
+                      <button
+                        type="button"
+                        className={`board-zone tile-${tile.type} tile-color-${tile.color ?? 'neutral'} ${
+                          isFocused ? 'board-zone-focused' : ''
+                        } ${isPending ? 'board-zone-pending' : ''} ${
+                          isCurrentPlayerTile ? 'board-zone-current' : ''
+                        }`}
+                        key={tile.id}
+                        style={{
+                          left: `${overlay.left}%`,
+                          top: `${overlay.top}%`,
+                          width: `${overlay.width}%`,
+                          height: `${overlay.height}%`,
+                        }}
+                        onClick={() => setInspectedTileId(tile.id)}
+                        title={`${tileLabel} · ${tile.description}`}
+                      >
+                        <span className="board-zone-hit" />
+                        <span className="board-zone-label">
+                          <span className="tile-index">Case {tile.id}</span>
+                          <strong>{tileLabel}</strong>
+                          <span className="tile-type">{tileTypeLabels[tile.type]}</span>
+                          {tile.color && <span className="tile-family">{colorLabels[tile.color]}</span>}
+                        </span>
+                        <span className="board-zone-tokens" aria-hidden={occupants.length === 0}>
+                          {occupants.map((player, occupantIndex) => {
+                            const playerIndex = game.players.findIndex((entry) => entry.id === player.id);
+                            const offsetX = occupantIndex % 2 === 0 ? occupantIndex * 12 : -occupantIndex * 10;
+                            const offsetY = occupantIndex > 1 ? 10 : 0;
 
-                <div className="board-center">
-                  <div className="board-center-overlay" />
-                  <div className="board-center-copy">
-                    <p className="eyebrow">Références du jeu original</p>
-                    <h3>Monopoly des Services</h3>
-                    <p>
-                      Le centre reprend le visuel du plateau et des planches pour ancrer l’interface dans le
-                      style du jeu de formation original.
-                    </p>
+                            return (
+                              <span
+                                className="player-token board-player-token"
+                                key={player.id}
+                                style={{
+                                  background: PLAYER_TOKEN_COLORS[playerIndex % PLAYER_TOKEN_COLORS.length],
+                                  transform: `translate(${offsetX}px, ${offsetY}px)`,
+                                  zIndex: occupants.length - occupantIndex,
+                                }}
+                                title={player.name}
+                              >
+                                {getPlayerInitials(player.name)}
+                              </span>
+                            );
+                          })}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="board-focus-card">
+                  <div className="board-focus-copy">
+                    <p className="eyebrow">Lecture du plateau</p>
+                    <h3>{focusTileService?.name ?? focusTile.title}</h3>
+                    <p>{focusTile.description}</p>
                   </div>
-                  <img src={boardReferenceImage} alt="Référence du plateau Monopoly des Services" className="board-reference main-reference" />
-                  <img src={plancheAImage} alt="Planche A de référence" className="board-reference side-reference side-reference-a" />
-                  <img src={plancheBImage} alt="Planche B de référence" className="board-reference side-reference side-reference-b" />
+                  <div className="board-focus-meta">
+                    <span className="status-chip">{tileTypeLabels[focusTile.type]}</span>
+                    {focusTile.color && <span className="tile-family">Famille {colorLabels[focusTile.color]}</span>}
+                  </div>
                 </div>
               </div>
+            </div>
+
+            <div className="board-reference-strip" aria-label="Références complémentaires du jeu">
+              <img src={plancheAImage} alt="Planche A de référence" className="mini-reference" />
+              <img src={plancheBImage} alt="Planche B de référence" className="mini-reference" />
             </div>
           </section>
 
