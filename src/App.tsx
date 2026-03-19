@@ -1,4 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import boardReferenceImage from '../PLATEAU DE JEU .png';
+import plancheAImage from '../PLANCHE A 1.2.png';
+import plancheBImage from '../PLANCHE B 1.2.png';
 
 type TileType =
   | 'start'
@@ -55,10 +58,41 @@ type GameState = {
   winnerId: string | null;
 };
 
+type DieFaceProps = {
+  value: number | null;
+  isRolling: boolean;
+};
+
 const STORAGE_KEY = 'monopoly-des-services-state';
 const INITIAL_CLIENTS = 2;
 const INITIAL_BANK = 40;
 const SALE_VALUES = [2, 3, 5] as const;
+const PLAYER_TOKEN_COLORS = ['#d9473f', '#2b6fdd', '#f59e0b', '#0f9d74'];
+
+const BOARD_LAYOUT: Record<number, string> = {
+  0: 'slot-bottom-left',
+  1: 'slot-bottom-a',
+  2: 'slot-bottom-b',
+  3: 'slot-bottom-c',
+  4: 'slot-bottom-right',
+  5: 'slot-right-bottom',
+  6: 'slot-right-top',
+  7: 'slot-top-right',
+  8: 'slot-top-b',
+  9: 'slot-top-a',
+  10: 'slot-top-left',
+  11: 'slot-left-top',
+  12: 'slot-left-bottom',
+};
+
+const DIE_PIPS: Record<number, string[]> = {
+  1: ['center'],
+  2: ['top-left', 'bottom-right'],
+  3: ['top-left', 'center', 'bottom-right'],
+  4: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
+  5: ['top-left', 'top-right', 'center', 'bottom-left', 'bottom-right'],
+  6: ['top-left', 'top-right', 'mid-left', 'mid-right', 'bottom-left', 'bottom-right'],
+};
 
 const servicePieces: ServicePiece[] = [
   {
@@ -257,6 +291,31 @@ const awardClients = (
   };
 };
 
+const getPlayerInitials = (name: string) =>
+  name
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part[0]?.toUpperCase())
+    .join('')
+    .slice(0, 2) || '?';
+
+const DieFace = ({ value, isRolling }: DieFaceProps) => {
+  const safeValue = value && value >= 1 && value <= 6 ? value : null;
+
+  return (
+    <div className={`die-face ${isRolling ? 'die-face-rolling' : ''}`} aria-live="polite">
+      <div className="die-inner">
+        {safeValue ? (
+          DIE_PIPS[safeValue].map((pip) => <span key={pip} className={`pip pip-${pip}`} />)
+        ) : (
+          <span className="die-placeholder">?</span>
+        )}
+      </div>
+      <div className="die-caption">{isRolling ? 'Lancer...' : `Face ${safeValue ?? '-'}`}</div>
+    </div>
+  );
+};
+
 const App = () => {
   const [game, setGame] = useState<GameState>(() => {
     if (typeof window === 'undefined') {
@@ -278,13 +337,34 @@ const App = () => {
   const [playerNames, setPlayerNames] = useState<string[]>(['', '']);
   const [selectedPieceId, setSelectedPieceId] = useState<string>('');
   const [saleValue, setSaleValue] = useState<number>(SALE_VALUES[0]);
+  const [displayRoll, setDisplayRoll] = useState<number | null>(game.lastRoll);
+  const [isRolling, setIsRolling] = useState(false);
+  const rollIntervalRef = useRef<number | null>(null);
+  const rollTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(game));
   }, [game]);
 
-  const currentPlayer = game.players[game.currentPlayerIndex] ?? null;
+  useEffect(() => {
+    if (!isRolling) {
+      setDisplayRoll(game.lastRoll);
+    }
+  }, [game.lastRoll, isRolling]);
 
+  useEffect(
+    () => () => {
+      if (rollIntervalRef.current) {
+        window.clearInterval(rollIntervalRef.current);
+      }
+      if (rollTimeoutRef.current) {
+        window.clearTimeout(rollTimeoutRef.current);
+      }
+    },
+    [],
+  );
+
+  const currentPlayer = game.players[game.currentPlayerIndex] ?? null;
   const completeSets = useMemo(() => getCompleteSets(game.players), [game.players]);
 
   const startSetup = () => {
@@ -296,9 +376,18 @@ const App = () => {
   };
 
   const resetGame = () => {
+    if (rollIntervalRef.current) {
+      window.clearInterval(rollIntervalRef.current);
+    }
+    if (rollTimeoutRef.current) {
+      window.clearTimeout(rollTimeoutRef.current);
+    }
+
     setPlayerNames(['', '']);
     setSelectedPieceId('');
     setSaleValue(SALE_VALUES[0]);
+    setDisplayRoll(null);
+    setIsRolling(false);
     setGame(createInitialState());
   };
 
@@ -321,6 +410,7 @@ const App = () => {
       pieces: [],
     }));
 
+    setDisplayRoll(null);
     setGame({
       phase: 'playing',
       players,
@@ -334,30 +424,52 @@ const App = () => {
   };
 
   const rollDie = () => {
-    if (!currentPlayer || game.pendingAction || game.phase === 'finished') {
+    if (!currentPlayer || game.pendingAction || game.phase === 'finished' || isRolling) {
       return;
     }
 
-    const roll = Math.floor(Math.random() * 6) + 1;
-    const nextPosition = (currentPlayer.position + roll) % board.length;
+    const finalRoll = Math.floor(Math.random() * 6) + 1;
+    const nextPosition = (currentPlayer.position + finalRoll) % board.length;
     const tile = board[nextPosition];
 
-    setGame((currentGame) => ({
-      ...currentGame,
-      players: currentGame.players.map((player) =>
-        player.id === currentPlayer.id ? { ...player, position: nextPosition } : player,
-      ),
-      lastRoll: roll,
-      pendingAction: {
-        tile,
-        playerId: currentPlayer.id,
-        roll,
-      },
-      history: appendHistoryEntry(
-        currentGame.history,
-        `${currentPlayer.name} lance un ${roll} et arrive sur ${tile.title}.`,
-      ),
-    }));
+    if (rollIntervalRef.current) {
+      window.clearInterval(rollIntervalRef.current);
+    }
+    if (rollTimeoutRef.current) {
+      window.clearTimeout(rollTimeoutRef.current);
+    }
+
+    setIsRolling(true);
+    setDisplayRoll(Math.floor(Math.random() * 6) + 1);
+
+    rollIntervalRef.current = window.setInterval(() => {
+      setDisplayRoll(Math.floor(Math.random() * 6) + 1);
+    }, 110);
+
+    rollTimeoutRef.current = window.setTimeout(() => {
+      if (rollIntervalRef.current) {
+        window.clearInterval(rollIntervalRef.current);
+      }
+
+      setDisplayRoll(finalRoll);
+      setIsRolling(false);
+      setGame((currentGame) => ({
+        ...currentGame,
+        players: currentGame.players.map((player) =>
+          player.id === currentPlayer.id ? { ...player, position: nextPosition } : player,
+        ),
+        lastRoll: finalRoll,
+        pendingAction: {
+          tile,
+          playerId: currentPlayer.id,
+          roll: finalRoll,
+        },
+        history: appendHistoryEntry(
+          currentGame.history,
+          `${currentPlayer.name} lance un ${finalRoll} et arrive sur ${tile.title}.`,
+        ),
+      }));
+    }, 900);
   };
 
   const resolveTurn = (state: GameState, players: Player[], centralBank: number, message: string): GameState => {
@@ -517,11 +629,11 @@ const App = () => {
     <div className="app-shell">
       <header className="hero-card">
         <div>
-          <p className="eyebrow">React + TypeScript + Vite</p>
+          <p className="eyebrow">Plateau interactif · React + TypeScript + Vite</p>
           <h1>Monopoly des Services</h1>
           <p className="hero-copy">
-            Une adaptation locale du jeu pour animer les services EDF, suivre les clients et gérer les
-            pièces de service sans backend.
+            Une version digitale qui reprend davantage l’esprit du plateau physique&nbsp;: circuit autour du
+            board, couleurs de famille, pions visibles et dé animé au centre de l’action.
           </p>
         </div>
         <div className="hero-actions">
@@ -537,7 +649,7 @@ const App = () => {
       </header>
 
       {game.phase === 'setup' && (
-        <section className="panel">
+        <section className="panel intro-panel">
           <div className="panel-header">
             <div>
               <h2>Paramétrage des joueurs</h2>
@@ -574,94 +686,171 @@ const App = () => {
       )}
 
       {(game.phase === 'playing' || game.phase === 'finished') && (
-        <main className="dashboard">
-          <section className="panel board-panel">
-            <div className="panel-header">
+        <main className="game-layout">
+          <section className="board-stage panel">
+            <div className="board-header">
               <div>
-                <h2>Plateau de jeu</h2>
-                <p>Déplacez les joueurs, validez les réponses et suivez la banque centrale de clients.</p>
+                <p className="eyebrow">Plateau principal</p>
+                <h2>Le plateau des services</h2>
               </div>
-              <div className="status-pill">Banque centrale : {game.centralBank} clients</div>
+              <div className="board-bank">Banque centrale : {game.centralBank} clients</div>
             </div>
-            <div className="board-grid">
-              {board.map((tile) => {
-                const occupants = game.players.filter((player) => player.position === tile.id);
 
-                return (
-                  <article className={`tile tile-${tile.type}`} key={tile.id}>
-                    <div className="tile-topline">Case {tile.id}</div>
-                    <h3>{tileTypeLabels[tile.type]}</h3>
-                    <p>{tile.description}</p>
-                    {tile.color && <span className="tile-tag">Couleur : {colorLabels[tile.color]}</span>}
-                    {tile.serviceId && <span className="tile-tag">{getService(tile.serviceId)?.name}</span>}
-                    <div className="occupants">
-                      {occupants.length > 0 ? occupants.map((player) => <span key={player.id}>{player.name}</span>) : <span>Libre</span>}
-                    </div>
-                  </article>
-                );
-              })}
+            <div className="board-frame">
+              <div className="board-surface">
+                {board.map((tile) => {
+                  const occupants = game.players.filter((player) => player.position === tile.id);
+                  const service = getService(tile.serviceId);
+                  const tileLabel = tile.type === 'service' && service ? service.name : tile.title;
+
+                  return (
+                    <article
+                      className={`board-tile tile-${tile.type} tile-color-${tile.color ?? 'neutral'} ${BOARD_LAYOUT[tile.id]}`}
+                      key={tile.id}
+                    >
+                      <div className="tile-color-band" />
+                      <div className="tile-index">{tile.id}</div>
+                      <p className="tile-type">{tileTypeLabels[tile.type]}</p>
+                      <h3>{tileLabel}</h3>
+                      <p className="tile-description">{tile.description}</p>
+                      <div className="tile-footer">
+                        {tile.color && <span className="tile-family">{colorLabels[tile.color]}</span>}
+                        <div className="token-stack">
+                          {occupants.length > 0 ? (
+                            occupants.map((player) => {
+                              const playerIndex = game.players.findIndex((entry) => entry.id === player.id);
+
+                              return (
+                                <span
+                                  className="player-token"
+                                  key={player.id}
+                                  style={{ background: PLAYER_TOKEN_COLORS[playerIndex % PLAYER_TOKEN_COLORS.length] }}
+                                  title={player.name}
+                                >
+                                  {getPlayerInitials(player.name)}
+                                </span>
+                              );
+                            })
+                          ) : (
+                            <span className="tile-empty">Libre</span>
+                          )}
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+
+                <div className="board-center">
+                  <div className="board-center-overlay" />
+                  <div className="board-center-copy">
+                    <p className="eyebrow">Références du jeu original</p>
+                    <h3>Monopoly des Services</h3>
+                    <p>
+                      Le centre reprend le visuel du plateau et des planches pour ancrer l’interface dans le
+                      style du jeu de formation original.
+                    </p>
+                  </div>
+                  <img src={boardReferenceImage} alt="Référence du plateau Monopoly des Services" className="board-reference main-reference" />
+                  <img src={plancheAImage} alt="Planche A de référence" className="board-reference side-reference side-reference-a" />
+                  <img src={plancheBImage} alt="Planche B de référence" className="board-reference side-reference side-reference-b" />
+                </div>
+              </div>
             </div>
           </section>
 
-          <section className="sidebar">
-            <section className="panel">
-              <div className="panel-header">
+          <aside className="info-rail">
+            <section className="panel turn-panel">
+              <div className="turn-header">
                 <div>
-                  <h2>Tour actuel</h2>
-                  <p>{currentPlayer ? `${currentPlayer.name} doit jouer.` : 'En attente.'}</p>
+                  <p className="eyebrow">Tour actuel</p>
+                  <h2>{currentPlayer ? currentPlayer.name : 'En attente'}</h2>
+                  <p>{currentPlayer ? 'Lancez le dé pour avancer sur le plateau.' : 'Configurez une partie pour commencer.'}</p>
                 </div>
-                <div className="status-pill">Dernier dé : {game.lastRoll ?? '-'}</div>
+                <DieFace value={displayRoll} isRolling={isRolling} />
               </div>
-              <button className="primary-button" onClick={rollDie} disabled={Boolean(game.pendingAction) || game.phase === 'finished'}>
-                Lancer le dé
-              </button>
+              <div className="turn-actions">
+                <button
+                  className="primary-button"
+                  onClick={rollDie}
+                  disabled={Boolean(game.pendingAction) || game.phase === 'finished' || isRolling}
+                >
+                  {isRolling ? 'Le dé roule...' : 'Lancer le dé'}
+                </button>
+                <div className="status-chip">Dernier résultat : {game.lastRoll ?? '-'}</div>
+              </div>
             </section>
 
-            <section className="panel">
-              <h2>Score automatique</h2>
+            <section className="panel score-panel">
+              <div className="panel-header compact-header">
+                <div>
+                  <p className="eyebrow">Scores</p>
+                  <h2>Joueurs & pions</h2>
+                </div>
+              </div>
               <div className="score-list">
-                {game.players.map((player) => (
+                {game.players.map((player, index) => (
                   <article className="score-card" key={player.id}>
-                    <div>
-                      <h3>{player.name}</h3>
-                      <p>{player.clients} clients</p>
+                    <div className="score-title-row">
+                      <span
+                        className="player-badge"
+                        style={{ background: PLAYER_TOKEN_COLORS[index % PLAYER_TOKEN_COLORS.length] }}
+                      >
+                        {getPlayerInitials(player.name)}
+                      </span>
+                      <div>
+                        <h3>{player.name}</h3>
+                        <p>Case {player.position}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p>Pièces : {player.pieces.length}</p>
-                      <p>
+                    <div className="score-stats">
+                      <strong>{player.clients} clients</strong>
+                      <span>{player.pieces.length} pièce(s)</span>
+                      <span>
                         Enseignes :{' '}
                         {completeSets[player.id]?.length
                           ? completeSets[player.id].map((color) => colorLabels[color]).join(', ')
                           : 'Aucune'}
-                      </p>
+                      </span>
                     </div>
                   </article>
                 ))}
               </div>
             </section>
 
-            <section className="panel">
-              <h2>Pièces service</h2>
+            <section className="panel reserve-panel">
+              <div className="panel-header compact-header">
+                <div>
+                  <p className="eyebrow">Réserve</p>
+                  <h2>Pièces service</h2>
+                </div>
+              </div>
               <div className="service-list">
                 {servicePieces.map((piece) => (
-                  <article className="service-card" key={piece.id}>
-                    <h3>{piece.name}</h3>
+                  <article className={`service-card service-${piece.color}`} key={piece.id}>
+                    <div className="service-card-head">
+                      <h3>{piece.name}</h3>
+                      <span className="tile-family">{colorLabels[piece.color]}</span>
+                    </div>
                     <p>{piece.description}</p>
-                    <span className="tile-tag">Couleur : {colorLabels[piece.color]}</span>
                   </article>
                 ))}
               </div>
             </section>
 
             <section className="panel history-panel">
-              <h2>Historique</h2>
+              <div className="panel-header compact-header">
+                <div>
+                  <p className="eyebrow">Partie</p>
+                  <h2>Historique</h2>
+                </div>
+              </div>
               <ul>
                 {game.history.map((item, index) => (
                   <li key={`${item}-${index}`}>{item}</li>
                 ))}
               </ul>
             </section>
-          </section>
+          </aside>
         </main>
       )}
 
