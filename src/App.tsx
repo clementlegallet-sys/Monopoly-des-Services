@@ -87,7 +87,14 @@ type TileOverlay = {
 type BubbleTileVisual = {
   image: string;
   alt: string;
-  label: string;
+};
+
+type BubbleTileOverlay = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  clipPath: string;
 };
 
 const STORAGE_KEY = 'monopoly-des-services-state';
@@ -98,95 +105,132 @@ const PLAYER_TOKEN_COLORS = ['#d9473f', '#2b6fdd', '#f59e0b', '#0f9d74'];
 
 const TILE_OVERLAYS: Record<number, TileOverlay> = {
   0: {
-    left: 40.6,
-    top: 39.2,
-    width: 18.8,
-    height: 20.6,
-    clipPath: 'polygon(17% 14%, 50% 0%, 83% 14%, 100% 50%, 83% 87%, 50% 100%, 17% 87%, 0% 50%)',
+    left: 41.2,
+    top: 39.7,
+    width: 17.8,
+    height: 19.5,
+    clipPath: 'polygon(19% 14%, 50% 2%, 81% 14%, 97% 50%, 81% 86%, 50% 98%, 19% 86%, 3% 50%)',
   },
   1: {
-    left: 43.3,
-    top: 16.8,
-    width: 13.4,
-    height: 21.4,
-    clipPath: 'polygon(50% 0%, 89% 12%, 82% 100%, 18% 100%, 11% 12%)',
+    left: 43.9,
+    top: 17.2,
+    width: 12.3,
+    height: 20.4,
+    clipPath: 'polygon(50% 2%, 86% 13%, 79% 97%, 21% 97%, 14% 13%)',
   },
   2: {
-    left: 39.6,
-    top: 0.6,
-    width: 20.7,
-    height: 16.2,
-    clipPath: 'polygon(14% 100%, 0% 30%, 24% 0%, 76% 0%, 100% 30%, 86% 100%)',
+    left: 40.3,
+    top: 1.1,
+    width: 19.3,
+    height: 15,
+    clipPath: 'polygon(15% 97%, 2% 31%, 25% 3%, 75% 3%, 98% 31%, 85% 97%)',
   },
   3: {
-    left: 78.3,
-    top: 18.6,
-    width: 17.4,
-    height: 29.8,
-    clipPath: 'polygon(0% 18%, 39% 0%, 100% 8%, 92% 84%, 49% 100%, 0% 84%)',
+    left: 79.1,
+    top: 19.4,
+    width: 15.9,
+    height: 27.4,
+    clipPath: 'polygon(2% 18%, 39% 2%, 97% 9%, 90% 82%, 49% 97%, 2% 83%)',
   },
   4: {
-    left: 58.4,
-    top: 35,
-    width: 15.2,
-    height: 16.9,
-    clipPath: 'polygon(0% 17%, 57% 0%, 100% 20%, 100% 82%, 44% 100%, 0% 80%)',
+    left: 59,
+    top: 35.7,
+    width: 14,
+    height: 15.8,
+    clipPath: 'polygon(3% 18%, 56% 3%, 97% 20%, 97% 80%, 45% 97%, 3% 79%)',
   },
   5: {
-    left: 68.3,
-    top: 55,
-    width: 18.6,
-    height: 24.8,
-    clipPath: 'polygon(0% 11%, 56% 0%, 100% 18%, 88% 100%, 29% 93%, 0% 74%)',
+    left: 69,
+    top: 55.8,
+    width: 17,
+    height: 22.9,
+    clipPath: 'polygon(3% 12%, 56% 3%, 97% 19%, 86% 97%, 31% 91%, 3% 74%)',
   },
   6: {
-    left: 43.4,
-    top: 60.4,
-    width: 13.2,
-    height: 22,
-    clipPath: 'polygon(18% 0%, 82% 0%, 89% 86%, 50% 100%, 11% 86%)',
+    left: 44,
+    top: 61.1,
+    width: 12.1,
+    height: 20.3,
+    clipPath: 'polygon(20% 3%, 80% 3%, 86% 83%, 50% 97%, 14% 83%)',
   },
   7: {
-    left: 39.6,
-    top: 82.8,
-    width: 20.8,
-    height: 16.8,
-    clipPath: 'polygon(14% 0%, 86% 0%, 100% 70%, 76% 100%, 24% 100%, 0% 70%)',
+    left: 40.2,
+    top: 83.4,
+    width: 19.4,
+    height: 15.5,
+    clipPath: 'polygon(15% 3%, 85% 3%, 97% 68%, 76% 97%, 24% 97%, 3% 68%)',
   },
   8: {
-    left: 12.8,
-    top: 55,
-    width: 18.9,
-    height: 24.8,
-    clipPath: 'polygon(44% 0%, 100% 12%, 100% 76%, 70% 93%, 12% 100%, 0% 18%)',
+    left: 13.5,
+    top: 55.9,
+    width: 17.2,
+    height: 22.8,
+    clipPath: 'polygon(44% 3%, 97% 13%, 97% 74%, 69% 91%, 14% 97%, 3% 19%)',
   },
   9: {
-    left: 26.7,
-    top: 35,
-    width: 15.1,
-    height: 16.9,
-    clipPath: 'polygon(43% 0%, 100% 18%, 100% 82%, 56% 100%, 0% 80%, 0% 20%)',
+    left: 27.4,
+    top: 35.7,
+    width: 13.9,
+    height: 15.7,
+    clipPath: 'polygon(43% 3%, 97% 19%, 97% 80%, 56% 97%, 3% 78%, 3% 22%)',
   },
   10: {
-    left: 13,
-    top: 18.2,
-    width: 18.7,
-    height: 29.8,
-    clipPath: 'polygon(51% 0%, 100% 16%, 100% 82%, 61% 100%, 0% 84%, 8% 8%)',
+    left: 13.7,
+    top: 18.9,
+    width: 17.1,
+    height: 27.4,
+    clipPath: 'polygon(51% 3%, 97% 17%, 97% 80%, 61% 97%, 3% 82%, 10% 10%)',
   },
   11: {
-    left: 29.1,
-    top: 1.6,
-    width: 10.8,
-    height: 8.8,
-    clipPath: 'polygon(21% 100%, 0% 44%, 44% 0%, 100% 16%, 80% 100%)',
+    left: 29.6,
+    top: 2.1,
+    width: 9.8,
+    height: 8,
+    clipPath: 'polygon(22% 97%, 3% 45%, 45% 3%, 97% 18%, 79% 97%)',
   },
   12: {
-    left: 85.1,
-    top: 52,
-    width: 10.8,
-    height: 8.8,
-    clipPath: 'polygon(0% 18%, 56% 0%, 100% 55%, 79% 100%, 19% 87%)',
+    left: 85.6,
+    top: 52.5,
+    width: 9.8,
+    height: 8,
+    clipPath: 'polygon(3% 19%, 56% 3%, 97% 54%, 78% 97%, 20% 85%)',
+  },
+};
+
+const MODE_BUBBLE_TILE_IDS = [3, 7, 8, 10] as const;
+
+const BUBBLE_TILE_OVERLAYS: Record<(typeof MODE_BUBBLE_TILE_IDS)[number], BubbleTileOverlay> = {
+  3: {
+    left: 6,
+    top: 1,
+    width: 50,
+    height: 25,
+    clipPath:
+      'polygon(16% 31%, 31% 7%, 58% 4%, 84% 18%, 97% 42%, 92% 66%, 77% 83%, 52% 91%, 30% 84%, 17% 94%, 19% 74%, 6% 58%, 4% 39%)',
+  },
+  7: {
+    left: 7,
+    top: 6,
+    width: 33,
+    height: 84,
+    clipPath:
+      'polygon(55% 2%, 76% 9%, 89% 24%, 91% 47%, 81% 67%, 75% 86%, 62% 97%, 45% 99%, 28% 95%, 16% 81%, 11% 60%, 13% 38%, 24% 17%, 38% 5%)',
+  },
+  8: {
+    left: 3,
+    top: 7,
+    width: 64,
+    height: 33,
+    clipPath:
+      'polygon(11% 24%, 31% 8%, 58% 5%, 82% 13%, 96% 27%, 99% 47%, 93% 64%, 79% 78%, 56% 87%, 34% 85%, 25% 99%, 23% 82%, 10% 73%, 3% 54%, 3% 37%)',
+  },
+  10: {
+    left: 22,
+    top: 3,
+    width: 66,
+    height: 30,
+    clipPath:
+      'polygon(11% 26%, 26% 8%, 47% 2%, 71% 5%, 89% 16%, 98% 35%, 96% 55%, 85% 72%, 66% 84%, 42% 87%, 24% 80%, 14% 99%, 12% 79%, 4% 63%, 1% 43%)',
   },
 };
 
@@ -388,12 +432,10 @@ const bubbleTileVisuals: Record<TrainingMode, BubbleTileVisual> = {
   arguments: {
     image: bacBubbleImage,
     alt: 'Logo Argument de vente BAC',
-    label: 'ARGUMENT DE VENTE (BAC)',
   },
   objections: {
     image: objectionBubbleImage,
     alt: 'Logo Objection',
-    label: 'OBJECTION',
   },
 };
 
@@ -417,25 +459,13 @@ const getService = (serviceId?: string) =>
 
 const appendHistoryEntry = (history: string[], message: string) => [message, ...history].slice(0, 12);
 
-const isSpeechBubbleTile = (tile: Tile) =>
-  tile.type === 'question' || tile.type === 'story' || tile.type === 'pitch' || tile.type === 'objection';
-
-const getTilePresentation = (tile: Tile, trainingMode: TrainingMode | null) => {
-  if (!trainingMode || !isSpeechBubbleTile(tile)) {
-    return tile;
-  }
-
-  const modeCopy = bubbleModeCopy[trainingMode];
-
-  return {
-    ...tile,
-    title: modeCopy.label,
-    description: modeCopy.description,
-  };
-};
-
 const getBubbleTileVisual = (trainingMode: TrainingMode | null) =>
   trainingMode ? bubbleTileVisuals[trainingMode] : null;
+
+const getBubbleTileOverlay = (tileId: number) =>
+  MODE_BUBBLE_TILE_IDS.includes(tileId as (typeof MODE_BUBBLE_TILE_IDS)[number])
+    ? BUBBLE_TILE_OVERLAYS[tileId as (typeof MODE_BUBBLE_TILE_IDS)[number]]
+    : null;
 
 const getServicesByColor = () =>
   servicePieces.reduce<Record<ServiceColor, string[]>>(
@@ -585,14 +615,13 @@ const App = () => {
 
   const currentPlayer = game.players[game.currentPlayerIndex] ?? null;
   const completeSets = useMemo(() => getCompleteSets(game.players), [game.players]);
-  const activeTrainingMode = game.trainingMode ?? selectedTrainingMode;
   const boardFocusTileId =
     inspectedTileId ??
     game.pendingAction?.tile.id ??
     game.pendingMovement?.originTileId ??
     currentPlayer?.position ??
     0;
-  const focusTile = getTilePresentation(board[boardFocusTileId] ?? board[0], activeTrainingMode);
+  const focusTile = board[boardFocusTileId] ?? board[0];
   const focusTileService = getService(focusTile.serviceId);
   const reachableTileIds = game.pendingMovement?.reachableTileIds ?? [];
   const isChoosingDestination = Boolean(game.pendingMovement);
@@ -767,9 +796,8 @@ const App = () => {
 
       const player = currentGame.players.find((candidate) => candidate.id === pendingMovement.playerId);
       const tile = board[tileId];
-      const presentedTile = tile ? getTilePresentation(tile, currentGame.trainingMode) : null;
 
-      if (!player || !tile || !presentedTile) {
+      if (!player || !tile) {
         return { ...currentGame, pendingMovement: null };
       }
 
@@ -798,13 +826,13 @@ const App = () => {
         players: movedPlayers,
         pendingMovement: null,
         pendingAction: {
-          tile: presentedTile,
+          tile,
           playerId: player.id,
           roll: pendingMovement.roll,
         },
         history: appendHistoryEntry(
           currentGame.history,
-          `${player.name} choisit ${presentedTile.title} comme destination après un ${pendingMovement.roll}.`,
+          `${player.name} choisit ${tile.title} comme destination après un ${pendingMovement.roll}.`,
         ),
       };
     });
@@ -1056,11 +1084,11 @@ const App = () => {
                 <div className="board-overlays" aria-label="Cases du plateau">
                   {board.map((tile) => {
                     const overlay = TILE_OVERLAYS[tile.id];
-                    const presentedTile = getTilePresentation(tile, game.trainingMode);
                     const occupants = game.players.filter((player) => player.position === tile.id);
                     const service = getService(tile.serviceId);
-                    const tileLabel = tile.type === 'service' && service ? service.name : presentedTile.title;
-                    const bubbleVisual = isSpeechBubbleTile(tile) ? getBubbleTileVisual(game.trainingMode) : null;
+                    const tileLabel = tile.type === 'service' && service ? service.name : tile.title;
+                    const bubbleVisual = getBubbleTileVisual(game.trainingMode);
+                    const bubbleOverlay = getBubbleTileOverlay(tile.id);
                     const isFocused = tile.id === boardFocusTileId;
                     const isSelectedTile = tile.id === game.pendingAction?.tile.id;
                     const isCurrentPlayerTile = tile.id === currentPlayer?.position;
@@ -1089,19 +1117,29 @@ const App = () => {
                         onClick={() =>
                           isChoosingDestination ? handleDestinationSelection(tile.id) : setInspectedTileId(tile.id)
                         }
-                        title={`${tileLabel} · ${presentedTile.description}`}
-                        aria-label={`${tileLabel}. ${isReachable ? 'Destination atteignable.' : presentedTile.description}`}
+                        title={`${tileLabel} · ${tile.description}`}
+                        aria-label={`${tileLabel}. ${isReachable ? 'Destination atteignable.' : tile.description}`}
                         disabled={isDisabled}
                       >
                         <span className="board-zone-hit" />
-                        {bubbleVisual && (
-                          <span className="board-zone-bubble-visual" aria-hidden="true">
+                        {bubbleVisual && bubbleOverlay && (
+                          <span
+                            className={`board-zone-bubble-visual board-zone-bubble-tile-${tile.id}`}
+                            aria-hidden="true"
+                            style={{
+                              left: `${bubbleOverlay.left}%`,
+                              top: `${bubbleOverlay.top}%`,
+                              width: `${bubbleOverlay.width}%`,
+                              height: `${bubbleOverlay.height}%`,
+                              clipPath: bubbleOverlay.clipPath,
+                              WebkitClipPath: bubbleOverlay.clipPath,
+                            }}
+                          >
                             <img
                               src={bubbleVisual.image}
                               alt={bubbleVisual.alt}
                               className="board-zone-bubble-image"
                             />
-                            <span className="board-zone-bubble-caption">{bubbleVisual.label}</span>
                           </span>
                         )}
                         <span className="board-zone-badge" aria-hidden="true">
