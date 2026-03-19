@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import boardReferenceImage from '../PLATEAU DE JEU .png';
 import plancheAImage from '../PLANCHE A 1.2.png';
 import plancheBImage from '../PLANCHE B 1.2.png';
+import objectionBubbleImage from '../CARTES OBJECTIONS FACE.png';
+import bacBubbleImage from '../PLANCHE B 2.2.png';
 
 type TileType =
   | 'start'
@@ -80,6 +82,12 @@ type TileOverlay = {
   width: number;
   height: number;
   clipPath: string;
+};
+
+type BubbleTileVisual = {
+  image: string;
+  alt: string;
+  label: string;
 };
 
 const STORAGE_KEY = 'monopoly-des-services-state';
@@ -376,6 +384,19 @@ const bubbleModeCopy: Record<
   },
 };
 
+const bubbleTileVisuals: Record<TrainingMode, BubbleTileVisual> = {
+  arguments: {
+    image: bacBubbleImage,
+    alt: 'Logo Argument de vente BAC',
+    label: 'ARGUMENT DE VENTE (BAC)',
+  },
+  objections: {
+    image: objectionBubbleImage,
+    alt: 'Logo Objection',
+    label: 'OBJECTION',
+  },
+};
+
 const createInitialState = (): GameState => ({
   phase: 'welcome',
   players: [],
@@ -412,6 +433,9 @@ const getTilePresentation = (tile: Tile, trainingMode: TrainingMode | null) => {
     description: modeCopy.description,
   };
 };
+
+const getBubbleTileVisual = (trainingMode: TrainingMode | null) =>
+  trainingMode ? bubbleTileVisuals[trainingMode] : null;
 
 const getServicesByColor = () =>
   servicePieces.reduce<Record<ServiceColor, string[]>>(
@@ -1036,6 +1060,7 @@ const App = () => {
                     const occupants = game.players.filter((player) => player.position === tile.id);
                     const service = getService(tile.serviceId);
                     const tileLabel = tile.type === 'service' && service ? service.name : presentedTile.title;
+                    const bubbleVisual = isSpeechBubbleTile(tile) ? getBubbleTileVisual(game.trainingMode) : null;
                     const isFocused = tile.id === boardFocusTileId;
                     const isSelectedTile = tile.id === game.pendingAction?.tile.id;
                     const isCurrentPlayerTile = tile.id === currentPlayer?.position;
@@ -1069,6 +1094,16 @@ const App = () => {
                         disabled={isDisabled}
                       >
                         <span className="board-zone-hit" />
+                        {bubbleVisual && (
+                          <span className="board-zone-bubble-visual" aria-hidden="true">
+                            <img
+                              src={bubbleVisual.image}
+                              alt={bubbleVisual.alt}
+                              className="board-zone-bubble-image"
+                            />
+                            <span className="board-zone-bubble-caption">{bubbleVisual.label}</span>
+                          </span>
+                        )}
                         <span className="board-zone-badge" aria-hidden="true">
                           {tile.id}
                         </span>
