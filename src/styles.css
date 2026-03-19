@@ -1,0 +1,296 @@
+:root {
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #f5f7fb;
+  background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  border: 0;
+  cursor: pointer;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app-shell {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.hero-card,
+.panel,
+.modal-card,
+.score-card,
+.tile,
+.service-card {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.35);
+}
+
+.hero-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 28px;
+  border-radius: 24px;
+  margin-bottom: 24px;
+}
+
+.hero-copy {
+  max-width: 700px;
+  color: #cbd5e1;
+}
+
+.hero-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 200px;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #38bdf8;
+  font-size: 0.75rem;
+  margin-bottom: 8px;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+.primary-button,
+.secondary-button {
+  padding: 12px 18px;
+  border-radius: 12px;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.primary-button {
+  background: linear-gradient(135deg, #22c55e, #14b8a6);
+  color: #04111f;
+  font-weight: 700;
+}
+
+.secondary-button {
+  background: rgba(59, 130, 246, 0.14);
+  color: #e2e8f0;
+  border: 1px solid rgba(96, 165, 250, 0.35);
+}
+
+button:hover:enabled {
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.panel {
+  border-radius: 20px;
+  padding: 20px;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.setup-grid,
+.board-grid,
+.score-list,
+.service-list {
+  display: grid;
+  gap: 16px;
+}
+
+.setup-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin-bottom: 18px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #dbeafe;
+}
+
+.field input,
+.field select {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(15, 23, 42, 0.55);
+  color: #f8fafc;
+}
+
+.dashboard {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
+  gap: 24px;
+}
+
+.board-grid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.tile {
+  border-radius: 18px;
+  padding: 18px;
+  min-height: 180px;
+}
+
+.tile-topline,
+.status-pill,
+.tile-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+}
+
+.tile-topline,
+.tile-tag {
+  background: rgba(30, 41, 59, 0.95);
+  color: #bfdbfe;
+  padding: 6px 10px;
+  margin-bottom: 12px;
+}
+
+.status-pill {
+  background: rgba(34, 197, 94, 0.16);
+  color: #86efac;
+  padding: 8px 14px;
+}
+
+.tile-start {
+  border-color: rgba(250, 204, 21, 0.45);
+}
+
+.tile-chance {
+  border-color: rgba(192, 132, 252, 0.45);
+}
+
+.tile-service {
+  border-color: rgba(56, 189, 248, 0.45);
+}
+
+.tile-question,
+.tile-story,
+.tile-pitch,
+.tile-objection,
+.tile-market {
+  border-color: rgba(74, 222, 128, 0.3);
+}
+
+.occupants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.occupants span {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(15, 118, 110, 0.2);
+  color: #99f6e4;
+}
+
+.sidebar {
+  display: grid;
+  gap: 24px;
+}
+
+.score-list,
+.service-list {
+  grid-template-columns: 1fr;
+}
+
+.score-card,
+.service-card {
+  border-radius: 18px;
+  padding: 16px;
+}
+
+.history-panel ul {
+  padding-left: 18px;
+  margin: 0;
+  color: #cbd5e1;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.72);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.modal-card {
+  width: min(520px, 100%);
+  border-radius: 24px;
+  padding: 24px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.market-box {
+  display: grid;
+  gap: 14px;
+}
+
+@media (max-width: 980px) {
+  .hero-card,
+  .panel-header,
+  .dashboard {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .hero-actions {
+    min-width: 0;
+  }
+}
