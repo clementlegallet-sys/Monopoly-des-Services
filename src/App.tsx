@@ -13,9 +13,8 @@ type TileType =
   | 'chance'
   | 'service'
   | 'question'
-  | 'story'
+  | 'bubble'
   | 'market'
-  | 'pitch'
   | 'objection';
 
 type ServiceColor = 'blue' | 'green' | 'orange';
@@ -30,11 +29,14 @@ type ServicePiece = {
 
 type Tile = {
   id: number;
+  key: string;
   title: string;
   type: TileType;
   color?: ServiceColor;
   description: string;
   serviceId?: string;
+  neighbors: number[];
+  shape: TileShapeDefinition;
 };
 
 type Player = {
@@ -88,11 +90,7 @@ type DieFaceProps = {
 };
 
 type TileShapeDefinition = {
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-  polygon: string;
+  points: string;
   tokenAnchor: {
     x: number;
     y: number;
@@ -151,128 +149,316 @@ const OBJECTION_DECK: ObjectionCard[] = [
   },
 ] as const;
 
-const TILE_SHAPES: Record<number, TileShapeDefinition> = {
-  0: {
-    left: 41.5,
-    top: 40.1,
-    width: 17.1,
-    height: 18.9,
-    polygon: 'polygon(17% 14%, 50% 4%, 82% 15%, 97% 50%, 82% 85%, 50% 96%, 17% 85%, 3% 50%)',
-    tokenAnchor: { x: 50.0, y: 49.4 },
+const BOARD_SPACES: Tile[] = [
+  {
+    id: 0,
+    key: 'start',
+    title: 'Départ',
+    type: 'start',
+    description: 'Point de départ de tous les joueurs.',
+    neighbors: [1, 16, 17, 18, 19, 20],
+    shape: {
+      points: '39.6,37.5 55.9,37.2 60.8,48.8 56.0,61.4 44.4,61.7 39.2,49.0',
+      tokenAnchor: { x: 49.9, y: 49.3 },
+    },
   },
-  1: {
-    left: 43.2,
-    top: 16.2,
-    width: 13.2,
-    height: 21.6,
-    polygon: 'polygon(48% 2%, 83% 12%, 78% 97%, 22% 97%, 17% 12%)',
-    tokenAnchor: { x: 49.8, y: 27.2 },
+  {
+    id: 1,
+    key: 'market-north',
+    title: 'Place du Marché',
+    type: 'market',
+    description: 'Échanger une pièce entre joueurs ou vendre une pièce à la banque.',
+    neighbors: [0, 2, 3, 15, 16, 20],
+    shape: {
+      points: '42.7,16.1 55.8,16.1 56.2,37.2 43.0,37.3',
+      tokenAnchor: { x: 49.5, y: 26.4 },
+    },
   },
-  2: {
-    left: 39.7,
-    top: 0.5,
-    width: 20.1,
-    height: 16.1,
-    polygon: 'polygon(14% 98%, 2% 28%, 23% 2%, 77% 2%, 98% 28%, 86% 98%)',
-    tokenAnchor: { x: 49.8, y: 8.9 },
+  {
+    id: 2,
+    key: 'service-protection-facture',
+    title: 'Protection Facture',
+    type: 'service',
+    color: 'blue',
+    serviceId: 'protection-facture',
+    description: 'Donner 2 avantages pour remporter la pièce.',
+    neighbors: [1, 3, 15],
+    shape: {
+      points: '39.2,0.0 60.8,0.0 55.8,16.1 42.7,16.1',
+      tokenAnchor: { x: 49.9, y: 8.2 },
+    },
   },
-  3: {
-    left: 78.3,
-    top: 18.4,
-    width: 17.2,
-    height: 28.9,
-    polygon: 'polygon(2% 16%, 36% 2%, 97% 9%, 90% 83%, 48% 98%, 2% 84%)',
-    tokenAnchor: { x: 87.9, y: 33.6 },
+  {
+    id: 3,
+    key: 'bubble-northeast',
+    title: 'Bulle',
+    type: 'bubble',
+    description: 'Case bulle : argument BAC ou traitement d’objection selon le mode choisi.',
+    neighbors: [1, 2, 4, 20],
+    shape: {
+      points: '60.8,0.0 81.8,0.0 71.0,21.0 66.0,21.0 55.8,16.1',
+      tokenAnchor: { x: 68.7, y: 9.8 },
+    },
   },
-  4: {
-    left: 58.6,
-    top: 35.9,
-    width: 15.6,
-    height: 16.3,
-    polygon: 'polygon(3% 16%, 57% 2%, 97% 19%, 97% 81%, 44% 98%, 3% 80%)',
-    tokenAnchor: { x: 66.2, y: 43.9 },
+  {
+    id: 4,
+    key: 'chance-east',
+    title: 'Chance',
+    type: 'chance',
+    description: 'Bonne réponse = +2 clients.',
+    neighbors: [3, 5, 20],
+    shape: {
+      points: '81.8,0.0 100.0,49.8 79.0,49.8 71.0,21.0',
+      tokenAnchor: { x: 86.5, y: 31.0 },
+    },
   },
-  5: {
-    left: 68.8,
-    top: 56.3,
-    width: 17.8,
-    height: 23.4,
-    polygon: 'polygon(3% 11%, 56% 2%, 97% 19%, 86% 97%, 30% 91%, 3% 73%)',
-    tokenAnchor: { x: 77.0, y: 68.1 },
+  {
+    id: 5,
+    key: 'question-east',
+    title: 'Case ?',
+    type: 'question',
+    description: 'Poser une question ouverte adaptée à une offre du groupe.',
+    neighbors: [4, 6, 19, 20],
+    shape: {
+      points: '79.0,49.8 100.0,49.8 94.0,65.0 84.2,61.4',
+      tokenAnchor: { x: 89.8, y: 57.2 },
+    },
   },
-  6: {
-    left: 44.2,
-    top: 60.5,
-    width: 12.8,
-    height: 22.6,
-    polygon: 'polygon(20% 2%, 80% 2%, 86% 83%, 50% 98%, 14% 83%)',
-    tokenAnchor: { x: 50.2, y: 71.4 },
+  {
+    id: 6,
+    key: 'service-izi-confort',
+    title: 'IZI Confort',
+    type: 'service',
+    color: 'orange',
+    serviceId: 'izi-confort',
+    description: 'Donner 2 avantages pour remporter la pièce.',
+    neighbors: [5, 7, 19],
+    shape: {
+      points: '73.2,69.2 84.2,61.4 94.0,65.0 87.3,84.9',
+      tokenAnchor: { x: 81.0, y: 71.0 },
+    },
   },
-  7: {
-    left: 39.8,
-    top: 82.4,
-    width: 21.0,
-    height: 17.2,
-    polygon: 'polygon(13% 2%, 87% 2%, 98% 68%, 77% 98%, 23% 98%, 2% 68%)',
-    tokenAnchor: { x: 49.8, y: 90.8 },
+  {
+    id: 7,
+    key: 'bubble-southeast',
+    title: 'Bulle',
+    type: 'bubble',
+    description: 'Case bulle : argument BAC ou traitement d’objection selon le mode choisi.',
+    neighbors: [6, 8, 18, 19],
+    shape: {
+      points: '60.8,82.2 73.2,69.2 87.3,84.9 81.4,100.0',
+      tokenAnchor: { x: 75.4, y: 88.2 },
+    },
   },
-  8: {
-    left: 12.7,
-    top: 55.2,
-    width: 17.9,
-    height: 24.5,
-    polygon: 'polygon(45% 2%, 98% 12%, 98% 74%, 68% 91%, 13% 98%, 2% 18%)',
-    tokenAnchor: { x: 22.1, y: 68.0 },
+  {
+    id: 8,
+    key: 'service-assistance-depannage',
+    title: 'Assistance Dépannage',
+    type: 'service',
+    color: 'blue',
+    serviceId: 'assistance-depannage',
+    description: 'Donner 2 avantages pour remporter la pièce.',
+    neighbors: [7, 9, 18],
+    shape: {
+      points: '39.4,82.2 60.8,82.2 61.8,100.0 38.5,100.0',
+      tokenAnchor: { x: 49.7, y: 91.0 },
+    },
   },
-  9: {
-    left: 26.2,
-    top: 35.6,
-    width: 15.0,
-    height: 16.7,
-    polygon: 'polygon(43% 2%, 98% 18%, 98% 81%, 56% 98%, 2% 79%, 2% 21%)',
-    tokenAnchor: { x: 33.7, y: 44.0 },
+  {
+    id: 9,
+    key: 'bubble-southwest',
+    title: 'Bulle',
+    type: 'bubble',
+    description: 'Case bulle : argument BAC ou traitement d’objection selon le mode choisi.',
+    neighbors: [8, 10, 17, 18],
+    shape: {
+      points: '23.4,100.0 38.8,82.3 27.0,69.1 13.0,84.9',
+      tokenAnchor: { x: 31.6, y: 90.4 },
+    },
   },
-  10: {
-    left: 12.2,
-    top: 18.0,
-    width: 17.7,
-    height: 29.1,
-    polygon: 'polygon(51% 2%, 98% 16%, 98% 81%, 61% 98%, 2% 83%, 9% 10%)',
-    tokenAnchor: { x: 21.8, y: 33.1 },
+  {
+    id: 10,
+    key: 'question-southwest',
+    title: 'Case ?',
+    type: 'question',
+    description: 'Poser une question ouverte adaptée à une offre du groupe.',
+    neighbors: [9, 11, 17],
+    shape: {
+      points: '0.0,100.0 13.0,84.9 27.0,69.1 9.8,65.0 0.0,80.0',
+      tokenAnchor: { x: 21.6, y: 82.5 },
+    },
   },
-  11: {
-    left: 28.8,
-    top: 1.8,
-    width: 10.7,
-    height: 9.3,
-    polygon: 'polygon(20% 98%, 2% 42%, 43% 2%, 98% 18%, 81% 98%)',
-    tokenAnchor: { x: 34.0, y: 6.0 },
+  {
+    id: 11,
+    key: 'service-izi-by-edf',
+    title: 'IZI by EDF',
+    type: 'service',
+    color: 'green',
+    serviceId: 'izi-by-edf',
+    description: 'Donner 2 avantages pour remporter la pièce.',
+    neighbors: [10, 12, 16, 17],
+    shape: {
+      points: '5.5,65.6 21.2,50.1 27.0,69.1 9.8,84.9',
+      tokenAnchor: { x: 16.2, y: 68.8 },
+    },
   },
-  12: {
-    left: 84.9,
-    top: 51.7,
-    width: 10.9,
-    height: 9.5,
-    polygon: 'polygon(2% 19%, 57% 2%, 98% 55%, 80% 98%, 19% 86%)',
-    tokenAnchor: { x: 90.4, y: 56.4 },
+  {
+    id: 12,
+    key: 'bubble-west',
+    title: 'Bulle',
+    type: 'bubble',
+    description: 'Case bulle : argument BAC ou traitement d’objection selon le mode choisi.',
+    neighbors: [11, 13, 16],
+    shape: {
+      points: '0.0,50.0 21.2,50.1 39.0,37.7 24.2,26.4 5.8,33.6',
+      tokenAnchor: { x: 16.0, y: 55.2 },
+    },
   },
+  {
+    id: 13,
+    key: 'question-west',
+    title: 'Case ?',
+    type: 'question',
+    description: 'Poser une question ouverte adaptée à une offre du groupe.',
+    neighbors: [12, 14, 16],
+    shape: {
+      points: '0.0,33.6 5.8,33.6 24.2,26.4 21.2,50.1 0.0,50.0',
+      tokenAnchor: { x: 8.5, y: 44.0 },
+    },
+  },
+  {
+    id: 14,
+    key: 'service-thermostat-connecte-sowee',
+    title: 'Thermostat connecté Sowee',
+    type: 'service',
+    color: 'green',
+    serviceId: 'thermostat-connecte-sowee',
+    description: 'Donner 2 avantages pour remporter la pièce.',
+    neighbors: [13, 15, 16],
+    shape: {
+      points: '5.8,10.8 24.2,26.4 39.0,37.7 23.7,50.0 0.0,33.6',
+      tokenAnchor: { x: 18.8, y: 28.6 },
+    },
+  },
+  {
+    id: 15,
+    key: 'question-northwest',
+    title: 'Case ?',
+    type: 'question',
+    description: 'Poser une question ouverte adaptée à une offre du groupe.',
+    neighbors: [1, 2, 14, 16],
+    shape: {
+      points: '15.2,0.0 39.2,0.0 32.8,16.1 24.2,10.8',
+      tokenAnchor: { x: 31.0, y: 7.2 },
+    },
+  },
+  {
+    id: 16,
+    key: 'market-northwest',
+    title: 'Place du Marché',
+    type: 'market',
+    description: 'Échanger une pièce entre joueurs ou vendre une pièce à la banque.',
+    neighbors: [0, 1, 11, 12, 13, 14, 15, 17],
+    shape: {
+      points: '32.8,16.1 42.7,16.1 43.0,37.3 39.0,37.7 24.2,26.4',
+      tokenAnchor: { x: 33.2, y: 28.7 },
+    },
+  },
+  {
+    id: 17,
+    key: 'market-southwest',
+    title: 'Place du Marché',
+    type: 'market',
+    description: 'Échanger une pièce entre joueurs ou vendre une pièce à la banque.',
+    neighbors: [0, 10, 11, 16, 18],
+    shape: {
+      points: '21.2,50.1 39.2,37.8 43.0,61.5 27.0,69.1',
+      tokenAnchor: { x: 31.7, y: 58.8 },
+    },
+  },
+  {
+    id: 18,
+    key: 'market-south',
+    title: 'Place du Marché',
+    type: 'market',
+    description: 'Échanger une pièce entre joueurs ou vendre une pièce à la banque.',
+    neighbors: [0, 7, 8, 9, 17, 19],
+    shape: {
+      points: '43.0,61.5 56.0,61.5 56.8,82.3 39.4,82.2',
+      tokenAnchor: { x: 50.0, y: 71.4 },
+    },
+  },
+  {
+    id: 19,
+    key: 'market-southeast',
+    title: 'Place du Marché',
+    type: 'market',
+    description: 'Échanger une pièce entre joueurs ou vendre une pièce à la banque.',
+    neighbors: [0, 5, 6, 7, 18, 20],
+    shape: {
+      points: '56.0,61.5 67.8,49.8 73.2,69.2 60.8,82.2 56.8,82.3',
+      tokenAnchor: { x: 64.2, y: 58.9 },
+    },
+  },
+  {
+    id: 20,
+    key: 'market-northeast',
+    title: 'Place du Marché',
+    type: 'market',
+    description: 'Échanger une pièce entre joueurs ou vendre une pièce à la banque.',
+    neighbors: [0, 1, 3, 4, 5, 19],
+    shape: {
+      points: '56.2,37.2 70.6,28.6 79.0,41.5 67.8,49.8 60.0,49.8',
+      tokenAnchor: { x: 67.0, y: 38.0 },
+    },
+  },
+];
+
+const TILE_GRAPH: Record<number, number[]> = Object.fromEntries(
+  BOARD_SPACES.map((tile) => [tile.id, tile.neighbors]),
+);
+
+const getBoardRegistryIssues = (tiles: Tile[]) => {
+  const tileIds = new Set(tiles.map((tile) => tile.id));
+  const issues: string[] = [];
+
+  tiles.forEach((tile) => {
+    if (!tile.key.trim()) {
+      issues.push(`Case ${tile.id} sans identifiant lisible.`);
+    }
+
+    if (!tile.title.trim()) {
+      issues.push(`Case ${tile.id} sans libellé.`);
+    }
+
+    if (!tile.description.trim()) {
+      issues.push(`Case ${tile.id} sans description.`);
+    }
+
+    if (!tile.shape.points.trim()) {
+      issues.push(`Case ${tile.id} sans forme SVG.`);
+    }
+
+    if (tile.neighbors.length === 0) {
+      issues.push(`Case ${tile.id} sans adjacency.`);
+    }
+
+    tile.neighbors.forEach((neighborId) => {
+      if (!tileIds.has(neighborId)) {
+        issues.push(`Case ${tile.id} reliée à une case inconnue (${neighborId}).`);
+        return;
+      }
+
+      if (!TILE_GRAPH[neighborId]?.includes(tile.id)) {
+        issues.push(`Adjacency non symétrique entre ${tile.id} et ${neighborId}.`);
+      }
+    });
+  });
+
+  return issues;
 };
 
-const TILE_GRAPH: Record<number, number[]> = {
-  0: [1, 4, 6, 9],
-  1: [0, 2, 3, 11],
-  2: [1],
-  3: [1, 4],
-  4: [0, 3, 5, 12],
-  5: [4],
-  6: [0, 7, 8, 12],
-  7: [6],
-  8: [6, 9],
-  9: [0, 8, 10, 11],
-  10: [9],
-  11: [1, 9],
-  12: [4, 6],
-};
+const BOARD_REGISTRY_ISSUES = getBoardRegistryIssues(BOARD_SPACES);
 
 const DIE_PIPS: Record<number, string[]> = {
   1: ['center'],
@@ -322,92 +508,7 @@ const servicePieces: ServicePiece[] = [
   },
 ];
 
-const board: Tile[] = [
-  { id: 0, title: 'Départ', type: 'start', description: 'Point de départ de tous les joueurs.' },
-  { id: 1, title: 'Chance', type: 'chance', description: 'Bonne réponse = +2 clients.' },
-  {
-    id: 2,
-    title: 'Service EDF',
-    type: 'service',
-    color: 'blue',
-    serviceId: 'assistance-depannage',
-    description: 'Donner 2 avantages pour remporter la pièce.',
-  },
-  {
-    id: 3,
-    title: 'Case ?',
-    type: 'question',
-    color: 'blue',
-    description: 'Poser une question ouverte adaptée à une offre du groupe.',
-  },
-  {
-    id: 4,
-    title: 'Service EDF',
-    type: 'service',
-    color: 'blue',
-    serviceId: 'protection-facture',
-    description: 'Donner 2 avantages pour remporter la pièce.',
-  },
-  {
-    id: 5,
-    title: 'Histoire',
-    type: 'story',
-    color: 'green',
-    description: 'Raconter une situation d’usage convaincante.',
-  },
-  {
-    id: 6,
-    title: 'Service EDF',
-    type: 'service',
-    color: 'green',
-    serviceId: 'izi-by-edf',
-    description: 'Donner 2 avantages pour remporter la pièce.',
-  },
-  {
-    id: 7,
-    title: 'Objection',
-    type: 'objection',
-    color: 'green',
-    description: 'Répondre à une objection avec la méthode AREF.',
-  },
-  {
-    id: 8,
-    title: 'Service EDF',
-    type: 'service',
-    color: 'green',
-    serviceId: 'thermostat-connecte-sowee',
-    description: 'Donner 2 avantages pour remporter la pièce.',
-  },
-  {
-    id: 9,
-    title: 'Place du Marché',
-    type: 'market',
-    description: 'Échanger une pièce entre joueurs ou vendre une pièce à la banque.',
-  },
-  {
-    id: 10,
-    title: 'Service EDF',
-    type: 'service',
-    color: 'orange',
-    serviceId: 'izi-confort',
-    description: 'Donner 2 avantages pour remporter la pièce.',
-  },
-  {
-    id: 11,
-    title: 'Argument BAC',
-    type: 'pitch',
-    color: 'orange',
-    description: 'Construire un argument bénéfice-avantage-caractéristique.',
-  },
-  {
-    id: 12,
-    title: 'Service EDF',
-    type: 'service',
-    color: 'orange',
-    serviceId: 'homiris',
-    description: 'Donner 2 avantages pour remporter la pièce.',
-  },
-];
+const board = BOARD_SPACES;
 
 const colorLabels: Record<ServiceColor, string> = {
   blue: 'Bleu',
@@ -420,9 +521,8 @@ const tileTypeLabels: Record<TileType, string> = {
   chance: 'Chance',
   service: 'Service EDF',
   question: 'Case ?',
-  story: 'Histoire',
+  bubble: 'Bulle',
   market: 'Place du Marché',
-  pitch: 'Argument BAC',
   objection: 'Objection',
 };
 
@@ -484,26 +584,6 @@ const getService = (serviceId?: string) =>
 
 const appendHistoryEntry = (history: string[], message: string) => [message, ...history].slice(0, 12);
 
-const parsePolygonPoints = (polygon: string) =>
-  polygon
-    .replace(/^polygon\(/, '')
-    .replace(/\)$/, '')
-    .split(',')
-    .map((point) => point.trim())
-    .filter(Boolean)
-    .map((point) => {
-      const [x, y] = point.split(/\s+/);
-      return {
-        x: Number.parseFloat(x.replace('%', '')),
-        y: Number.parseFloat(y.replace('%', '')),
-      };
-    });
-
-const toSvgPolygonPoints = ({ left, top, width, height, polygon }: TileShapeDefinition) =>
-  parsePolygonPoints(polygon)
-    .map(({ x, y }) => `${left + (width * x) / 100},${top + (height * y) / 100}`)
-    .join(' ');
-
 const TOKEN_OFFSETS = [
   { x: 0, y: 0 },
   { x: 2.6, y: -2.2 },
@@ -534,7 +614,7 @@ const getTilePresentation = (
   tile: Tile,
   trainingMode: TrainingMode | null,
 ): TilePresentation => {
-  if (tile.type === 'objection') {
+  if (tile.type === 'bubble' || tile.type === 'objection') {
     if (trainingMode === 'objections') {
       return {
         title: 'Objection',
@@ -692,6 +772,12 @@ const App = () => {
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(game));
   }, [game]);
+
+  useEffect(() => {
+    if (BOARD_REGISTRY_ISSUES.length > 0) {
+      console.warn('Board registry issues detected:', BOARD_REGISTRY_ISSUES);
+    }
+  }, []);
 
   useEffect(() => {
     if (!isRolling) {
@@ -908,7 +994,7 @@ const App = () => {
           : candidate,
       );
       const triggeredObjectionCard =
-        tile.type === 'objection' && currentGame.trainingMode === 'objections'
+        (tile.type === 'bubble' || tile.type === 'objection') && currentGame.trainingMode === 'objections'
           ? drawRandomObjectionCard(currentGame.activeObjectionCard?.id)
           : null;
 
@@ -975,8 +1061,7 @@ const App = () => {
 
       if (
         pendingAction.tile.type === 'question' ||
-        pendingAction.tile.type === 'story' ||
-        pendingAction.tile.type === 'pitch' ||
+        pendingAction.tile.type === 'bubble' ||
         pendingAction.tile.type === 'objection'
       ) {
         const result = awardClients(players, player.id, 1, centralBank);
@@ -1104,7 +1189,7 @@ const App = () => {
   const canInspectObjectionCard = Boolean(game.activeObjectionCard);
   const winner = game.players.find((player) => player.id === game.winnerId) ?? null;
   const boardTiles = board.map((tile) => {
-    const shape = TILE_SHAPES[tile.id];
+    const shape = tile.shape;
     const occupants = game.players.filter((player) => player.position === tile.id);
     const service = getService(tile.serviceId);
     const tilePresentation = getTilePresentation(tile, game.trainingMode);
@@ -1127,7 +1212,7 @@ const App = () => {
       isCurrentPlayerTile,
       isReachable,
       isDisabled,
-      svgPoints: toSvgPolygonPoints(shape),
+      svgPoints: shape.points,
     };
   });
 
@@ -1231,6 +1316,11 @@ const App = () => {
                 )}
               </div>
               <div className="board-header-status">
+                <div className={`status-chip ${BOARD_REGISTRY_ISSUES.length > 0 ? 'status-chip-warning' : ''}`}>
+                  {BOARD_REGISTRY_ISSUES.length > 0
+                    ? `${BOARD_REGISTRY_ISSUES.length} alerte(s) registre`
+                    : `${board.length} cases jouables`}
+                </div>
                 {game.trainingMode && (
                   <div className="status-chip status-chip-mode">{trainingModeLabels[game.trainingMode]}</div>
                 )}
@@ -1582,7 +1672,8 @@ const App = () => {
               </div>
             )}
 
-            {game.pendingAction.tile.type === 'objection' && game.trainingMode === 'objections' && (
+            {(game.pendingAction.tile.type === 'bubble' || game.pendingAction.tile.type === 'objection') &&
+              game.trainingMode === 'objections' && (
               <div className="deck-card modal-deck-card objection-viewer">
                 <div className="deck-card-header">
                   <div>

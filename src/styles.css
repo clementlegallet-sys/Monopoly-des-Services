@@ -299,6 +299,12 @@ button:disabled {
   background: rgba(255, 231, 158, 0.18);
 }
 
+.status-chip-warning {
+  background: rgba(255, 129, 95, 0.18);
+  border-color: rgba(255, 158, 122, 0.42);
+  color: #fff1d5;
+}
+
 .board-bank,
 .status-chip,
 .tile-family,
