@@ -91,12 +91,16 @@ type DieFaceProps = {
   isRolling: boolean;
 };
 
-type TileOverlay = {
+type TileShapeDefinition = {
   left: number;
   top: number;
   width: number;
   height: number;
-  clipPath: string;
+  polygon: string;
+  tokenAnchor: {
+    x: number;
+    y: number;
+  };
 };
 
 type BubbleTileVisual = {
@@ -162,97 +166,110 @@ const OBJECTION_DECK: ObjectionCard[] = [
   },
 ] as const;
 
-const TILE_OVERLAYS: Record<number, TileOverlay> = {
+const TILE_SHAPES: Record<number, TileShapeDefinition> = {
   0: {
     left: 41.2,
     top: 39.7,
     width: 17.8,
     height: 19.5,
-    clipPath: 'polygon(19% 14%, 50% 2%, 81% 14%, 97% 50%, 81% 86%, 50% 98%, 19% 86%, 3% 50%)',
+    polygon: 'polygon(19% 14%, 50% 2%, 81% 14%, 97% 50%, 81% 86%, 50% 98%, 19% 86%, 3% 50%)',
+    tokenAnchor: { x: 50.1, y: 49.2 },
   },
   1: {
     left: 43.9,
     top: 17.2,
     width: 12.3,
     height: 20.4,
-    clipPath: 'polygon(50% 2%, 86% 13%, 79% 97%, 21% 97%, 14% 13%)',
+    polygon: 'polygon(50% 2%, 86% 13%, 79% 97%, 21% 97%, 14% 13%)',
+    tokenAnchor: { x: 50.0, y: 27.3 },
   },
   2: {
     left: 40.3,
     top: 1.1,
     width: 19.3,
     height: 15,
-    clipPath: 'polygon(15% 97%, 2% 31%, 25% 3%, 75% 3%, 98% 31%, 85% 97%)',
+    polygon: 'polygon(15% 97%, 2% 31%, 25% 3%, 75% 3%, 98% 31%, 85% 97%)',
+    tokenAnchor: { x: 50.0, y: 8.8 },
   },
   3: {
     left: 79.1,
     top: 19.4,
     width: 15.9,
     height: 27.4,
-    clipPath: 'polygon(2% 18%, 39% 2%, 97% 9%, 90% 82%, 49% 97%, 2% 83%)',
+    polygon: 'polygon(2% 18%, 39% 2%, 97% 9%, 90% 82%, 49% 97%, 2% 83%)',
+    tokenAnchor: { x: 88.2, y: 33.8 },
   },
   4: {
     left: 59,
     top: 35.7,
     width: 14,
     height: 15.8,
-    clipPath: 'polygon(3% 18%, 56% 3%, 97% 20%, 97% 80%, 45% 97%, 3% 79%)',
+    polygon: 'polygon(3% 18%, 56% 3%, 97% 20%, 97% 80%, 45% 97%, 3% 79%)',
+    tokenAnchor: { x: 65.9, y: 43.8 },
   },
   5: {
     left: 69,
     top: 55.8,
     width: 17,
     height: 22.9,
-    clipPath: 'polygon(3% 12%, 56% 3%, 97% 19%, 86% 97%, 31% 91%, 3% 74%)',
+    polygon: 'polygon(3% 12%, 56% 3%, 97% 19%, 86% 97%, 31% 91%, 3% 74%)',
+    tokenAnchor: { x: 77.1, y: 67.9 },
   },
   6: {
     left: 44,
     top: 61.1,
     width: 12.1,
     height: 20.3,
-    clipPath: 'polygon(20% 3%, 80% 3%, 86% 83%, 50% 97%, 14% 83%)',
+    polygon: 'polygon(20% 3%, 80% 3%, 86% 83%, 50% 97%, 14% 83%)',
+    tokenAnchor: { x: 50.1, y: 71.2 },
   },
   7: {
     left: 40.2,
     top: 83.4,
     width: 19.4,
     height: 15.5,
-    clipPath: 'polygon(15% 3%, 85% 3%, 97% 68%, 76% 97%, 24% 97%, 3% 68%)',
+    polygon: 'polygon(15% 3%, 85% 3%, 97% 68%, 76% 97%, 24% 97%, 3% 68%)',
+    tokenAnchor: { x: 49.8, y: 90.5 },
   },
   8: {
     left: 13.5,
     top: 55.9,
     width: 17.2,
     height: 22.8,
-    clipPath: 'polygon(44% 3%, 97% 13%, 97% 74%, 69% 91%, 14% 97%, 3% 19%)',
+    polygon: 'polygon(44% 3%, 97% 13%, 97% 74%, 69% 91%, 14% 97%, 3% 19%)',
+    tokenAnchor: { x: 22.6, y: 67.7 },
   },
   9: {
     left: 27.4,
     top: 35.7,
     width: 13.9,
     height: 15.7,
-    clipPath: 'polygon(43% 3%, 97% 19%, 97% 80%, 56% 97%, 3% 78%, 3% 22%)',
+    polygon: 'polygon(43% 3%, 97% 19%, 97% 80%, 56% 97%, 3% 78%, 3% 22%)',
+    tokenAnchor: { x: 34.3, y: 43.8 },
   },
   10: {
     left: 13.7,
     top: 18.9,
     width: 17.1,
     height: 27.4,
-    clipPath: 'polygon(51% 3%, 97% 17%, 97% 80%, 61% 97%, 3% 82%, 10% 10%)',
+    polygon: 'polygon(51% 3%, 97% 17%, 97% 80%, 61% 97%, 3% 82%, 10% 10%)',
+    tokenAnchor: { x: 22.6, y: 33.4 },
   },
   11: {
     left: 29.6,
     top: 2.1,
     width: 9.8,
     height: 8,
-    clipPath: 'polygon(22% 97%, 3% 45%, 45% 3%, 97% 18%, 79% 97%)',
+    polygon: 'polygon(22% 97%, 3% 45%, 45% 3%, 97% 18%, 79% 97%)',
+    tokenAnchor: { x: 34.1, y: 6.2 },
   },
   12: {
     left: 85.6,
     top: 52.5,
     width: 9.8,
     height: 8,
-    clipPath: 'polygon(3% 19%, 56% 3%, 97% 54%, 78% 97%, 20% 85%)',
+    polygon: 'polygon(3% 19%, 56% 3%, 97% 54%, 78% 97%, 20% 85%)',
+    tokenAnchor: { x: 90.8, y: 56.4 },
   },
 };
 
@@ -529,6 +546,51 @@ const getService = (serviceId?: string) =>
 
 const appendHistoryEntry = (history: string[], message: string) => [message, ...history].slice(0, 12);
 
+const parsePolygonPoints = (polygon: string) =>
+  polygon
+    .replace(/^polygon\(/, '')
+    .replace(/\)$/, '')
+    .split(',')
+    .map((point) => point.trim())
+    .filter(Boolean)
+    .map((point) => {
+      const [x, y] = point.split(/\s+/);
+      return {
+        x: Number.parseFloat(x.replace('%', '')),
+        y: Number.parseFloat(y.replace('%', '')),
+      };
+    });
+
+const toSvgPolygonPoints = ({ left, top, width, height, polygon }: TileShapeDefinition) =>
+  parsePolygonPoints(polygon)
+    .map(({ x, y }) => `${left + (width * x) / 100},${top + (height * y) / 100}`)
+    .join(' ');
+
+const TOKEN_OFFSETS = [
+  { x: 0, y: 0 },
+  { x: 2.6, y: -2.2 },
+  { x: -2.6, y: 2.2 },
+  { x: 2.6, y: 2.2 },
+  { x: -2.6, y: -2.2 },
+] as const;
+
+const getTokenOffset = (occupantIndex: number) => {
+  const preset = TOKEN_OFFSETS[occupantIndex];
+
+  if (preset) {
+    return preset;
+  }
+
+  const ringIndex = occupantIndex - TOKEN_OFFSETS.length;
+  const angle = ((ringIndex % 6) / 6) * Math.PI * 2;
+  const radius = 4.4 + Math.floor(ringIndex / 6) * 1.8;
+
+  return {
+    x: Math.cos(angle) * radius,
+    y: Math.sin(angle) * radius,
+  };
+};
+
 const getBubbleTileVisual = (trainingMode: TrainingMode | null) =>
   trainingMode ? bubbleTileVisuals[trainingMode] : null;
 
@@ -609,30 +671,27 @@ const getPlayerInitials = (name: string) =>
     .slice(0, 2) || '?';
 
 const getReachableTileIds = (originTileId: number, roll: number) => {
-  const destinations = new Set<number>();
+  if (roll <= 0) {
+    return [];
+  }
 
-  const traverse = (tileId: number, stepsLeft: number, visited: Set<number>) => {
-    if (stepsLeft === 0) {
-      if (tileId !== originTileId) {
-        destinations.add(tileId);
-      }
-      return;
-    }
+  let frontier = new Set<number>([originTileId]);
 
-    TILE_GRAPH[tileId]?.forEach((neighborId) => {
-      if (visited.has(neighborId)) {
-        return;
-      }
+  for (let step = 0; step < roll; step += 1) {
+    const nextFrontier = new Set<number>();
 
-      visited.add(neighborId);
-      traverse(neighborId, stepsLeft - 1, visited);
-      visited.delete(neighborId);
+    frontier.forEach((tileId) => {
+      TILE_GRAPH[tileId]?.forEach((neighborId) => {
+        nextFrontier.add(neighborId);
+      });
     });
-  };
 
-  traverse(originTileId, roll, new Set([originTileId]));
+    frontier = nextFrontier;
+  }
 
-  return [...destinations].sort((left, right) => left - right);
+  frontier.delete(originTileId);
+
+  return [...frontier].sort((left, right) => left - right);
 };
 
 const DieFace = ({ value, isRolling }: DieFaceProps) => {
@@ -1113,6 +1172,37 @@ const App = () => {
     : null;
   const canInspectObjectionCard = Boolean(game.activeObjectionCard);
   const winner = game.players.find((player) => player.id === game.winnerId) ?? null;
+  const boardTiles = board.map((tile) => {
+    const shape = TILE_SHAPES[tile.id];
+    const occupants = game.players.filter((player) => player.position === tile.id);
+    const service = getService(tile.serviceId);
+    const tilePresentation = getTilePresentation(tile, game.trainingMode);
+    const tileLabel = tile.type === 'service' && service ? service.name : tilePresentation.title;
+    const bubbleVisual = getBubbleTileVisual(game.trainingMode);
+    const bubbleOverlay = getBubbleTileOverlay(tile.id);
+    const isFocused = tile.id === boardFocusTileId;
+    const isSelectedTile = tile.id === game.pendingAction?.tile.id;
+    const isCurrentPlayerTile = tile.id === currentPlayer?.position;
+    const isReachable = reachableTileIds.includes(tile.id);
+    const isDisabled = isChoosingDestination && !isReachable;
+
+    return {
+      tile,
+      shape,
+      occupants,
+      service,
+      tilePresentation,
+      tileLabel,
+      bubbleVisual,
+      bubbleOverlay,
+      isFocused,
+      isSelectedTile,
+      isCurrentPlayerTile,
+      isReachable,
+      isDisabled,
+      svgPoints: toSvgPolygonPoints(shape),
+    };
+  });
 
   return (
     <div className="app-shell">
@@ -1222,123 +1312,191 @@ const App = () => {
               </div>
             </div>
 
-            <div className="board-frame">
-              <div className="board-surface">
-                <img src={boardReferenceImage} alt="Plateau Monopoly des Services" className="board-base-image" />
-                <div className="board-image-shade" />
+            <div className={`board-stage-layout ${game.trainingMode === 'objections' ? 'board-stage-layout-objections' : ''}`}>
+              <div className="board-frame">
+                <div className="board-surface">
+                  <img src={boardReferenceImage} alt="Plateau Monopoly des Services" className="board-base-image" />
+                  <div className="board-image-shade" />
 
-                <div className="board-overlays" aria-label="Cases du plateau">
-                  {board.map((tile) => {
-                    const overlay = TILE_OVERLAYS[tile.id];
-                    const occupants = game.players.filter((player) => player.position === tile.id);
-                    const service = getService(tile.serviceId);
-                    const tilePresentation = getTilePresentation(tile, game.trainingMode);
-                    const tileLabel =
-                      tile.type === 'service' && service ? service.name : tilePresentation.title;
-                    const bubbleVisual = getBubbleTileVisual(game.trainingMode);
-                    const bubbleOverlay = getBubbleTileOverlay(tile.id);
-                    const isFocused = tile.id === boardFocusTileId;
-                    const isSelectedTile = tile.id === game.pendingAction?.tile.id;
-                    const isCurrentPlayerTile = tile.id === currentPlayer?.position;
-                    const isReachable = reachableTileIds.includes(tile.id);
-                    const isDisabled = isChoosingDestination && !isReachable;
+                  <div className="board-token-layer" aria-hidden="true">
+                    {boardTiles.map(({ tile, shape, occupants }) =>
+                      occupants.map((player, occupantIndex) => {
+                        const playerIndex = game.players.findIndex((entry) => entry.id === player.id);
+                        const offset = getTokenOffset(occupantIndex);
 
-                    return (
-                      <button
-                        type="button"
-                        className={`board-zone tile-${tile.type} tile-color-${tile.color ?? 'neutral'} ${
-                          isFocused ? 'board-zone-focused' : ''
-                        } ${isSelectedTile ? 'board-zone-selected' : ''} ${
-                          isCurrentPlayerTile ? 'board-zone-current' : ''
-                        } ${isReachable ? 'board-zone-reachable' : ''} ${
-                          isDisabled ? 'board-zone-disabled' : ''
-                        }`}
-                        key={tile.id}
-                        style={{
-                          left: `${overlay.left}%`,
-                          top: `${overlay.top}%`,
-                          width: `${overlay.width}%`,
-                          height: `${overlay.height}%`,
-                          clipPath: overlay.clipPath,
-                          WebkitClipPath: overlay.clipPath,
-                        }}
-                        onClick={() =>
-                          isChoosingDestination ? handleDestinationSelection(tile.id) : setInspectedTileId(tile.id)
-                        }
-                        title={`${tileLabel} · ${tilePresentation.description}`}
-                        aria-label={`${tileLabel}. ${
-                          isReachable ? 'Destination atteignable.' : tilePresentation.description
-                        }`}
-                        disabled={isDisabled}
-                      >
-                        <span className="board-zone-hit" />
-                        {bubbleVisual && bubbleOverlay && (
+                        return (
                           <span
-                            className={`board-zone-bubble-visual board-zone-bubble-tile-${tile.id}`}
-                            aria-hidden="true"
+                            className="player-token board-player-token"
+                            key={`${tile.id}-${player.id}`}
                             style={{
-                              left: `${bubbleOverlay.left}%`,
-                              top: `${bubbleOverlay.top}%`,
-                              width: `${bubbleOverlay.width}%`,
-                              height: `${bubbleOverlay.height}%`,
-                              clipPath: bubbleOverlay.clipPath,
-                              WebkitClipPath: bubbleOverlay.clipPath,
+                              background: PLAYER_TOKEN_COLORS[playerIndex % PLAYER_TOKEN_COLORS.length],
+                              left: `${shape.tokenAnchor.x}%`,
+                              top: `${shape.tokenAnchor.y}%`,
+                              transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`,
+                              zIndex: 5 + occupantIndex,
                             }}
+                            title={player.name}
                           >
-                            <img
-                              src={bubbleVisual.image}
-                              alt={bubbleVisual.alt}
-                              className="board-zone-bubble-image"
-                            />
+                            {getPlayerInitials(player.name)}
                           </span>
-                        )}
-                        <span className="board-zone-badge" aria-hidden="true">
-                          {tile.id}
-                        </span>
-                        <span className="board-zone-label sr-only">
-                          Case {tile.id} · {tileLabel} · {tilePresentation.typeLabel}
-                        </span>
-                        <span className="board-zone-tokens" aria-hidden={occupants.length === 0}>
-                          {occupants.map((player, occupantIndex) => {
-                            const playerIndex = game.players.findIndex((entry) => entry.id === player.id);
-                            const columnOffset = occupantIndex % 2 === 0 ? -1 : 1;
-                            const rowOffset = Math.floor(occupantIndex / 2);
-                            const offsetX = occupantIndex === 0 ? 0 : columnOffset * (12 + rowOffset * 2);
-                            const offsetY = rowOffset * 13;
-
-                            return (
-                              <span
-                                className="player-token board-player-token"
-                                key={player.id}
-                                style={{
-                                  background: PLAYER_TOKEN_COLORS[playerIndex % PLAYER_TOKEN_COLORS.length],
-                                  transform: `translate(${offsetX}px, ${offsetY}px)`,
-                                  zIndex: occupants.length - occupantIndex,
-                                }}
-                                title={player.name}
-                              >
-                                {getPlayerInitials(player.name)}
-                              </span>
-                            );
-                          })}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="board-focus-card">
-                  <div className="board-focus-copy">
-                    <p className="eyebrow">Lecture du plateau</p>
-                    <h3>{focusTileService?.name ?? focusTilePresentation.title}</h3>
-                    <p>{focusTilePresentation.description}</p>
+                        );
+                      }),
+                    )}
                   </div>
-                  <div className="board-focus-meta">
-                    <span className="status-chip">{focusTilePresentation.typeLabel}</span>
-                    {focusTile.color && <span className="tile-family">Famille {colorLabels[focusTile.color]}</span>}
+
+                  <svg
+                    className="board-overlay-svg"
+                    viewBox="0 0 100 100"
+                    preserveAspectRatio="none"
+                    aria-label="Cases du plateau"
+                  >
+                    {boardTiles.map(
+                      ({
+                        tile,
+                        bubbleOverlay,
+                        bubbleVisual,
+                        isCurrentPlayerTile,
+                        isDisabled,
+                        isFocused,
+                        isReachable,
+                        isSelectedTile,
+                        svgPoints,
+                        tileLabel,
+                        tilePresentation,
+                      }) => {
+                        const interactiveTitle = `${tileLabel} · ${tilePresentation.description}`;
+                        const canSelectDestination = isChoosingDestination && isReachable;
+
+                        return (
+                          <g
+                            key={tile.id}
+                            className={`board-space-group tile-${tile.type} tile-color-${tile.color ?? 'neutral'} ${
+                              isFocused ? 'board-space-focused' : ''
+                            } ${isSelectedTile ? 'board-space-selected' : ''} ${
+                              isCurrentPlayerTile ? 'board-space-current' : ''
+                            } ${isReachable ? 'board-space-reachable' : ''} ${
+                              isDisabled ? 'board-space-disabled' : ''
+                            }`}
+                          >
+                            <polygon className="board-space-shape" points={svgPoints} />
+                            <polygon className="board-space-outline" points={svgPoints} />
+                            <polygon
+                              className="board-space-hit"
+                              points={svgPoints}
+                              role="button"
+                              tabIndex={isDisabled ? -1 : 0}
+                              aria-disabled={isDisabled}
+                              aria-label={`${tileLabel}. ${
+                                canSelectDestination ? 'Destination atteignable.' : tilePresentation.description
+                              }`}
+                              onClick={() =>
+                                isChoosingDestination ? handleDestinationSelection(tile.id) : setInspectedTileId(tile.id)
+                              }
+                              onKeyDown={(event) => {
+                                if (isDisabled) {
+                                  return;
+                                }
+
+                                if (event.key === 'Enter' || event.key === ' ') {
+                                  event.preventDefault();
+                                  if (isChoosingDestination) {
+                                    handleDestinationSelection(tile.id);
+                                  } else {
+                                    setInspectedTileId(tile.id);
+                                  }
+                                }
+                              }}
+                            >
+                              <title>{interactiveTitle}</title>
+                            </polygon>
+                            {bubbleVisual && bubbleOverlay && (
+                              <foreignObject
+                                x={bubbleOverlay.left}
+                                y={bubbleOverlay.top}
+                                width={bubbleOverlay.width}
+                                height={bubbleOverlay.height}
+                                className={`board-zone-bubble-visual board-zone-bubble-tile-${tile.id}`}
+                              >
+                                <div
+                                  className="board-zone-bubble-frame"
+                                  style={{
+                                    clipPath: bubbleOverlay.clipPath,
+                                    WebkitClipPath: bubbleOverlay.clipPath,
+                                  }}
+                                >
+                                  <img
+                                    src={bubbleVisual.image}
+                                    alt={bubbleVisual.alt}
+                                    className="board-zone-bubble-image"
+                                  />
+                                </div>
+                              </foreignObject>
+                            )}
+                            <text
+                              x={TILE_SHAPES[tile.id].tokenAnchor.x}
+                              y={TILE_SHAPES[tile.id].tokenAnchor.y - 4.2}
+                              className="board-space-badge"
+                            >
+                              {tile.id}
+                            </text>
+                          </g>
+                        );
+                      },
+                    )}
+                  </svg>
+
+                  <div className="board-focus-card">
+                    <div className="board-focus-copy">
+                      <p className="eyebrow">Lecture du plateau</p>
+                      <h3>{focusTileService?.name ?? focusTilePresentation.title}</h3>
+                      <p>{focusTilePresentation.description}</p>
+                    </div>
+                    <div className="board-focus-meta">
+                      <span className="status-chip">{focusTilePresentation.typeLabel}</span>
+                      {focusTile.color && <span className="tile-family">Famille {colorLabels[focusTile.color]}</span>}
+                    </div>
                   </div>
                 </div>
               </div>
+
+              {game.trainingMode === 'objections' && (
+                <section className="deck-sidecar deck-panel">
+                  <div className="deck-sidecar-header">
+                    <div>
+                      <p className="eyebrow">Pioche</p>
+                      <h3>Deck Objections</h3>
+                    </div>
+                    <button className="secondary-button" onClick={drawObjectionCard}>
+                      {canInspectObjectionCard ? 'Changer la carte' : 'Préparer une carte'}
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    className="objections-deck-pile objections-deck-pile-large"
+                    onClick={drawObjectionCard}
+                    aria-label="Piocher une carte Objection"
+                  >
+                    <span className="objections-deck-shadow objections-deck-shadow-back" aria-hidden="true" />
+                    <span className="objections-deck-shadow objections-deck-shadow-mid" aria-hidden="true" />
+                    <span className="objections-deck-top-card">
+                      <img src={objectionsDeckFaceImage} alt="Dos du deck Objections" />
+                    </span>
+                  </button>
+                  <div className="deck-card objections-deck-copy">
+                    <p className="deck-card-label">Pile active</p>
+                    <strong>{game.activeObjectionCard?.title ?? 'Aucune carte révélée'}</strong>
+                    <p>
+                      La pioche reste hors du plateau, visible en permanence, et la carte de défi
+                      s’ouvre lors d’une case Objection.
+                    </p>
+                    {game.activeObjectionCard && (
+                      <button className="secondary-button objections-view-button" onClick={drawObjectionCard}>
+                        Tirer une autre carte
+                      </button>
+                    )}
+                  </div>
+                </section>
+              )}
             </div>
 
             <div className="board-reference-strip" aria-label="Références complémentaires du jeu">
@@ -1457,47 +1615,6 @@ const App = () => {
                 ))}
               </div>
             </section>
-
-            {game.trainingMode === 'objections' && (
-              <section className="panel deck-panel">
-                <div className="panel-header compact-header">
-                  <div>
-                    <p className="eyebrow">Pioche</p>
-                    <h2>Deck Objections</h2>
-                  </div>
-                  <button className="secondary-button" onClick={drawObjectionCard}>
-                    {canInspectObjectionCard ? 'Changer la carte' : 'Préparer une carte'}
-                  </button>
-                </div>
-                <div className="objections-deck-area">
-                  <button
-                    type="button"
-                    className="objections-deck-pile"
-                    onClick={drawObjectionCard}
-                    aria-label="Piocher une carte Objection"
-                  >
-                    <span className="objections-deck-shadow objections-deck-shadow-back" aria-hidden="true" />
-                    <span className="objections-deck-shadow objections-deck-shadow-mid" aria-hidden="true" />
-                    <span className="objections-deck-top-card">
-                      <img src={objectionsDeckFaceImage} alt="Dos du deck Objections" />
-                    </span>
-                  </button>
-                  <div className="deck-card objections-deck-copy">
-                    <p className="deck-card-label">Pile active</p>
-                    <strong>{game.activeObjectionCard?.title ?? 'Aucune carte révélée'}</strong>
-                    <p>
-                      La pile apparaît uniquement en mode Objections et la carte est tirée automatiquement
-                      lorsqu’un challenge Objection se déclenche.
-                    </p>
-                    {game.activeObjectionCard && (
-                      <button className="secondary-button objections-view-button" onClick={drawObjectionCard}>
-                        Tirer une autre carte
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </section>
-            )}
 
             <section className="panel history-panel">
               <div className="panel-header compact-header">
