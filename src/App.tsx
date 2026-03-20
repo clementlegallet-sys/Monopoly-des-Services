@@ -3,6 +3,13 @@ import boardReferenceImage from '../PLATEAU DE JEU .png';
 import plancheAImage from '../PLANCHE A 1.2.png';
 import plancheBImage from '../PLANCHE B 1.2.png';
 import objectionBubbleImage from '../CARTES OBJECTIONS FACE.png';
+import objectionsDeckFaceImage from '../carte objection FACE.png';
+import objectionCardAlreadySameImage from '../objection-j-ai-deja-la-meme-chose.png';
+import objectionCardNotInterestedImage from '../objection-ca-ne-m-interesse-pas.png';
+import objectionCardNoBreakdownsImage from '../objection-je-n-ai-jamais-eu-de-pannes.png';
+import objectionCardBudgetImage from '../objection-j-ai-un-budget-restreint.png';
+import objectionCardSpouseImage from '../objection-je-dois-en-parler-a-mon-conjoint.png';
+import objectionCardReflectImage from '../objection-je-souhaite-reflechir.png';
 import bacBubbleImage from '../PLANCHE B 2.2.png';
 
 type TileType =
@@ -58,6 +65,13 @@ type PendingMovement = {
 
 type GamePhase = 'welcome' | 'setup' | 'playing' | 'finished';
 
+type ObjectionCard = {
+  id: string;
+  title: string;
+  prompt: string;
+  image: string;
+};
+
 type GameState = {
   phase: GamePhase;
   players: Player[];
@@ -69,7 +83,7 @@ type GameState = {
   lastRoll: number | null;
   winnerId: string | null;
   trainingMode: TrainingMode | null;
-  activeObjectionCard: string | null;
+  activeObjectionCard: ObjectionCard | null;
 };
 
 type DieFaceProps = {
@@ -109,13 +123,43 @@ const INITIAL_CLIENTS = 2;
 const INITIAL_BANK = 40;
 const SALE_VALUES = [2, 3, 5] as const;
 const PLAYER_TOKEN_COLORS = ['#d9473f', '#2b6fdd', '#f59e0b', '#0f9d74'];
-const OBJECTION_CARDS = [
-  'C’est trop cher pour moi.',
-  'Je dois d’abord en parler avec mon conjoint.',
-  'Je n’en vois pas l’utilité aujourd’hui.',
-  'Je suis déjà équipé chez un concurrent.',
-  'Je préfère attendre avant de m’engager.',
-  'Je manque de temps pour regarder cela maintenant.',
+const OBJECTION_DECK: ObjectionCard[] = [
+  {
+    id: 'already-equipped',
+    title: 'J’ai déjà la même chose',
+    prompt: 'Le client estime être déjà équipé chez un concurrent ou via une offre similaire.',
+    image: objectionCardAlreadySameImage,
+  },
+  {
+    id: 'not-interested',
+    title: 'Ça ne m’intéresse pas',
+    prompt: 'Le client ne perçoit pas encore la valeur ou l’intérêt immédiat de la proposition.',
+    image: objectionCardNotInterestedImage,
+  },
+  {
+    id: 'no-breakdowns',
+    title: 'Je n’ai jamais eu de pannes',
+    prompt: 'Le client remet en cause le besoin car il n’a pas vécu le problème présenté.',
+    image: objectionCardNoBreakdownsImage,
+  },
+  {
+    id: 'tight-budget',
+    title: 'J’ai un budget restreint',
+    prompt: 'Le client exprime une contrainte budgétaire et attend une réponse adaptée.',
+    image: objectionCardBudgetImage,
+  },
+  {
+    id: 'spouse',
+    title: 'Je dois en parler à mon conjoint',
+    prompt: 'Le client veut reporter sa décision pour consulter une autre personne.',
+    image: objectionCardSpouseImage,
+  },
+  {
+    id: 'need-time',
+    title: 'Je souhaite réfléchir',
+    prompt: 'Le client demande du temps avant de s’engager.',
+    image: objectionCardReflectImage,
+  },
 ] as const;
 
 const TILE_OVERLAYS: Record<number, TileOverlay> = {
@@ -454,6 +498,16 @@ const bubbleTileVisuals: Record<TrainingMode, BubbleTileVisual> = {
   },
 };
 
+const drawRandomObjectionCard = (excludedId?: string | null) => {
+  const availableCards = OBJECTION_DECK.filter((card) => card.id !== excludedId);
+
+  if (availableCards.length === 0) {
+    return OBJECTION_DECK[0] ?? null;
+  }
+
+  return availableCards[Math.floor(Math.random() * availableCards.length)] ?? null;
+};
+
 const createInitialState = (): GameState => ({
   phase: 'welcome',
   players: [],
@@ -612,6 +666,16 @@ const App = () => {
 
     try {
       const parsedGame = JSON.parse(savedGame) as Partial<GameState>;
+      const parsedObjectionCard = parsedGame.activeObjectionCard;
+      const normalizedObjectionCard =
+        parsedObjectionCard &&
+        typeof parsedObjectionCard === 'object' &&
+        'id' in parsedObjectionCard &&
+        'title' in parsedObjectionCard &&
+        'image' in parsedObjectionCard
+          ? (parsedObjectionCard as ObjectionCard)
+          : null;
+
       return {
         ...createInitialState(),
         ...parsedGame,
@@ -619,6 +683,7 @@ const App = () => {
           ...player,
           rollsTaken: player.rollsTaken ?? 0,
         })) as Player[],
+        activeObjectionCard: normalizedObjectionCard,
       };
     } catch {
       return createInitialState();
@@ -852,6 +917,10 @@ const App = () => {
           ? { ...candidate, position: tileId, rollsTaken: candidate.rollsTaken + 1 }
           : candidate,
       );
+      const triggeredObjectionCard =
+        tile.type === 'objection' && currentGame.trainingMode === 'objections'
+          ? drawRandomObjectionCard(currentGame.activeObjectionCard?.id)
+          : null;
 
       if (tile.type === 'market' && player.rollsTaken === 0 && pendingMovement.roll === 1) {
         return resolveTurn(
@@ -867,6 +936,10 @@ const App = () => {
         );
       }
 
+      const destinationMessage = triggeredObjectionCard
+        ? `${player.name} choisit ${tilePresentation?.title ?? tile.title} comme destination après un ${pendingMovement.roll}. Carte tirée : « ${triggeredObjectionCard.title} ».`
+        : `${player.name} choisit ${tilePresentation?.title ?? tile.title} comme destination après un ${pendingMovement.roll}.`;
+
       return {
         ...currentGame,
         players: movedPlayers,
@@ -876,10 +949,8 @@ const App = () => {
           playerId: player.id,
           roll: pendingMovement.roll,
         },
-        history: appendHistoryEntry(
-          currentGame.history,
-          `${player.name} choisit ${tilePresentation?.title ?? tile.title} comme destination après un ${pendingMovement.roll}.`,
-        ),
+        activeObjectionCard: currentGame.trainingMode === 'objections' ? triggeredObjectionCard ?? currentGame.activeObjectionCard : null,
+        history: appendHistoryEntry(currentGame.history, destinationMessage),
       };
     });
   };
@@ -1023,12 +1094,16 @@ const App = () => {
         return currentGame;
       }
 
-      const card = OBJECTION_CARDS[Math.floor(Math.random() * OBJECTION_CARDS.length)];
+      const card = drawRandomObjectionCard(currentGame.activeObjectionCard?.id);
+
+      if (!card) {
+        return currentGame;
+      }
 
       return {
         ...currentGame,
         activeObjectionCard: card,
-        history: appendHistoryEntry(currentGame.history, `Nouvelle carte Objection tirée : « ${card} »`),
+        history: appendHistoryEntry(currentGame.history, `Nouvelle carte Objection tirée : « ${card.title} »`),
       };
     });
   };
@@ -1036,6 +1111,7 @@ const App = () => {
   const pendingActionTilePresentation = game.pendingAction
     ? getTilePresentation(game.pendingAction.tile, game.trainingMode)
     : null;
+  const canInspectObjectionCard = Boolean(game.activeObjectionCard);
   const winner = game.players.find((player) => player.id === game.winnerId) ?? null;
 
   return (
@@ -1390,16 +1466,35 @@ const App = () => {
                     <h2>Deck Objections</h2>
                   </div>
                   <button className="secondary-button" onClick={drawObjectionCard}>
-                    Tirer une carte
+                    {canInspectObjectionCard ? 'Changer la carte' : 'Préparer une carte'}
                   </button>
                 </div>
-                <div className="deck-card">
-                  <p className="deck-card-label">Carte active</p>
-                  <strong>{game.activeObjectionCard ?? 'Aucune carte tirée pour le moment.'}</strong>
-                  <p>
-                    Utilisez cette carte pendant les challenges Objection. Le deck disparaît entièrement en
-                    mode Arguments de vente.
-                  </p>
+                <div className="objections-deck-area">
+                  <button
+                    type="button"
+                    className="objections-deck-pile"
+                    onClick={drawObjectionCard}
+                    aria-label="Piocher une carte Objection"
+                  >
+                    <span className="objections-deck-shadow objections-deck-shadow-back" aria-hidden="true" />
+                    <span className="objections-deck-shadow objections-deck-shadow-mid" aria-hidden="true" />
+                    <span className="objections-deck-top-card">
+                      <img src={objectionsDeckFaceImage} alt="Dos du deck Objections" />
+                    </span>
+                  </button>
+                  <div className="deck-card objections-deck-copy">
+                    <p className="deck-card-label">Pile active</p>
+                    <strong>{game.activeObjectionCard?.title ?? 'Aucune carte révélée'}</strong>
+                    <p>
+                      La pile apparaît uniquement en mode Objections et la carte est tirée automatiquement
+                      lorsqu’un challenge Objection se déclenche.
+                    </p>
+                    {game.activeObjectionCard && (
+                      <button className="secondary-button objections-view-button" onClick={drawObjectionCard}>
+                        Tirer une autre carte
+                      </button>
+                    )}
+                  </div>
                 </div>
               </section>
             )}
@@ -1481,14 +1576,29 @@ const App = () => {
             )}
 
             {game.pendingAction.tile.type === 'objection' && game.trainingMode === 'objections' && (
-              <div className="deck-card modal-deck-card">
+              <div className="deck-card modal-deck-card objection-viewer">
                 <div className="deck-card-header">
-                  <p className="deck-card-label">Carte Objection</p>
+                  <div>
+                    <p className="deck-card-label">Carte Objection tirée</p>
+                    <strong>{game.activeObjectionCard?.title ?? 'Carte en attente'}</strong>
+                  </div>
                   <button className="secondary-button" onClick={drawObjectionCard}>
-                    {game.activeObjectionCard ? 'Retirer une carte' : 'Tirer une carte'}
+                    Changer la carte
                   </button>
                 </div>
-                <strong>{game.activeObjectionCard ?? 'Tirez une carte pour lancer le challenge.'}</strong>
+                <p>Utilisez la carte réelle ci-dessous pour mener le challenge et valider la réponse.</p>
+                {game.activeObjectionCard ? (
+                  <figure className="objection-card-viewer">
+                    <img
+                      src={game.activeObjectionCard.image}
+                      alt={`Carte objection : ${game.activeObjectionCard.title}`}
+                      className="objection-card-image"
+                    />
+                    <figcaption>{game.activeObjectionCard.prompt}</figcaption>
+                  </figure>
+                ) : (
+                  <p className="market-message">Aucune carte disponible. Relancez une pioche pour continuer.</p>
+                )}
               </div>
             )}
 
