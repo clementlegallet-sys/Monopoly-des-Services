@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import boardReferenceImage from '../PLATEAU DE JEU .png';
+import boardReferenceImage from '../plateau-reference-bordures-epaisses.png';
 import plancheAImage from '../PLANCHE A 1.2.png';
 import plancheBImage from '../PLANCHE B 1.2.png';
-import objectionBubbleImage from '../CARTES OBJECTIONS FACE.png';
 import objectionsDeckFaceImage from '../carte objection FACE.png';
 import objectionCardAlreadySameImage from '../objection-j-ai-deja-la-meme-chose.png';
 import objectionCardNotInterestedImage from '../objection-ca-ne-m-interesse-pas.png';
@@ -10,7 +9,6 @@ import objectionCardNoBreakdownsImage from '../objection-je-n-ai-jamais-eu-de-pa
 import objectionCardBudgetImage from '../objection-j-ai-un-budget-restreint.png';
 import objectionCardSpouseImage from '../objection-je-dois-en-parler-a-mon-conjoint.png';
 import objectionCardReflectImage from '../objection-je-souhaite-reflechir.png';
-import bacBubbleImage from '../PLANCHE B 2.2.png';
 
 type TileType =
   | 'start'
@@ -103,10 +101,6 @@ type TileShapeDefinition = {
   };
 };
 
-type BubbleTileVisual = {
-  image: string;
-  alt: string;
-};
 
 type TilePresentation = {
   title: string;
@@ -114,13 +108,6 @@ type TilePresentation = {
   typeLabel: string;
 };
 
-type BubbleTileOverlay = {
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-  clipPath: string;
-};
 
 const STORAGE_KEY = 'monopoly-des-services-state';
 const INITIAL_CLIENTS = 2;
@@ -168,145 +155,108 @@ const OBJECTION_DECK: ObjectionCard[] = [
 
 const TILE_SHAPES: Record<number, TileShapeDefinition> = {
   0: {
-    left: 41.2,
-    top: 39.7,
-    width: 17.8,
-    height: 19.5,
-    polygon: 'polygon(19% 14%, 50% 2%, 81% 14%, 97% 50%, 81% 86%, 50% 98%, 19% 86%, 3% 50%)',
-    tokenAnchor: { x: 50.1, y: 49.2 },
+    left: 41.5,
+    top: 40.1,
+    width: 17.1,
+    height: 18.9,
+    polygon: 'polygon(17% 14%, 50% 4%, 82% 15%, 97% 50%, 82% 85%, 50% 96%, 17% 85%, 3% 50%)',
+    tokenAnchor: { x: 50.0, y: 49.4 },
   },
   1: {
-    left: 43.9,
-    top: 17.2,
-    width: 12.3,
-    height: 20.4,
-    polygon: 'polygon(50% 2%, 86% 13%, 79% 97%, 21% 97%, 14% 13%)',
-    tokenAnchor: { x: 50.0, y: 27.3 },
+    left: 43.2,
+    top: 16.2,
+    width: 13.2,
+    height: 21.6,
+    polygon: 'polygon(48% 2%, 83% 12%, 78% 97%, 22% 97%, 17% 12%)',
+    tokenAnchor: { x: 49.8, y: 27.2 },
   },
   2: {
-    left: 40.3,
-    top: 1.1,
-    width: 19.3,
-    height: 15,
-    polygon: 'polygon(15% 97%, 2% 31%, 25% 3%, 75% 3%, 98% 31%, 85% 97%)',
-    tokenAnchor: { x: 50.0, y: 8.8 },
+    left: 39.7,
+    top: 0.5,
+    width: 20.1,
+    height: 16.1,
+    polygon: 'polygon(14% 98%, 2% 28%, 23% 2%, 77% 2%, 98% 28%, 86% 98%)',
+    tokenAnchor: { x: 49.8, y: 8.9 },
   },
   3: {
-    left: 79.1,
-    top: 19.4,
-    width: 15.9,
-    height: 27.4,
-    polygon: 'polygon(2% 18%, 39% 2%, 97% 9%, 90% 82%, 49% 97%, 2% 83%)',
-    tokenAnchor: { x: 88.2, y: 33.8 },
+    left: 78.3,
+    top: 18.4,
+    width: 17.2,
+    height: 28.9,
+    polygon: 'polygon(2% 16%, 36% 2%, 97% 9%, 90% 83%, 48% 98%, 2% 84%)',
+    tokenAnchor: { x: 87.9, y: 33.6 },
   },
   4: {
-    left: 59,
-    top: 35.7,
-    width: 14,
-    height: 15.8,
-    polygon: 'polygon(3% 18%, 56% 3%, 97% 20%, 97% 80%, 45% 97%, 3% 79%)',
-    tokenAnchor: { x: 65.9, y: 43.8 },
+    left: 58.6,
+    top: 35.9,
+    width: 15.6,
+    height: 16.3,
+    polygon: 'polygon(3% 16%, 57% 2%, 97% 19%, 97% 81%, 44% 98%, 3% 80%)',
+    tokenAnchor: { x: 66.2, y: 43.9 },
   },
   5: {
-    left: 69,
-    top: 55.8,
-    width: 17,
-    height: 22.9,
-    polygon: 'polygon(3% 12%, 56% 3%, 97% 19%, 86% 97%, 31% 91%, 3% 74%)',
-    tokenAnchor: { x: 77.1, y: 67.9 },
+    left: 68.8,
+    top: 56.3,
+    width: 17.8,
+    height: 23.4,
+    polygon: 'polygon(3% 11%, 56% 2%, 97% 19%, 86% 97%, 30% 91%, 3% 73%)',
+    tokenAnchor: { x: 77.0, y: 68.1 },
   },
   6: {
-    left: 44,
-    top: 61.1,
-    width: 12.1,
-    height: 20.3,
-    polygon: 'polygon(20% 3%, 80% 3%, 86% 83%, 50% 97%, 14% 83%)',
-    tokenAnchor: { x: 50.1, y: 71.2 },
+    left: 44.2,
+    top: 60.5,
+    width: 12.8,
+    height: 22.6,
+    polygon: 'polygon(20% 2%, 80% 2%, 86% 83%, 50% 98%, 14% 83%)',
+    tokenAnchor: { x: 50.2, y: 71.4 },
   },
   7: {
-    left: 40.2,
-    top: 83.4,
-    width: 19.4,
-    height: 15.5,
-    polygon: 'polygon(15% 3%, 85% 3%, 97% 68%, 76% 97%, 24% 97%, 3% 68%)',
-    tokenAnchor: { x: 49.8, y: 90.5 },
+    left: 39.8,
+    top: 82.4,
+    width: 21.0,
+    height: 17.2,
+    polygon: 'polygon(13% 2%, 87% 2%, 98% 68%, 77% 98%, 23% 98%, 2% 68%)',
+    tokenAnchor: { x: 49.8, y: 90.8 },
   },
   8: {
-    left: 13.5,
-    top: 55.9,
-    width: 17.2,
-    height: 22.8,
-    polygon: 'polygon(44% 3%, 97% 13%, 97% 74%, 69% 91%, 14% 97%, 3% 19%)',
-    tokenAnchor: { x: 22.6, y: 67.7 },
+    left: 12.7,
+    top: 55.2,
+    width: 17.9,
+    height: 24.5,
+    polygon: 'polygon(45% 2%, 98% 12%, 98% 74%, 68% 91%, 13% 98%, 2% 18%)',
+    tokenAnchor: { x: 22.1, y: 68.0 },
   },
   9: {
-    left: 27.4,
-    top: 35.7,
-    width: 13.9,
-    height: 15.7,
-    polygon: 'polygon(43% 3%, 97% 19%, 97% 80%, 56% 97%, 3% 78%, 3% 22%)',
-    tokenAnchor: { x: 34.3, y: 43.8 },
+    left: 26.2,
+    top: 35.6,
+    width: 15.0,
+    height: 16.7,
+    polygon: 'polygon(43% 2%, 98% 18%, 98% 81%, 56% 98%, 2% 79%, 2% 21%)',
+    tokenAnchor: { x: 33.7, y: 44.0 },
   },
   10: {
-    left: 13.7,
-    top: 18.9,
-    width: 17.1,
-    height: 27.4,
-    polygon: 'polygon(51% 3%, 97% 17%, 97% 80%, 61% 97%, 3% 82%, 10% 10%)',
-    tokenAnchor: { x: 22.6, y: 33.4 },
+    left: 12.2,
+    top: 18.0,
+    width: 17.7,
+    height: 29.1,
+    polygon: 'polygon(51% 2%, 98% 16%, 98% 81%, 61% 98%, 2% 83%, 9% 10%)',
+    tokenAnchor: { x: 21.8, y: 33.1 },
   },
   11: {
-    left: 29.6,
-    top: 2.1,
-    width: 9.8,
-    height: 8,
-    polygon: 'polygon(22% 97%, 3% 45%, 45% 3%, 97% 18%, 79% 97%)',
-    tokenAnchor: { x: 34.1, y: 6.2 },
+    left: 28.8,
+    top: 1.8,
+    width: 10.7,
+    height: 9.3,
+    polygon: 'polygon(20% 98%, 2% 42%, 43% 2%, 98% 18%, 81% 98%)',
+    tokenAnchor: { x: 34.0, y: 6.0 },
   },
   12: {
-    left: 85.6,
-    top: 52.5,
-    width: 9.8,
-    height: 8,
-    polygon: 'polygon(3% 19%, 56% 3%, 97% 54%, 78% 97%, 20% 85%)',
-    tokenAnchor: { x: 90.8, y: 56.4 },
-  },
-};
-
-const MODE_BUBBLE_TILE_IDS = [3, 7, 8, 10] as const;
-
-const BUBBLE_TILE_OVERLAYS: Record<(typeof MODE_BUBBLE_TILE_IDS)[number], BubbleTileOverlay> = {
-  3: {
-    left: 6,
-    top: 1,
-    width: 50,
-    height: 25,
-    clipPath:
-      'polygon(16% 31%, 31% 7%, 58% 4%, 84% 18%, 97% 42%, 92% 66%, 77% 83%, 52% 91%, 30% 84%, 17% 94%, 19% 74%, 6% 58%, 4% 39%)',
-  },
-  7: {
-    left: 7,
-    top: 6,
-    width: 33,
-    height: 84,
-    clipPath:
-      'polygon(55% 2%, 76% 9%, 89% 24%, 91% 47%, 81% 67%, 75% 86%, 62% 97%, 45% 99%, 28% 95%, 16% 81%, 11% 60%, 13% 38%, 24% 17%, 38% 5%)',
-  },
-  8: {
-    left: 3,
-    top: 7,
-    width: 64,
-    height: 33,
-    clipPath:
-      'polygon(11% 24%, 31% 8%, 58% 5%, 82% 13%, 96% 27%, 99% 47%, 93% 64%, 79% 78%, 56% 87%, 34% 85%, 25% 99%, 23% 82%, 10% 73%, 3% 54%, 3% 37%)',
-  },
-  10: {
-    left: 22,
-    top: 3,
-    width: 66,
-    height: 30,
-    clipPath:
-      'polygon(11% 26%, 26% 8%, 47% 2%, 71% 5%, 89% 16%, 98% 35%, 96% 55%, 85% 72%, 66% 84%, 42% 87%, 24% 80%, 14% 99%, 12% 79%, 4% 63%, 1% 43%)',
+    left: 84.9,
+    top: 51.7,
+    width: 10.9,
+    height: 9.5,
+    polygon: 'polygon(2% 19%, 57% 2%, 98% 55%, 80% 98%, 19% 86%)',
+    tokenAnchor: { x: 90.4, y: 56.4 },
   },
 };
 
@@ -504,16 +454,6 @@ const bubbleModeCopy: Record<
   },
 };
 
-const bubbleTileVisuals: Record<TrainingMode, BubbleTileVisual> = {
-  arguments: {
-    image: bacBubbleImage,
-    alt: 'Logo Argument de vente BAC',
-  },
-  objections: {
-    image: objectionBubbleImage,
-    alt: 'Logo Objection',
-  },
-};
 
 const drawRandomObjectionCard = (excludedId?: string | null) => {
   const availableCards = OBJECTION_DECK.filter((card) => card.id !== excludedId);
@@ -591,13 +531,6 @@ const getTokenOffset = (occupantIndex: number) => {
   };
 };
 
-const getBubbleTileVisual = (trainingMode: TrainingMode | null) =>
-  trainingMode ? bubbleTileVisuals[trainingMode] : null;
-
-const getBubbleTileOverlay = (tileId: number) =>
-  MODE_BUBBLE_TILE_IDS.includes(tileId as (typeof MODE_BUBBLE_TILE_IDS)[number])
-    ? BUBBLE_TILE_OVERLAYS[tileId as (typeof MODE_BUBBLE_TILE_IDS)[number]]
-    : null;
 
 const getTilePresentation = (
   tile: Tile,
@@ -1178,8 +1111,6 @@ const App = () => {
     const service = getService(tile.serviceId);
     const tilePresentation = getTilePresentation(tile, game.trainingMode);
     const tileLabel = tile.type === 'service' && service ? service.name : tilePresentation.title;
-    const bubbleVisual = getBubbleTileVisual(game.trainingMode);
-    const bubbleOverlay = getBubbleTileOverlay(tile.id);
     const isFocused = tile.id === boardFocusTileId;
     const isSelectedTile = tile.id === game.pendingAction?.tile.id;
     const isCurrentPlayerTile = tile.id === currentPlayer?.position;
@@ -1193,8 +1124,6 @@ const App = () => {
       service,
       tilePresentation,
       tileLabel,
-      bubbleVisual,
-      bubbleOverlay,
       isFocused,
       isSelectedTile,
       isCurrentPlayerTile,
@@ -1212,8 +1141,7 @@ const App = () => {
           <h1>Monopoly des Services</h1>
           <p className="hero-copy">
             Une version digitale recentrée sur le tapis de jeu d’origine&nbsp;: le plateau devient la
-            surface principale, les zones restent collées au visuel et les pions se repèrent
-            immédiatement sur les cases.
+            surface principale, la géométrie des cases colle au nouveau visuel à bordures épaisses et les pions se repèrent immédiatement sur les espaces jouables.
           </p>
         </div>
         <div className="hero-actions">
@@ -1313,6 +1241,44 @@ const App = () => {
             </div>
 
             <div className={`board-stage-layout ${game.trainingMode === 'objections' ? 'board-stage-layout-objections' : ''}`}>
+              {game.trainingMode === 'objections' && (
+                <section className="deck-sidecar deck-panel">
+                  <div className="deck-sidecar-header">
+                    <div>
+                      <p className="eyebrow">Pioche</p>
+                      <h3>Deck Objections</h3>
+                    </div>
+                    <button className="secondary-button" onClick={drawObjectionCard}>
+                      {canInspectObjectionCard ? 'Changer la carte' : 'Préparer une carte'}
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    className="objections-deck-pile objections-deck-pile-large"
+                    onClick={drawObjectionCard}
+                    aria-label="Piocher une carte Objection"
+                  >
+                    <span className="objections-deck-shadow objections-deck-shadow-back" aria-hidden="true" />
+                    <span className="objections-deck-shadow objections-deck-shadow-mid" aria-hidden="true" />
+                    <span className="objections-deck-top-card">
+                      <img src={objectionsDeckFaceImage} alt="Dos du deck Objections" />
+                    </span>
+                  </button>
+                  <div className="deck-card objections-deck-copy">
+                    <p className="deck-card-label">Pile active</p>
+                    <strong>{game.activeObjectionCard?.title ?? 'Aucune carte révélée'}</strong>
+                    <p>
+                      La pioche reste dans la zone libre à gauche du plateau et la carte de défi s’ouvre lors d’une case Objection.
+                    </p>
+                    {game.activeObjectionCard && (
+                      <button className="secondary-button objections-view-button" onClick={drawObjectionCard}>
+                        Tirer une autre carte
+                      </button>
+                    )}
+                  </div>
+                </section>
+              )}
+
               <div className="board-frame">
                 <div className="board-surface">
                   <img src={boardReferenceImage} alt="Plateau Monopoly des Services" className="board-base-image" />
@@ -1353,8 +1319,6 @@ const App = () => {
                     {boardTiles.map(
                       ({
                         tile,
-                        bubbleOverlay,
-                        bubbleVisual,
                         isCurrentPlayerTile,
                         isDisabled,
                         isFocused,
@@ -1409,29 +1373,6 @@ const App = () => {
                             >
                               <title>{interactiveTitle}</title>
                             </polygon>
-                            {bubbleVisual && bubbleOverlay && (
-                              <foreignObject
-                                x={bubbleOverlay.left}
-                                y={bubbleOverlay.top}
-                                width={bubbleOverlay.width}
-                                height={bubbleOverlay.height}
-                                className={`board-zone-bubble-visual board-zone-bubble-tile-${tile.id}`}
-                              >
-                                <div
-                                  className="board-zone-bubble-frame"
-                                  style={{
-                                    clipPath: bubbleOverlay.clipPath,
-                                    WebkitClipPath: bubbleOverlay.clipPath,
-                                  }}
-                                >
-                                  <img
-                                    src={bubbleVisual.image}
-                                    alt={bubbleVisual.alt}
-                                    className="board-zone-bubble-image"
-                                  />
-                                </div>
-                              </foreignObject>
-                            )}
                             <text
                               x={TILE_SHAPES[tile.id].tokenAnchor.x}
                               y={TILE_SHAPES[tile.id].tokenAnchor.y - 4.2}
@@ -1458,45 +1399,6 @@ const App = () => {
                   </div>
                 </div>
               </div>
-
-              {game.trainingMode === 'objections' && (
-                <section className="deck-sidecar deck-panel">
-                  <div className="deck-sidecar-header">
-                    <div>
-                      <p className="eyebrow">Pioche</p>
-                      <h3>Deck Objections</h3>
-                    </div>
-                    <button className="secondary-button" onClick={drawObjectionCard}>
-                      {canInspectObjectionCard ? 'Changer la carte' : 'Préparer une carte'}
-                    </button>
-                  </div>
-                  <button
-                    type="button"
-                    className="objections-deck-pile objections-deck-pile-large"
-                    onClick={drawObjectionCard}
-                    aria-label="Piocher une carte Objection"
-                  >
-                    <span className="objections-deck-shadow objections-deck-shadow-back" aria-hidden="true" />
-                    <span className="objections-deck-shadow objections-deck-shadow-mid" aria-hidden="true" />
-                    <span className="objections-deck-top-card">
-                      <img src={objectionsDeckFaceImage} alt="Dos du deck Objections" />
-                    </span>
-                  </button>
-                  <div className="deck-card objections-deck-copy">
-                    <p className="deck-card-label">Pile active</p>
-                    <strong>{game.activeObjectionCard?.title ?? 'Aucune carte révélée'}</strong>
-                    <p>
-                      La pioche reste hors du plateau, visible en permanence, et la carte de défi
-                      s’ouvre lors d’une case Objection.
-                    </p>
-                    {game.activeObjectionCard && (
-                      <button className="secondary-button objections-view-button" onClick={drawObjectionCard}>
-                        Tirer une autre carte
-                      </button>
-                    )}
-                  </div>
-                </section>
-              )}
             </div>
 
             <div className="board-reference-strip" aria-label="Références complémentaires du jeu">
