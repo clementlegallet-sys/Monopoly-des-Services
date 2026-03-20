@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
 import boardReferenceImage from '../plateau-reference-bordures-epaisses.png';
 import annotatedBoardImage from '../plateau_annoté_final_T0_T22.png';
 import boardRegistryJson from '../board_registry_final_T0_T22.json';
@@ -123,6 +123,13 @@ type TilePresentation = {
   identityLabel?: string;
 };
 
+type TileInteractionDebugState = {
+  tileId: string;
+  label: string;
+  type: TileType;
+  source: 'inspection' | 'destination';
+};
+
 type RegistryEntry = {
   label: string;
   type: RegistryTileType;
@@ -134,6 +141,7 @@ const INITIAL_BANK = 40;
 const SALE_VALUES = [2, 3, 5] as const;
 const PLAYER_TOKEN_COLORS = ['#d9473f', '#2b6fdd', '#f59e0b', '#0f9d74'];
 const ENABLE_TILE_DEBUG = true;
+const TILE_DEBUG_FLASH_DURATION_MS = 950;
 const TECHNICAL_SOURCE_OF_TRUTH = {
   image: annotatedBoardImage,
   registry: boardRegistryJson as Record<string, RegistryEntry>,
@@ -1060,8 +1068,12 @@ const App = () => {
   const [displayRoll, setDisplayRoll] = useState<number | null>(game.lastRoll);
   const [isRolling, setIsRolling] = useState(false);
   const [inspectedTileId, setInspectedTileId] = useState<string | null>(null);
+  const [isTileDebugEnabled, setIsTileDebugEnabled] = useState(false);
+  const [tileDebugState, setTileDebugState] = useState<TileInteractionDebugState | null>(null);
+  const [debugFlashTileId, setDebugFlashTileId] = useState<string | null>(null);
   const rollIntervalRef = useRef<number | null>(null);
   const rollTimeoutRef = useRef<number | null>(null);
+  const debugFlashTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(game));
@@ -1086,6 +1098,9 @@ const App = () => {
       }
       if (rollTimeoutRef.current) {
         window.clearTimeout(rollTimeoutRef.current);
+      }
+      if (debugFlashTimeoutRef.current) {
+        window.clearTimeout(debugFlashTimeoutRef.current);
       }
     },
     [],
@@ -1115,9 +1130,81 @@ const App = () => {
     console.info(`[board-debug:${source}] tileId=${tile.tileId} label="${tile.label}" type=${tile.type}`);
   };
 
+  const flashClickedTile = (tileId: string) => {
+    if (debugFlashTimeoutRef.current) {
+      window.clearTimeout(debugFlashTimeoutRef.current);
+    }
+
+    setDebugFlashTileId(tileId);
+    debugFlashTimeoutRef.current = window.setTimeout(() => {
+      setDebugFlashTileId((currentTileId) => (currentTileId === tileId ? null : currentTileId));
+    }, TILE_DEBUG_FLASH_DURATION_MS);
+  };
+
   const inspectTile = (tile: Tile, source: 'inspection' | 'destination' = 'inspection') => {
     setInspectedTileId(tile.tileId);
     logTileInteraction(tile, source);
+
+    if (isTileDebugEnabled) {
+      setTileDebugState({
+        tileId: tile.tileId,
+        label: tile.label,
+        type: tile.type,
+        source,
+      });
+      flashClickedTile(tile.tileId);
+    }
+  };
+
+  const getBoundTileId = (event: MouseEvent<SVGPolygonElement> | KeyboardEvent<SVGPolygonElement>) =>
+    event.currentTarget.dataset.tileId ?? null;
+
+  const getTileFromBoundShape = (
+    event: MouseEvent<SVGPolygonElement> | KeyboardEvent<SVGPolygonElement>,
+  ) => {
+    const tileId = getBoundTileId(event);
+
+    if (!tileId) {
+      return null;
+    }
+
+    return BOARD_BY_TILE_ID.get(tileId) ?? null;
+  };
+
+  const handleTileShapeClick = (event: MouseEvent<SVGPolygonElement>) => {
+    const tile = getTileFromBoundShape(event);
+
+    if (!tile) {
+      return;
+    }
+
+    if (isChoosingDestination) {
+      handleDestinationSelection(tile.tileId);
+      return;
+    }
+
+    inspectTile(tile, 'inspection');
+  };
+
+  const handleTileShapeKeyDown = (event: KeyboardEvent<SVGPolygonElement>) => {
+    if (event.key !== 'Enter' && event.key !== ' ') {
+      return;
+    }
+
+    event.preventDefault();
+
+    const tile = getTileFromBoundShape(event);
+
+    if (!tile) {
+      return;
+    }
+
+    if (isChoosingDestination) {
+      handleDestinationSelection(tile.tileId);
+      return;
+    }
+
+    inspectTile(tile, 'inspection');
   };
 
   const startSetup = () => {
@@ -1513,6 +1600,7 @@ const App = () => {
     const isCurrentPlayerTile = tile.tileId === currentPlayer?.position;
     const isReachable = reachableTileIds.includes(tile.tileId);
     const isDisabled = isChoosingDestination && !isReachable;
+    const isDebugFlashing = tile.tileId === debugFlashTileId;
     const visualPoints = insetPolygonPoints(shape.points, isReachable ? 1.1 : 0.95);
     const outlinePoints = insetPolygonPoints(shape.points, 0.5);
     const hitPoints = shape.points;
@@ -1529,6 +1617,7 @@ const App = () => {
       isCurrentPlayerTile,
       isReachable,
       isDisabled,
+      isDebugFlashing,
       visualPoints,
       outlinePoints,
       hitPoints,
@@ -1636,6 +1725,32 @@ const App = () => {
                 )}
               </div>
               <div className="board-header-status">
+                {ENABLE_TILE_DEBUG && (
+                  <button
+                    type="button"
+                    className={`secondary-button board-debug-toggle ${
+                      isTileDebugEnabled ? 'board-debug-toggle-active' : ''
+                    }`}
+                    aria-pressed={isTileDebugEnabled}
+                    onClick={() => {
+                      setIsTileDebugEnabled((currentValue) => {
+                        const nextValue = !currentValue;
+
+                        if (!nextValue) {
+                          setTileDebugState(null);
+                          setDebugFlashTileId(null);
+                          if (debugFlashTimeoutRef.current) {
+                            window.clearTimeout(debugFlashTimeoutRef.current);
+                          }
+                        }
+
+                        return nextValue;
+                      });
+                    }}
+                  >
+                    Debug clic {isTileDebugEnabled ? 'activé' : 'désactivé'}
+                  </button>
+                )}
                 <div className={`status-chip ${BOARD_REGISTRY_ISSUES.length > 0 ? 'status-chip-warning' : ''}`}>
                   {BOARD_REGISTRY_ISSUES.length > 0
                     ? `${BOARD_REGISTRY_ISSUES.length} alerte(s) registre`
@@ -1728,6 +1843,7 @@ const App = () => {
                       ({
                         tile,
                         isCurrentPlayerTile,
+                        isDebugFlashing,
                         isDisabled,
                         isFocused,
                         isReachable,
@@ -1751,11 +1867,17 @@ const App = () => {
                             } ${isSelectedTile ? 'board-space-selected' : ''} ${
                               isCurrentPlayerTile ? 'board-space-current' : ''
                             } ${isReachable ? 'board-space-reachable' : ''} ${
+                              isDebugFlashing ? 'board-space-debug-flash' : ''
+                            } ${
                               isDisabled ? 'board-space-disabled' : ''
                             }`}
                           >
-                            <polygon className="board-space-shape" points={visualPoints} />
-                            <polygon className="board-space-outline" points={outlinePoints} />
+                            <polygon className="board-space-shape" points={visualPoints} data-tile-id={tile.tileId} />
+                            <polygon
+                              className="board-space-outline"
+                              points={outlinePoints}
+                              data-tile-id={tile.tileId}
+                            />
                             {tile.type === 'bubble' && (
                               <text
                                 aria-hidden="true"
@@ -1778,25 +1900,8 @@ const App = () => {
                               aria-label={`${tileLabel}. ${
                                 canSelectDestination ? 'Destination atteignable.' : tilePresentation.description
                               }`}
-                              onClick={() =>
-                                isChoosingDestination
-                                  ? handleDestinationSelection(tile.tileId)
-                                  : inspectTile(tile, 'inspection')
-                              }
-                              onKeyDown={(event) => {
-                                if (isDisabled) {
-                                  return;
-                                }
-
-                                if (event.key === 'Enter' || event.key === ' ') {
-                                  event.preventDefault();
-                                  if (isChoosingDestination) {
-                                    handleDestinationSelection(tile.tileId);
-                                  } else {
-                                    inspectTile(tile, 'inspection');
-                                  }
-                                }
-                              }}
+                              onClick={handleTileShapeClick}
+                              onKeyDown={handleTileShapeKeyDown}
                             >
                               <title>{interactiveTitle}</title>
                             </polygon>
@@ -1823,6 +1928,18 @@ const App = () => {
                       </div>
                     </div>
                   </aside>
+
+                  {ENABLE_TILE_DEBUG && isTileDebugEnabled && tileDebugState && (
+                    <aside className="board-debug-card" aria-live="polite">
+                      <p className="eyebrow board-debug-eyebrow">Debug clic</p>
+                      <div className="board-debug-main">
+                        <p className="board-debug-source">Source · {tileDebugState.source}</p>
+                        <p className="board-debug-line">tileId · {tileDebugState.tileId}</p>
+                        <p className="board-debug-line">label · {tileDebugState.label}</p>
+                        <p className="board-debug-line">type · {tileTypeLabels[tileDebugState.type]}</p>
+                      </div>
+                    </aside>
+                  )}
                 </div>
               </div>
             </div>

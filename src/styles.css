@@ -373,6 +373,7 @@ button:disabled {
   height: 100%;
   object-fit: cover;
   object-position: center;
+  pointer-events: none;
 }
 
 .board-image-shade {
@@ -390,10 +391,12 @@ button:disabled {
 .board-overlay-svg {
   z-index: 2;
   overflow: visible;
+  pointer-events: none;
 }
 
 .board-space-group {
   isolation: isolate;
+  pointer-events: none;
 }
 
 .board-space-shape,
@@ -412,6 +415,7 @@ button:disabled {
   stroke: rgba(255, 242, 214, 0);
   stroke-width: 0.1;
   paint-order: stroke fill;
+  pointer-events: none;
 }
 
 .board-space-outline {
@@ -436,9 +440,9 @@ button:disabled {
 }
 
 .board-space-hit {
-  fill: transparent;
+  fill: rgba(255, 255, 255, 0.001);
   cursor: pointer;
-  pointer-events: auto;
+  pointer-events: visiblePainted;
   outline: none;
 }
 
@@ -491,6 +495,14 @@ button:disabled {
 .board-space-selected .board-space-outline {
   stroke: rgba(122, 35, 22, 0.2);
   stroke-width: 0.09;
+}
+
+.board-space-debug-flash .board-space-shape,
+.board-space-debug-flash .board-space-outline {
+  fill: rgba(255, 218, 102, 0.18);
+  stroke: rgba(255, 247, 223, 0.96);
+  stroke-width: 0.22;
+  filter: drop-shadow(0 0 10px rgba(255, 214, 92, 0.3));
 }
 
 .board-space-disabled .board-space-shape,
@@ -585,6 +597,53 @@ button:disabled {
   backdrop-filter: blur(6px);
   z-index: 3;
   pointer-events: none;
+}
+
+.board-debug-card {
+  position: absolute;
+  inset: auto auto 2.4% 2.2%;
+  width: min(30%, 270px);
+  padding: 10px 12px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(108, 30, 18, 0.82), rgba(54, 12, 9, 0.9));
+  border: 1px solid rgba(255, 228, 176, 0.28);
+  box-shadow: 0 12px 28px rgba(16, 3, 3, 0.22);
+  backdrop-filter: blur(8px);
+  z-index: 4;
+  pointer-events: none;
+}
+
+.board-debug-eyebrow,
+.board-debug-source,
+.board-debug-line {
+  margin-bottom: 0;
+}
+
+.board-debug-main {
+  display: grid;
+  gap: 6px;
+}
+
+.board-debug-source {
+  color: #f7d79b;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+}
+
+.board-debug-line {
+  color: #fff0ca;
+  font-size: 0.92rem;
+}
+
+.board-debug-toggle {
+  min-width: 164px;
+}
+
+.board-debug-toggle-active {
+  background: rgba(255, 220, 135, 0.22);
+  border-color: rgba(255, 226, 154, 0.64);
+  color: #fff4d6;
 }
 
 .board-focus-eyebrow {
