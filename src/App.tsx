@@ -36,27 +36,24 @@ type TileActionDefinition = {
 };
 
 type BaseTile = {
-  id: number;
-  key: string;
-  title: string;
+  order: number;
+  tileId: string;
+  legacyShapeId: number;
+  label: string;
   type: TileType;
   color?: ServiceColor;
   description: string;
   serviceId?: string;
-  neighbors: number[];
+  adjacency: string[];
   shape: TileShapeDefinition;
 };
 
-type Tile = BaseTile & {
-  tileId: string;
-  label: string;
-  action: TileActionDefinition;
-};
+type Tile = BaseTile & { action: TileActionDefinition };
 
 type Player = {
   id: string;
   name: string;
-  position: number;
+  position: string;
   clients: number;
   pieces: string[];
   rollsTaken: number;
@@ -70,9 +67,9 @@ type PendingAction = {
 
 type PendingMovement = {
   playerId: string;
-  originTileId: number;
+  originTileId: string;
   roll: number;
-  reachableTileIds: number[];
+  reachableTileIds: string[];
 };
 
 type GamePhase = 'welcome' | 'setup' | 'playing' | 'finished';
@@ -120,6 +117,7 @@ type TilePresentation = {
   title: string;
   description: string;
   typeLabel: string;
+  identityLabel?: string;
 };
 
 
@@ -170,262 +168,283 @@ const OBJECTION_DECK: ObjectionCard[] = [
 
 const RAW_BOARD_SPACES: BaseTile[] = [
   {
-    id: 0,
-    key: 'start',
-    title: 'Départ',
+    order: 0,
+    tileId: 'T00',
+    legacyShapeId: 0,
+    label: 'Départ',
     type: 'start',
     description: 'Point de départ de tous les joueurs.',
-    neighbors: [1, 16, 17, 18, 19, 20],
+    adjacency: ['T01', 'T02', 'T03', 'T04', 'T05', 'T06'],
     shape: {
       points: '39.6,37.5 55.9,37.2 60.8,48.8 56.0,61.4 44.4,61.7 39.2,49.0',
       tokenAnchor: { x: 49.9, y: 49.3 },
     },
   },
   {
-    id: 1,
-    key: 'market-north',
-    title: 'Place du Marché',
+    order: 1,
+    tileId: 'T01',
+    legacyShapeId: 1,
+    label: 'Place du Marché haut',
     type: 'market',
     description: 'Échanger une pièce entre joueurs ou vendre une pièce à la banque.',
-    neighbors: [0, 2, 3, 15, 16, 20],
+    adjacency: ['T00', 'T07', 'T08', 'T20', 'T06', 'T02'],
     shape: {
       points: '42.7,16.1 55.8,16.1 56.2,37.2 43.0,37.3',
       tokenAnchor: { x: 49.5, y: 26.4 },
     },
   },
   {
-    id: 2,
-    key: 'service-protection-facture',
-    title: 'Protection Facture',
+    order: 7,
+    tileId: 'T07',
+    legacyShapeId: 2,
+    label: 'Protection Facture',
     type: 'service',
     color: 'blue',
     serviceId: 'protection-facture',
     description: 'Donner 2 avantages pour remporter la pièce.',
-    neighbors: [1, 3, 15],
+    adjacency: ['T01', 'T08', 'T20'],
     shape: {
       points: '39.2,0.0 60.8,0.0 55.8,16.1 42.7,16.1',
       tokenAnchor: { x: 49.9, y: 8.2 },
     },
   },
   {
-    id: 3,
-    key: 'bubble-northeast',
-    title: 'Bulle',
+    order: 8,
+    tileId: 'T08',
+    legacyShapeId: 3,
+    label: 'Bulle rose haut droite',
     type: 'bubble',
     description: 'Case bulle : argument BAC ou traitement d’objection selon le mode choisi.',
-    neighbors: [1, 2, 4, 20],
+    adjacency: ['T01', 'T07', 'T09', 'T02'],
     shape: {
       points: '60.8,0.0 81.8,0.0 71.0,21.0 66.0,21.0 55.8,16.1',
       tokenAnchor: { x: 68.7, y: 9.8 },
     },
   },
   {
-    id: 4,
-    key: 'chance-east',
-    title: 'Chance',
+    order: 9,
+    tileId: 'T09',
+    legacyShapeId: 4,
+    label: 'Chance',
     type: 'chance',
     description: 'Bonne réponse = +2 clients.',
-    neighbors: [3, 5, 20],
+    adjacency: ['T08', 'T10', 'T02'],
     shape: {
       points: '81.8,0.0 100.0,49.8 79.0,49.8 71.0,21.0',
       tokenAnchor: { x: 86.5, y: 31.0 },
     },
   },
   {
-    id: 5,
-    key: 'question-east',
-    title: 'Case ?',
+    order: 10,
+    tileId: 'T10',
+    legacyShapeId: 5,
+    label: '? droite',
     type: 'question',
     description: 'Poser une question ouverte adaptée à une offre du groupe.',
-    neighbors: [4, 6, 19, 20],
+    adjacency: ['T09', 'T11', 'T03', 'T02'],
     shape: {
       points: '79.0,49.8 100.0,49.8 94.0,65.0 84.2,61.4',
       tokenAnchor: { x: 89.8, y: 57.2 },
     },
   },
   {
-    id: 6,
-    key: 'service-izi-confort',
-    title: 'IZI Confort',
+    order: 11,
+    tileId: 'T11',
+    legacyShapeId: 6,
+    label: 'IZI Confort',
     type: 'service',
     color: 'orange',
     serviceId: 'izi-confort',
     description: 'Donner 2 avantages pour remporter la pièce.',
-    neighbors: [5, 7, 19],
+    adjacency: ['T10', 'T12', 'T03'],
     shape: {
       points: '73.2,69.2 84.2,61.4 94.0,65.0 87.3,84.9',
       tokenAnchor: { x: 81.0, y: 71.0 },
     },
   },
   {
-    id: 7,
-    key: 'bubble-southeast',
-    title: 'Bulle',
+    order: 12,
+    tileId: 'T12',
+    legacyShapeId: 7,
+    label: 'Bulle rouge bas',
     type: 'bubble',
     description: 'Case bulle : argument BAC ou traitement d’objection selon le mode choisi.',
-    neighbors: [6, 8, 18, 19],
+    adjacency: ['T11', 'T13', 'T04', 'T03'],
     shape: {
       points: '60.8,82.2 73.2,69.2 87.3,84.9 81.4,100.0',
       tokenAnchor: { x: 75.4, y: 88.2 },
     },
   },
   {
-    id: 8,
-    key: 'service-assistance-depannage',
-    title: 'Assistance Dépannage',
+    order: 13,
+    tileId: 'T13',
+    legacyShapeId: 8,
+    label: 'Assistance Dépannage',
     type: 'service',
     color: 'blue',
     serviceId: 'assistance-depannage',
     description: 'Donner 2 avantages pour remporter la pièce.',
-    neighbors: [7, 9, 18],
+    adjacency: ['T12', 'T14', 'T04'],
     shape: {
       points: '39.4,82.2 60.8,82.2 61.8,100.0 38.5,100.0',
       tokenAnchor: { x: 49.7, y: 91.0 },
     },
   },
   {
-    id: 9,
-    key: 'bubble-southwest',
-    title: 'Bulle',
-    type: 'bubble',
-    description: 'Case bulle : argument BAC ou traitement d’objection selon le mode choisi.',
-    neighbors: [8, 10, 17, 18],
+    order: 14,
+    tileId: 'T14',
+    legacyShapeId: 9,
+    label: '? bas gauche',
+    type: 'question',
+    description: 'Poser une question ouverte adaptée à une offre du groupe.',
+    adjacency: ['T13', 'T15', 'T05', 'T04'],
     shape: {
       points: '23.4,100.0 38.8,82.3 27.0,69.1 13.0,84.9',
       tokenAnchor: { x: 31.6, y: 90.4 },
     },
   },
   {
-    id: 10,
-    key: 'question-southwest',
-    title: 'Case ?',
-    type: 'question',
-    description: 'Poser une question ouverte adaptée à une offre du groupe.',
-    neighbors: [9, 11, 17],
+    order: 15,
+    tileId: 'T15',
+    legacyShapeId: 10,
+    label: 'IZI by EDF',
+    type: 'service',
+    color: 'green',
+    serviceId: 'izi-by-edf',
+    description: 'Donner 2 avantages pour remporter la pièce.',
+    adjacency: ['T14', 'T16', 'T05'],
     shape: {
       points: '0.0,100.0 13.0,84.9 27.0,69.1 9.8,65.0 0.0,80.0',
       tokenAnchor: { x: 21.6, y: 82.5 },
     },
   },
   {
-    id: 11,
-    key: 'service-izi-by-edf',
-    title: 'IZI by EDF',
-    type: 'service',
-    color: 'green',
-    serviceId: 'izi-by-edf',
-    description: 'Donner 2 avantages pour remporter la pièce.',
-    neighbors: [10, 12, 16, 17],
+    order: 16,
+    tileId: 'T16',
+    legacyShapeId: 11,
+    label: 'Bulle orange gauche',
+    type: 'bubble',
+    description: 'Case bulle : argument BAC ou traitement d’objection selon le mode choisi.',
+    adjacency: ['T15', 'T17', 'T06', 'T05'],
     shape: {
       points: '5.5,65.6 21.2,50.1 27.0,69.1 9.8,84.9',
       tokenAnchor: { x: 16.2, y: 68.8 },
     },
   },
   {
-    id: 12,
-    key: 'bubble-west',
-    title: 'Bulle',
-    type: 'bubble',
-    description: 'Case bulle : argument BAC ou traitement d’objection selon le mode choisi.',
-    neighbors: [11, 13, 16],
+    order: 17,
+    tileId: 'T17',
+    legacyShapeId: 12,
+    label: '? gauche',
+    type: 'question',
+    description: 'Poser une question ouverte adaptée à une offre du groupe.',
+    adjacency: ['T16', 'T18', 'T06'],
     shape: {
       points: '0.0,50.0 21.2,50.1 39.0,37.7 24.2,26.4 5.8,33.6',
       tokenAnchor: { x: 16.0, y: 55.2 },
     },
   },
   {
-    id: 13,
-    key: 'question-west',
-    title: 'Case ?',
-    type: 'question',
-    description: 'Poser une question ouverte adaptée à une offre du groupe.',
-    neighbors: [12, 14, 16],
+    order: 18,
+    tileId: 'T18',
+    legacyShapeId: 13,
+    label: 'Thermostat',
+    type: 'service',
+    color: 'green',
+    serviceId: 'thermostat-connecte-sowee',
+    description: 'Donner 2 avantages pour remporter la pièce.',
+    adjacency: ['T17', 'T19', 'T06'],
     shape: {
       points: '0.0,33.6 5.8,33.6 24.2,26.4 21.2,50.1 0.0,50.0',
       tokenAnchor: { x: 8.5, y: 44.0 },
     },
   },
   {
-    id: 14,
-    key: 'service-thermostat-connecte-sowee',
-    title: 'Thermostat connecté Sowee',
-    type: 'service',
-    color: 'green',
-    serviceId: 'thermostat-connecte-sowee',
-    description: 'Donner 2 avantages pour remporter la pièce.',
-    neighbors: [13, 15, 16],
+    order: 19,
+    tileId: 'T19',
+    legacyShapeId: 14,
+    label: 'Bulle verte haut gauche',
+    type: 'bubble',
+    description: 'Case bulle : argument BAC ou traitement d’objection selon le mode choisi.',
+    adjacency: ['T18', 'T20', 'T06'],
     shape: {
       points: '5.8,10.8 24.2,26.4 39.0,37.7 23.7,50.0 0.0,33.6',
       tokenAnchor: { x: 18.8, y: 28.6 },
     },
   },
   {
-    id: 15,
-    key: 'question-northwest',
-    title: 'Case ?',
+    order: 20,
+    tileId: 'T20',
+    legacyShapeId: 15,
+    label: '? haut',
     type: 'question',
     description: 'Poser une question ouverte adaptée à une offre du groupe.',
-    neighbors: [1, 2, 14, 16],
+    adjacency: ['T01', 'T07', 'T19', 'T06'],
     shape: {
       points: '15.2,0.0 39.2,0.0 32.8,16.1 24.2,10.8',
       tokenAnchor: { x: 31.0, y: 7.2 },
     },
   },
   {
-    id: 16,
-    key: 'market-northwest',
-    title: 'Place du Marché',
+    order: 6,
+    tileId: 'T06',
+    legacyShapeId: 16,
+    label: 'Place du Marché haut gauche',
     type: 'market',
     description: 'Échanger une pièce entre joueurs ou vendre une pièce à la banque.',
-    neighbors: [0, 1, 11, 12, 13, 14, 15, 17],
+    adjacency: ['T00', 'T01', 'T16', 'T17', 'T18', 'T19', 'T20', 'T05'],
     shape: {
       points: '32.8,16.1 42.7,16.1 43.0,37.3 39.0,37.7 24.2,26.4',
       tokenAnchor: { x: 33.2, y: 28.7 },
     },
   },
   {
-    id: 17,
-    key: 'market-southwest',
-    title: 'Place du Marché',
+    order: 5,
+    tileId: 'T05',
+    legacyShapeId: 17,
+    label: 'Place du Marché bas gauche',
     type: 'market',
     description: 'Échanger une pièce entre joueurs ou vendre une pièce à la banque.',
-    neighbors: [0, 10, 11, 16, 18],
+    adjacency: ['T00', 'T15', 'T16', 'T06', 'T04'],
     shape: {
       points: '21.2,50.1 39.2,37.8 43.0,61.5 27.0,69.1',
       tokenAnchor: { x: 31.7, y: 58.8 },
     },
   },
   {
-    id: 18,
-    key: 'market-south',
-    title: 'Place du Marché',
+    order: 4,
+    tileId: 'T04',
+    legacyShapeId: 18,
+    label: 'Place du Marché bas',
     type: 'market',
     description: 'Échanger une pièce entre joueurs ou vendre une pièce à la banque.',
-    neighbors: [0, 7, 8, 9, 17, 19],
+    adjacency: ['T00', 'T12', 'T13', 'T14', 'T05', 'T03'],
     shape: {
       points: '43.0,61.5 56.0,61.5 56.8,82.3 39.4,82.2',
       tokenAnchor: { x: 50.0, y: 71.4 },
     },
   },
   {
-    id: 19,
-    key: 'market-southeast',
-    title: 'Place du Marché',
+    order: 3,
+    tileId: 'T03',
+    legacyShapeId: 19,
+    label: 'Place du Marché bas droite',
     type: 'market',
     description: 'Échanger une pièce entre joueurs ou vendre une pièce à la banque.',
-    neighbors: [0, 5, 6, 7, 18, 20],
+    adjacency: ['T00', 'T10', 'T11', 'T12', 'T04', 'T02'],
     shape: {
       points: '56.0,61.5 67.8,49.8 73.2,69.2 60.8,82.2 56.8,82.3',
       tokenAnchor: { x: 64.2, y: 58.9 },
     },
   },
   {
-    id: 20,
-    key: 'market-northeast',
-    title: 'Place du Marché',
+    order: 2,
+    tileId: 'T02',
+    legacyShapeId: 20,
+    label: 'Place du Marché haut droite',
     type: 'market',
     description: 'Échanger une pièce entre joueurs ou vendre une pièce à la banque.',
-    neighbors: [0, 1, 3, 4, 5, 19],
+    adjacency: ['T00', 'T01', 'T08', 'T09', 'T10', 'T03'],
     shape: {
       points: '56.2,37.2 70.6,28.6 79.0,41.5 67.8,49.8 60.0,49.8',
       tokenAnchor: { x: 67.0, y: 38.0 },
@@ -487,16 +506,14 @@ const getTileActionDefinition = (tile: BaseTile): TileActionDefinition => {
 
 const BOARD_REGISTRY: Tile[] = RAW_BOARD_SPACES.map((tile) => ({
   ...tile,
-  tileId: tile.key,
-  label: tile.title,
   action: getTileActionDefinition(tile),
-}));
-
-const BOARD_BY_NUMERIC_ID = new Map(BOARD_REGISTRY.map((tile) => [tile.id, tile]));
+})).sort((left, right) => left.order - right.order);
 const BOARD_BY_TILE_ID = new Map(BOARD_REGISTRY.map((tile) => [tile.tileId, tile]));
-
-const TILE_GRAPH: Record<number, number[]> = Object.fromEntries(
-  BOARD_REGISTRY.map((tile) => [tile.id, tile.neighbors]),
+const BOARD_BY_LEGACY_SHAPE_ID = new Map(BOARD_REGISTRY.map((tile) => [tile.legacyShapeId, tile]));
+const BOARD_TILE_ORDER = BOARD_REGISTRY.map((tile) => tile.tileId);
+const BOARD_TILE_ORDER_INDEX = new Map(BOARD_TILE_ORDER.map((tileId, index) => [tileId, index]));
+const TILE_GRAPH: Record<string, string[]> = Object.fromEntries(
+  BOARD_REGISTRY.map((tile) => [tile.tileId, tile.adjacency]),
 );
 
 const parsePolygonPoints = (points: string): Point[] =>
@@ -559,34 +576,79 @@ const insetPolygonPoints = (points: string, inset: number): string => {
   return serializePolygonPoints(insetPoints);
 };
 
+const EXPECTED_BOARD_REGISTRY = [
+  ['T00', 'Départ'],
+  ['T01', 'Place du Marché haut'],
+  ['T02', 'Place du Marché haut droite'],
+  ['T03', 'Place du Marché bas droite'],
+  ['T04', 'Place du Marché bas'],
+  ['T05', 'Place du Marché bas gauche'],
+  ['T06', 'Place du Marché haut gauche'],
+  ['T07', 'Protection Facture'],
+  ['T08', 'Bulle rose haut droite'],
+  ['T09', 'Chance'],
+  ['T10', '? droite'],
+  ['T11', 'IZI Confort'],
+  ['T12', 'Bulle rouge bas'],
+  ['T13', 'Assistance Dépannage'],
+  ['T14', '? bas gauche'],
+  ['T15', 'IZI by EDF'],
+  ['T16', 'Bulle orange gauche'],
+  ['T17', '? gauche'],
+  ['T18', 'Thermostat'],
+  ['T19', 'Bulle verte haut gauche'],
+  ['T20', '? haut'],
+] as const;
+
+const BUBBLE_TILE_IDS = ['T08', 'T12', 'T16', 'T19'] as const;
+
 const getBoardRegistryIssues = (tiles: Tile[]) => {
-  const tileIds = new Set(tiles.map((tile) => tile.id));
+  const tileIds = new Set(tiles.map((tile) => tile.tileId));
   const tileRegistryIds = new Set<string>();
   const issues: string[] = [];
+  const expectedByOrder = new Map(EXPECTED_BOARD_REGISTRY.map(([tileId, label], index) => [index, { tileId, label }]));
+
+  if (tiles.length !== EXPECTED_BOARD_REGISTRY.length) {
+    issues.push(`Le registre doit contenir exactement ${EXPECTED_BOARD_REGISTRY.length} cases.`);
+  }
 
   tiles.forEach((tile) => {
+    const expected = expectedByOrder.get(tile.order);
+
+    if (!expected) {
+      issues.push(`Case ${tile.tileId} hors ordre attendu (${tile.order}).`);
+    } else {
+      if (tile.tileId !== expected.tileId) {
+        issues.push(`Ordre ${tile.order} attendu ${expected.tileId} mais reçu ${tile.tileId}.`);
+      }
+
+      if (tile.label !== expected.label) {
+        issues.push(`Libellé attendu pour ${tile.tileId} : ${expected.label}.`);
+      }
+    }
+
     if (!tile.tileId.trim()) {
-      issues.push(`Case ${tile.id} sans identifiant lisible.`);
+      issues.push(`Case ordre ${tile.order} sans identifiant lisible.`);
     }
 
     if (!tile.label.trim()) {
-      issues.push(`Case ${tile.id} sans libellé.`);
+      issues.push(`Case ${tile.tileId} sans libellé.`);
     }
 
     if (!tile.description.trim()) {
-      issues.push(`Case ${tile.id} sans description.`);
+      issues.push(`Case ${tile.tileId} sans description.`);
     }
 
     if (!tile.shape.points.trim()) {
-      issues.push(`Case ${tile.id} sans forme SVG.`);
+      issues.push(`Case ${tile.tileId} sans forme SVG.`);
     }
 
-    if (tile.neighbors.length === 0) {
-      issues.push(`Case ${tile.id} sans adjacency.`);
+    if (tile.adjacency.length === 0) {
+      issues.push(`Case ${tile.tileId} sans adjacency.`);
     }
 
     if (!tile.action.summary.trim()) {
-      issues.push(`Case ${tile.id} sans définition d’action.`);
+      issues.push(`Case ${tile.tileId} sans définition d’action.`);
     }
 
     if (tileRegistryIds.has(tile.tileId)) {
@@ -594,17 +656,22 @@ const getBoardRegistryIssues = (tiles: Tile[]) => {
     }
     tileRegistryIds.add(tile.tileId);
 
-    tile.neighbors.forEach((neighborId) => {
+    tile.adjacency.forEach((neighborId) => {
       if (!tileIds.has(neighborId)) {
-        issues.push(`Case ${tile.id} reliée à une case inconnue (${neighborId}).`);
+        issues.push(`Case ${tile.tileId} reliée à une case inconnue (${neighborId}).`);
         return;
       }
 
-      if (!TILE_GRAPH[neighborId]?.includes(tile.id)) {
-        issues.push(`Adjacency non symétrique entre ${tile.id} et ${neighborId}.`);
+      if (!TILE_GRAPH[neighborId]?.includes(tile.tileId)) {
+        issues.push(`Adjacency non symétrique entre ${tile.tileId} et ${neighborId}.`);
       }
     });
   });
+
+  const actualBubbleIds = tiles.filter((tile) => tile.type === 'bubble').map((tile) => tile.tileId);
+  if (actualBubbleIds.join('|') !== BUBBLE_TILE_IDS.join('|')) {
+    issues.push(`Bulles attendues : ${BUBBLE_TILE_IDS.join(', ')}.`);
+  }
 
   return issues;
 };
@@ -765,19 +832,24 @@ const getTilePresentation = (
   tile: Tile,
   trainingMode: TrainingMode | null,
 ): TilePresentation => {
-  if (tile.type === 'bubble' || tile.type === 'objection') {
-    if (trainingMode === 'objections') {
-      return {
-        title: 'Objection',
-        description: 'Tirez une carte Objection et répondez avec la méthode AREF.',
-        typeLabel: 'Objection',
-      };
-    }
-
+  if (tile.type === 'bubble') {
     return {
-      title: 'Argument BAC',
-      description: 'Construire un argument bénéfice-avantage-caractéristique.',
-      typeLabel: 'Argument BAC',
+      title: tile.label,
+      description:
+        trainingMode === 'objections'
+          ? 'Case bulle en mode Objections : affiche et déclenche une objection.'
+          : 'Case bulle en mode Arguments de vente : affiche et déclenche un BAC.',
+      typeLabel: tileTypeLabels[tile.type],
+      identityLabel: trainingMode === 'objections' ? 'Objection' : 'BAC',
+    };
+  }
+
+  if (tile.type === 'objection') {
+    return {
+      title: tile.label,
+      description: 'Tirez une carte Objection et répondez avec la méthode AREF.',
+      typeLabel: tileTypeLabels[tile.type],
+      identityLabel: 'Objection',
     };
   }
 
@@ -786,6 +858,28 @@ const getTilePresentation = (
     description: tile.description,
     typeLabel: tileTypeLabels[tile.type],
   };
+};
+
+const normalizeStoredTileId = (value: unknown): string => {
+  if (typeof value === 'string' && BOARD_BY_TILE_ID.has(value)) {
+    return value;
+  }
+
+  if (typeof value === 'number') {
+    return BOARD_BY_LEGACY_SHAPE_ID.get(value)?.tileId ?? BOARD_REGISTRY[0].tileId;
+  }
+
+  return BOARD_REGISTRY[0].tileId;
+};
+
+const getResolvedActionSummary = (tile: Tile, trainingMode: TrainingMode | null) => {
+  if (tile.type === 'bubble') {
+    return trainingMode === 'objections'
+      ? 'Déclenche le comportement Objection pour cette bulle.'
+      : 'Déclenche le comportement BAC pour cette bulle.';
+  }
+
+  return tile.action.summary;
 };
 
 const getServicesByColor = () =>
@@ -832,15 +926,15 @@ const getPlayerInitials = (name: string) =>
     .join('')
     .slice(0, 2) || '?';
 
-const getReachableTileIds = (originTileId: number, roll: number) => {
+const getReachableTileIds = (originTileId: string, roll: number) => {
   if (roll <= 0) {
     return [];
   }
 
-  let frontier = new Set<number>([originTileId]);
+  let frontier = new Set<string>([originTileId]);
 
   for (let step = 0; step < roll; step += 1) {
-    const nextFrontier = new Set<number>();
+    const nextFrontier = new Set<string>();
 
     frontier.forEach((tileId) => {
       TILE_GRAPH[tileId]?.forEach((neighborId) => {
@@ -853,7 +947,9 @@ const getReachableTileIds = (originTileId: number, roll: number) => {
 
   frontier.delete(originTileId);
 
-  return [...frontier].sort((left, right) => left - right);
+  return [...frontier].sort(
+    (left, right) => (BOARD_TILE_ORDER_INDEX.get(left) ?? 0) - (BOARD_TILE_ORDER_INDEX.get(right) ?? 0),
+  );
 };
 
 const DieFace = ({ value, isRolling }: DieFaceProps) => {
@@ -902,8 +998,28 @@ const App = () => {
         ...parsedGame,
         players: (parsedGame.players ?? []).map((player) => ({
           ...player,
+          position: normalizeStoredTileId(player.position),
           rollsTaken: player.rollsTaken ?? 0,
         })) as Player[],
+        pendingMovement: parsedGame.pendingMovement
+          ? {
+              ...parsedGame.pendingMovement,
+              originTileId: normalizeStoredTileId(parsedGame.pendingMovement.originTileId),
+              reachableTileIds: (parsedGame.pendingMovement.reachableTileIds ?? []).map((tileId) =>
+                normalizeStoredTileId(tileId),
+              ),
+            }
+          : null,
+        pendingAction:
+          parsedGame.pendingAction && parsedGame.pendingAction.tile
+            ? {
+                ...parsedGame.pendingAction,
+                tile:
+                  BOARD_BY_TILE_ID.get(
+                    normalizeStoredTileId((parsedGame.pendingAction.tile as Partial<Tile>).tileId),
+                  ) ?? BOARD_REGISTRY[0],
+              }
+            : null,
         activeObjectionCard: normalizedObjectionCard,
       };
     } catch {
@@ -950,9 +1066,9 @@ const App = () => {
 
   const currentPlayer = game.players[game.currentPlayerIndex] ?? null;
   const completeSets = useMemo(() => getCompleteSets(game.players), [game.players]);
-  const currentPlayerTile = currentPlayer ? BOARD_BY_NUMERIC_ID.get(currentPlayer.position) ?? null : null;
+  const currentPlayerTile = currentPlayer ? BOARD_BY_TILE_ID.get(currentPlayer.position) ?? null : null;
   const pendingMovementOriginTile = game.pendingMovement
-    ? BOARD_BY_NUMERIC_ID.get(game.pendingMovement.originTileId) ?? null
+    ? BOARD_BY_TILE_ID.get(game.pendingMovement.originTileId) ?? null
     : null;
   const focusTile =
     (inspectedTileId ? BOARD_BY_TILE_ID.get(inspectedTileId) ?? null : null) ??
@@ -961,7 +1077,6 @@ const App = () => {
     currentPlayerTile ??
     board[0];
   const focusTilePresentation = getTilePresentation(focusTile, game.trainingMode);
-  const focusTileService = getService(focusTile.serviceId);
   const reachableTileIds = game.pendingMovement?.reachableTileIds ?? [];
   const isChoosingDestination = Boolean(game.pendingMovement);
 
@@ -1029,7 +1144,7 @@ const App = () => {
     const players = names.map<Player>((name) => ({
       id: uid(),
       name,
-      position: 0,
+      position: BOARD_REGISTRY[0].tileId,
       clients: INITIAL_CLIENTS,
       pieces: [],
       rollsTaken: 0,
@@ -1087,7 +1202,7 @@ const App = () => {
       const reachableDestinations = getReachableTileIds(currentPlayer.position, finalRoll);
 
       setDisplayRoll(finalRoll);
-      const originTile = BOARD_BY_NUMERIC_ID.get(currentPlayer.position);
+      const originTile = BOARD_BY_TILE_ID.get(currentPlayer.position);
       if (originTile) {
         inspectTile(originTile);
       }
@@ -1137,12 +1252,12 @@ const App = () => {
     };
   };
 
-  const handleDestinationSelection = (tileId: number) => {
+  const handleDestinationSelection = (tileId: string) => {
     if (!game.pendingMovement) {
       return;
     }
 
-    const tile = BOARD_BY_NUMERIC_ID.get(tileId);
+    const tile = BOARD_BY_TILE_ID.get(tileId);
     if (tile) {
       inspectTile(tile, 'destination');
     }
@@ -1154,7 +1269,7 @@ const App = () => {
       }
 
       const player = currentGame.players.find((candidate) => candidate.id === pendingMovement.playerId);
-      const tile = BOARD_BY_NUMERIC_ID.get(tileId);
+      const tile = BOARD_BY_TILE_ID.get(tileId);
       const tilePresentation = tile ? getTilePresentation(tile, currentGame.trainingMode) : null;
 
       if (!player || !tile) {
@@ -1363,14 +1478,13 @@ const App = () => {
   const winner = game.players.find((player) => player.id === game.winnerId) ?? null;
   const boardTiles = board.map((tile) => {
     const shape = tile.shape;
-    const occupants = game.players.filter((player) => player.position === tile.id);
-    const service = getService(tile.serviceId);
+    const occupants = game.players.filter((player) => player.position === tile.tileId);
     const tilePresentation = getTilePresentation(tile, game.trainingMode);
-    const tileLabel = tile.type === 'service' && service ? service.name : tile.label;
+    const tileLabel = tile.label;
     const isFocused = tile.tileId === focusTile.tileId;
-    const isSelectedTile = tile.id === game.pendingAction?.tile.id;
-    const isCurrentPlayerTile = tile.id === currentPlayer?.position;
-    const isReachable = reachableTileIds.includes(tile.id);
+    const isSelectedTile = tile.tileId === game.pendingAction?.tile.tileId;
+    const isCurrentPlayerTile = tile.tileId === currentPlayer?.position;
+    const isReachable = reachableTileIds.includes(tile.tileId);
     const isDisabled = isChoosingDestination && !isReachable;
     const visualPoints = insetPolygonPoints(shape.points, isReachable ? 1.1 : 0.95);
     const outlinePoints = insetPolygonPoints(shape.points, 0.5);
@@ -1381,7 +1495,6 @@ const App = () => {
       tile,
       shape,
       occupants,
-      service,
       tilePresentation,
       tileLabel,
       isFocused,
@@ -1561,7 +1674,7 @@ const App = () => {
                         return (
                           <span
                             className="player-token board-player-token"
-                            key={`${tile.id}-${player.id}`}
+                            key={`${tile.tileId}-${player.id}`}
                             style={{
                               background: PLAYER_TOKEN_COLORS[playerIndex % PLAYER_TOKEN_COLORS.length],
                               left: `${shape.tokenAnchor.x}%`,
@@ -1616,7 +1729,7 @@ const App = () => {
                           >
                             <polygon className="board-space-shape" points={visualPoints} />
                             <polygon className="board-space-outline" points={outlinePoints} />
-                            {game.trainingMode === 'objections' && tile.type === 'bubble' && (
+                            {tile.type === 'bubble' && (
                               <text
                                 aria-hidden="true"
                                 className="board-space-objection-label"
@@ -1625,7 +1738,7 @@ const App = () => {
                                 textAnchor="middle"
                                 dominantBaseline="middle"
                               >
-                                Objection
+                                {tilePresentation.identityLabel}
                               </text>
                             )}
                             <polygon
@@ -1640,7 +1753,7 @@ const App = () => {
                               }`}
                               onClick={() =>
                                 isChoosingDestination
-                                  ? handleDestinationSelection(tile.id)
+                                  ? handleDestinationSelection(tile.tileId)
                                   : inspectTile(tile, 'inspection')
                               }
                               onKeyDown={(event) => {
@@ -1651,7 +1764,7 @@ const App = () => {
                                 if (event.key === 'Enter' || event.key === ' ') {
                                   event.preventDefault();
                                   if (isChoosingDestination) {
-                                    handleDestinationSelection(tile.id);
+                                    handleDestinationSelection(tile.tileId);
                                   } else {
                                     inspectTile(tile, 'inspection');
                                   }
@@ -1671,9 +1784,11 @@ const App = () => {
                     <div className="board-focus-main">
                       <div className="board-focus-copy">
                         <p className="board-focus-tile-id">tileId · {focusTile.tileId}</p>
-                        <h3>{focusTileService?.name ?? focusTilePresentation.title}</h3>
+                        <h3>{focusTilePresentation.title}</h3>
                         <p>{focusTilePresentation.description}</p>
-                        <p className="board-focus-action">{focusTile.action.summary}</p>
+                        <p className="board-focus-action">
+                          {getResolvedActionSummary(focusTile, game.trainingMode)}
+                        </p>
                       </div>
                       <div className="board-focus-meta">
                         <span className="status-chip">{focusTilePresentation.typeLabel}</span>
@@ -1721,7 +1836,7 @@ const App = () => {
                   <div className="turn-helper">
                     <strong>Choisissez votre case de destination</strong>
                     <span>
-                      Départ : case {game.pendingMovement.originTileId} · {game.pendingMovement.roll} déplacement
+                      Départ : tileId {game.pendingMovement.originTileId} · {game.pendingMovement.roll} déplacement
                       {game.pendingMovement.roll > 1 ? 's' : ''} possible
                       {game.pendingMovement.roll > 1 ? 's' : ''}.
                     </span>
@@ -1758,7 +1873,7 @@ const App = () => {
                       </span>
                       <div>
                         <h3>{player.name}</h3>
-                        <p>Case {player.position}</p>
+                        <p>tileId {player.position}</p>
                       </div>
                     </div>
                     <div className="score-stats">
