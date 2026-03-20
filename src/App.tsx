@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import boardReferenceImage from '../plateau-reference-bordures-epaisses.png';
-import plancheAImage from '../PLANCHE A 1.2.png';
-import plancheBImage from '../PLANCHE B 1.2.png';
 import objectionsDeckFaceImage from '../carte objection FACE.png';
 import objectionCardAlreadySameImage from '../objection-j-ai-deja-la-meme-chose.png';
 import objectionCardNotInterestedImage from '../objection-ca-ne-m-interesse-pas.png';
@@ -1373,37 +1371,27 @@ const App = () => {
                             >
                               <title>{interactiveTitle}</title>
                             </polygon>
-                            <text
-                              x={TILE_SHAPES[tile.id].tokenAnchor.x}
-                              y={TILE_SHAPES[tile.id].tokenAnchor.y - 4.2}
-                              className="board-space-badge"
-                            >
-                              {tile.id}
-                            </text>
                           </g>
                         );
                       },
                     )}
                   </svg>
 
-                  <div className="board-focus-card">
-                    <div className="board-focus-copy">
-                      <p className="eyebrow">Lecture du plateau</p>
-                      <h3>{focusTileService?.name ?? focusTilePresentation.title}</h3>
-                      <p>{focusTilePresentation.description}</p>
+                  <aside className="board-focus-card" aria-live="polite">
+                    <p className="eyebrow board-focus-eyebrow">Lecture du plateau</p>
+                    <div className="board-focus-main">
+                      <div className="board-focus-copy">
+                        <h3>{focusTileService?.name ?? focusTilePresentation.title}</h3>
+                        <p>{focusTilePresentation.description}</p>
+                      </div>
+                      <div className="board-focus-meta">
+                        <span className="status-chip">{focusTilePresentation.typeLabel}</span>
+                        {focusTile.color && <span className="tile-family">Famille {colorLabels[focusTile.color]}</span>}
+                      </div>
                     </div>
-                    <div className="board-focus-meta">
-                      <span className="status-chip">{focusTilePresentation.typeLabel}</span>
-                      {focusTile.color && <span className="tile-family">Famille {colorLabels[focusTile.color]}</span>}
-                    </div>
-                  </div>
+                  </aside>
                 </div>
               </div>
-            </div>
-
-            <div className="board-reference-strip" aria-label="Références complémentaires du jeu">
-              <img src={plancheAImage} alt="Planche A de référence" className="mini-reference" />
-              <img src={plancheBImage} alt="Planche B de référence" className="mini-reference" />
             </div>
           </section>
 
