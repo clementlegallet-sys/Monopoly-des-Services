@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import boardReferenceImage from '../plateau-reference-bordures-epaisses.png';
+import annotatedBoardImage from '../plateau_annoté_final_T0_T22.png';
+import boardRegistryJson from '../board_registry_final_T0_T22.json';
 import objectionsDeckFaceImage from '../carte objection FACE.png';
 import objectionCardAlreadySameImage from '../objection-j-ai-deja-la-meme-chose.png';
 import objectionCardNotInterestedImage from '../objection-ca-ne-m-interesse-pas.png';
@@ -16,6 +18,8 @@ type TileType =
   | 'bubble'
   | 'market'
   | 'objection';
+
+type RegistryTileType = 'start' | 'market' | 'service' | 'bubble_mode' | 'chance' | 'question';
 
 type ServiceColor = 'blue' | 'green' | 'orange';
 type TrainingMode = 'arguments' | 'objections';
@@ -35,10 +39,17 @@ type TileActionDefinition = {
   drawObjectionCard?: boolean;
 };
 
-type BaseTile = {
+type TileShapeDefinition = {
+  points: string;
+  tokenAnchor: {
+    x: number;
+    y: number;
+  };
+};
+
+type TileBlueprint = {
   order: number;
   tileId: string;
-  legacyShapeId: number;
   label: string;
   type: TileType;
   color?: ServiceColor;
@@ -48,7 +59,7 @@ type BaseTile = {
   shape: TileShapeDefinition;
 };
 
-type Tile = BaseTile & { action: TileActionDefinition };
+type Tile = TileBlueprint & { action: TileActionDefinition };
 
 type Player = {
   id: string;
@@ -100,14 +111,6 @@ type DieFaceProps = {
   isRolling: boolean;
 };
 
-type TileShapeDefinition = {
-  points: string;
-  tokenAnchor: {
-    x: number;
-    y: number;
-  };
-};
-
 type Point = {
   x: number;
   y: number;
@@ -120,6 +123,10 @@ type TilePresentation = {
   identityLabel?: string;
 };
 
+type RegistryEntry = {
+  label: string;
+  type: RegistryTileType;
+};
 
 const STORAGE_KEY = 'monopoly-des-services-state';
 const INITIAL_CLIENTS = 2;
@@ -127,6 +134,10 @@ const INITIAL_BANK = 40;
 const SALE_VALUES = [2, 3, 5] as const;
 const PLAYER_TOKEN_COLORS = ['#d9473f', '#2b6fdd', '#f59e0b', '#0f9d74'];
 const ENABLE_TILE_DEBUG = true;
+const TECHNICAL_SOURCE_OF_TRUTH = {
+  image: annotatedBoardImage,
+  registry: boardRegistryJson as Record<string, RegistryEntry>,
+} as const;
 const OBJECTION_DECK: ObjectionCard[] = [
   {
     id: 'already-equipped',
@@ -166,293 +177,306 @@ const OBJECTION_DECK: ObjectionCard[] = [
   },
 ] as const;
 
-const RAW_BOARD_SPACES: BaseTile[] = [
-  {
+const BOARD_TILE_ORDER = [
+  'T0',
+  'T1',
+  'T2',
+  'T3',
+  'T4',
+  'T5',
+  'T6',
+  'T7',
+  'T8',
+  'T9',
+  'T10',
+  'T11',
+  'T12',
+  'T13',
+  'T14',
+  'T15',
+  'T16',
+  'T17',
+  'T18',
+  'T19',
+  'T20',
+  'T21',
+  'T22',
+] as const;
+
+const BUBBLE_TILE_IDS = ['T8', 'T12', 'T16', 'T19', 'T22'] as const;
+
+const TILE_TYPE_BY_REGISTRY_TYPE: Record<RegistryTileType, TileType> = {
+  start: 'start',
+  market: 'market',
+  service: 'service',
+  bubble_mode: 'bubble',
+  chance: 'chance',
+  question: 'question',
+};
+
+const TILE_SERVICE_METADATA: Partial<
+  Record<
+    string,
+    {
+      color: ServiceColor;
+      serviceId: string;
+    }
+  >
+> = {
+  T7: { color: 'blue', serviceId: 'protection-facture' },
+  T11: { color: 'orange', serviceId: 'izi-confort' },
+  T13: { color: 'blue', serviceId: 'assistance-depannage' },
+  T15: { color: 'green', serviceId: 'izi-by-edf' },
+  T18: { color: 'green', serviceId: 'thermostat-connecte-sowee' },
+};
+
+const TILE_DESCRIPTIONS: Partial<Record<string, string>> = {
+  T0: 'Point de départ de tous les joueurs.',
+  T1: 'Échanger une pièce entre joueurs ou vendre une pièce à la banque.',
+  T2: 'Échanger une pièce entre joueurs ou vendre une pièce à la banque.',
+  T3: 'Échanger une pièce entre joueurs ou vendre une pièce à la banque.',
+  T4: 'Échanger une pièce entre joueurs ou vendre une pièce à la banque.',
+  T5: 'Échanger une pièce entre joueurs ou vendre une pièce à la banque.',
+  T6: 'Échanger une pièce entre joueurs ou vendre une pièce à la banque.',
+  T7: 'Donner 2 avantages pour remporter la pièce.',
+  T8: 'Case bulle : affiche une objection en mode Objections et un BAC en mode Arguments de vente.',
+  T9: 'Bonne réponse = +2 clients.',
+  T10: 'Poser une question ouverte adaptée à une offre du groupe.',
+  T11: 'Donner 2 avantages pour remporter la pièce.',
+  T12: 'Case bulle : affiche une objection en mode Objections et un BAC en mode Arguments de vente.',
+  T13: 'Donner 2 avantages pour remporter la pièce.',
+  T14: 'Poser une question ouverte adaptée à une offre du groupe.',
+  T15: 'Donner 2 avantages pour remporter la pièce.',
+  T16: 'Case bulle : affiche une objection en mode Objections et un BAC en mode Arguments de vente.',
+  T17: 'Poser une question ouverte adaptée à une offre du groupe.',
+  T18: 'Donner 2 avantages pour remporter la pièce.',
+  T19: 'Case bulle : affiche une objection en mode Objections et un BAC en mode Arguments de vente.',
+  T20: 'Poser une question ouverte adaptée à une offre du groupe.',
+  T21: 'Poser une question ouverte adaptée à une offre du groupe.',
+  T22: 'Case bulle : affiche une objection en mode Objections et un BAC en mode Arguments de vente.',
+};
+
+const TILE_LAYOUT: Record<string, Omit<TileBlueprint, 'label' | 'type' | 'description'>> = {
+  T0: {
     order: 0,
-    tileId: 'T00',
-    legacyShapeId: 0,
-    label: 'Départ',
-    type: 'start',
-    description: 'Point de départ de tous les joueurs.',
-    adjacency: ['T01', 'T02', 'T03', 'T04', 'T05', 'T06'],
+    tileId: 'T0',
+    adjacency: ['T1', 'T2', 'T3', 'T4', 'T5', 'T6'],
     shape: {
       points: '39.6,37.5 55.9,37.2 60.8,48.8 56.0,61.4 44.4,61.7 39.2,49.0',
       tokenAnchor: { x: 49.9, y: 49.3 },
     },
   },
-  {
+  T1: {
     order: 1,
-    tileId: 'T01',
-    legacyShapeId: 1,
-    label: 'Place du Marché haut',
-    type: 'market',
-    description: 'Échanger une pièce entre joueurs ou vendre une pièce à la banque.',
-    adjacency: ['T00', 'T07', 'T08', 'T20', 'T06', 'T02'],
+    tileId: 'T1',
+    adjacency: ['T0', 'T6', 'T7', 'T8', 'T2', 'T20'],
     shape: {
       points: '42.7,16.1 55.8,16.1 56.2,37.2 43.0,37.3',
       tokenAnchor: { x: 49.5, y: 26.4 },
     },
   },
-  {
-    order: 7,
-    tileId: 'T07',
-    legacyShapeId: 2,
-    label: 'Protection Facture',
-    type: 'service',
-    color: 'blue',
-    serviceId: 'protection-facture',
-    description: 'Donner 2 avantages pour remporter la pièce.',
-    adjacency: ['T01', 'T08', 'T20'],
-    shape: {
-      points: '39.2,0.0 60.8,0.0 55.8,16.1 42.7,16.1',
-      tokenAnchor: { x: 49.9, y: 8.2 },
-    },
-  },
-  {
-    order: 8,
-    tileId: 'T08',
-    legacyShapeId: 3,
-    label: 'Bulle rose haut droite',
-    type: 'bubble',
-    description: 'Case bulle : argument BAC ou traitement d’objection selon le mode choisi.',
-    adjacency: ['T01', 'T07', 'T09', 'T02'],
-    shape: {
-      points: '60.8,0.0 81.8,0.0 71.0,21.0 66.0,21.0 55.8,16.1',
-      tokenAnchor: { x: 68.7, y: 9.8 },
-    },
-  },
-  {
-    order: 9,
-    tileId: 'T09',
-    legacyShapeId: 4,
-    label: 'Chance',
-    type: 'chance',
-    description: 'Bonne réponse = +2 clients.',
-    adjacency: ['T08', 'T10', 'T02'],
-    shape: {
-      points: '81.8,0.0 100.0,49.8 79.0,49.8 71.0,21.0',
-      tokenAnchor: { x: 86.5, y: 31.0 },
-    },
-  },
-  {
-    order: 10,
-    tileId: 'T10',
-    legacyShapeId: 5,
-    label: '? droite',
-    type: 'question',
-    description: 'Poser une question ouverte adaptée à une offre du groupe.',
-    adjacency: ['T09', 'T11', 'T03', 'T02'],
-    shape: {
-      points: '79.0,49.8 100.0,49.8 94.0,65.0 84.2,61.4',
-      tokenAnchor: { x: 89.8, y: 57.2 },
-    },
-  },
-  {
-    order: 11,
-    tileId: 'T11',
-    legacyShapeId: 6,
-    label: 'IZI Confort',
-    type: 'service',
-    color: 'orange',
-    serviceId: 'izi-confort',
-    description: 'Donner 2 avantages pour remporter la pièce.',
-    adjacency: ['T10', 'T12', 'T03'],
-    shape: {
-      points: '73.2,69.2 84.2,61.4 94.0,65.0 87.3,84.9',
-      tokenAnchor: { x: 81.0, y: 71.0 },
-    },
-  },
-  {
-    order: 12,
-    tileId: 'T12',
-    legacyShapeId: 7,
-    label: 'Bulle rouge bas',
-    type: 'bubble',
-    description: 'Case bulle : argument BAC ou traitement d’objection selon le mode choisi.',
-    adjacency: ['T11', 'T13', 'T04', 'T03'],
-    shape: {
-      points: '60.8,82.2 73.2,69.2 87.3,84.9 81.4,100.0',
-      tokenAnchor: { x: 75.4, y: 88.2 },
-    },
-  },
-  {
-    order: 13,
-    tileId: 'T13',
-    legacyShapeId: 8,
-    label: 'Assistance Dépannage',
-    type: 'service',
-    color: 'blue',
-    serviceId: 'assistance-depannage',
-    description: 'Donner 2 avantages pour remporter la pièce.',
-    adjacency: ['T12', 'T14', 'T04'],
-    shape: {
-      points: '39.4,82.2 60.8,82.2 61.8,100.0 38.5,100.0',
-      tokenAnchor: { x: 49.7, y: 91.0 },
-    },
-  },
-  {
-    order: 14,
-    tileId: 'T14',
-    legacyShapeId: 9,
-    label: '? bas gauche',
-    type: 'question',
-    description: 'Poser une question ouverte adaptée à une offre du groupe.',
-    adjacency: ['T13', 'T15', 'T05', 'T04'],
-    shape: {
-      points: '23.4,100.0 38.8,82.3 27.0,69.1 13.0,84.9',
-      tokenAnchor: { x: 31.6, y: 90.4 },
-    },
-  },
-  {
-    order: 15,
-    tileId: 'T15',
-    legacyShapeId: 10,
-    label: 'IZI by EDF',
-    type: 'service',
-    color: 'green',
-    serviceId: 'izi-by-edf',
-    description: 'Donner 2 avantages pour remporter la pièce.',
-    adjacency: ['T14', 'T16', 'T05'],
-    shape: {
-      points: '0.0,100.0 13.0,84.9 27.0,69.1 9.8,65.0 0.0,80.0',
-      tokenAnchor: { x: 21.6, y: 82.5 },
-    },
-  },
-  {
-    order: 16,
-    tileId: 'T16',
-    legacyShapeId: 11,
-    label: 'Bulle orange gauche',
-    type: 'bubble',
-    description: 'Case bulle : argument BAC ou traitement d’objection selon le mode choisi.',
-    adjacency: ['T15', 'T17', 'T06', 'T05'],
-    shape: {
-      points: '5.5,65.6 21.2,50.1 27.0,69.1 9.8,84.9',
-      tokenAnchor: { x: 16.2, y: 68.8 },
-    },
-  },
-  {
-    order: 17,
-    tileId: 'T17',
-    legacyShapeId: 12,
-    label: '? gauche',
-    type: 'question',
-    description: 'Poser une question ouverte adaptée à une offre du groupe.',
-    adjacency: ['T16', 'T18', 'T06'],
-    shape: {
-      points: '0.0,50.0 21.2,50.1 39.0,37.7 24.2,26.4 5.8,33.6',
-      tokenAnchor: { x: 16.0, y: 55.2 },
-    },
-  },
-  {
-    order: 18,
-    tileId: 'T18',
-    legacyShapeId: 13,
-    label: 'Thermostat',
-    type: 'service',
-    color: 'green',
-    serviceId: 'thermostat-connecte-sowee',
-    description: 'Donner 2 avantages pour remporter la pièce.',
-    adjacency: ['T17', 'T19', 'T06'],
-    shape: {
-      points: '0.0,33.6 5.8,33.6 24.2,26.4 21.2,50.1 0.0,50.0',
-      tokenAnchor: { x: 8.5, y: 44.0 },
-    },
-  },
-  {
-    order: 19,
-    tileId: 'T19',
-    legacyShapeId: 14,
-    label: 'Bulle verte haut gauche',
-    type: 'bubble',
-    description: 'Case bulle : argument BAC ou traitement d’objection selon le mode choisi.',
-    adjacency: ['T18', 'T20', 'T06'],
-    shape: {
-      points: '5.8,10.8 24.2,26.4 39.0,37.7 23.7,50.0 0.0,33.6',
-      tokenAnchor: { x: 18.8, y: 28.6 },
-    },
-  },
-  {
-    order: 20,
-    tileId: 'T20',
-    legacyShapeId: 15,
-    label: '? haut',
-    type: 'question',
-    description: 'Poser une question ouverte adaptée à une offre du groupe.',
-    adjacency: ['T01', 'T07', 'T19', 'T06'],
-    shape: {
-      points: '15.2,0.0 39.2,0.0 32.8,16.1 24.2,10.8',
-      tokenAnchor: { x: 31.0, y: 7.2 },
-    },
-  },
-  {
-    order: 6,
-    tileId: 'T06',
-    legacyShapeId: 16,
-    label: 'Place du Marché haut gauche',
-    type: 'market',
-    description: 'Échanger une pièce entre joueurs ou vendre une pièce à la banque.',
-    adjacency: ['T00', 'T01', 'T16', 'T17', 'T18', 'T19', 'T20', 'T05'],
-    shape: {
-      points: '32.8,16.1 42.7,16.1 43.0,37.3 39.0,37.7 24.2,26.4',
-      tokenAnchor: { x: 33.2, y: 28.7 },
-    },
-  },
-  {
-    order: 5,
-    tileId: 'T05',
-    legacyShapeId: 17,
-    label: 'Place du Marché bas gauche',
-    type: 'market',
-    description: 'Échanger une pièce entre joueurs ou vendre une pièce à la banque.',
-    adjacency: ['T00', 'T15', 'T16', 'T06', 'T04'],
-    shape: {
-      points: '21.2,50.1 39.2,37.8 43.0,61.5 27.0,69.1',
-      tokenAnchor: { x: 31.7, y: 58.8 },
-    },
-  },
-  {
-    order: 4,
-    tileId: 'T04',
-    legacyShapeId: 18,
-    label: 'Place du Marché bas',
-    type: 'market',
-    description: 'Échanger une pièce entre joueurs ou vendre une pièce à la banque.',
-    adjacency: ['T00', 'T12', 'T13', 'T14', 'T05', 'T03'],
-    shape: {
-      points: '43.0,61.5 56.0,61.5 56.8,82.3 39.4,82.2',
-      tokenAnchor: { x: 50.0, y: 71.4 },
-    },
-  },
-  {
-    order: 3,
-    tileId: 'T03',
-    legacyShapeId: 19,
-    label: 'Place du Marché bas droite',
-    type: 'market',
-    description: 'Échanger une pièce entre joueurs ou vendre une pièce à la banque.',
-    adjacency: ['T00', 'T10', 'T11', 'T12', 'T04', 'T02'],
-    shape: {
-      points: '56.0,61.5 67.8,49.8 73.2,69.2 60.8,82.2 56.8,82.3',
-      tokenAnchor: { x: 64.2, y: 58.9 },
-    },
-  },
-  {
+  T2: {
     order: 2,
-    tileId: 'T02',
-    legacyShapeId: 20,
-    label: 'Place du Marché haut droite',
-    type: 'market',
-    description: 'Échanger une pièce entre joueurs ou vendre une pièce à la banque.',
-    adjacency: ['T00', 'T01', 'T08', 'T09', 'T10', 'T03'],
+    tileId: 'T2',
+    adjacency: ['T0', 'T1', 'T8', 'T9', 'T10', 'T3'],
     shape: {
       points: '56.2,37.2 70.6,28.6 79.0,41.5 67.8,49.8 60.0,49.8',
       tokenAnchor: { x: 67.0, y: 38.0 },
     },
   },
-];
+  T3: {
+    order: 3,
+    tileId: 'T3',
+    adjacency: ['T0', 'T2', 'T11', 'T22', 'T21', 'T4'],
+    shape: {
+      points: '56.0,61.5 67.8,49.8 73.2,69.2 60.8,82.2 56.8,82.3',
+      tokenAnchor: { x: 64.2, y: 58.9 },
+    },
+  },
+  T4: {
+    order: 4,
+    tileId: 'T4',
+    adjacency: ['T0', 'T3', 'T21', 'T13', 'T12', 'T5'],
+    shape: {
+      points: '43.0,61.5 56.0,61.5 56.8,82.3 39.4,82.2',
+      tokenAnchor: { x: 50.0, y: 71.4 },
+    },
+  },
+  T5: {
+    order: 5,
+    tileId: 'T5',
+    adjacency: ['T0', 'T4', 'T12', 'T14', 'T15', 'T6'],
+    shape: {
+      points: '21.2,50.1 39.2,37.8 43.0,61.5 27.0,69.1',
+      tokenAnchor: { x: 31.7, y: 58.8 },
+    },
+  },
+  T6: {
+    order: 6,
+    tileId: 'T6',
+    adjacency: ['T0', 'T5', 'T17', 'T18', 'T19', 'T20', 'T1'],
+    shape: {
+      points: '32.8,16.1 42.7,16.1 43.0,37.3 39.0,37.7 24.2,26.4',
+      tokenAnchor: { x: 33.2, y: 28.7 },
+    },
+  },
+  T7: {
+    order: 7,
+    tileId: 'T7',
+    color: 'blue',
+    serviceId: 'protection-facture',
+    adjacency: ['T1', 'T20', 'T8'],
+    shape: {
+      points: '40.4,0.0 59.2,0.0 55.8,16.1 42.7,16.1',
+      tokenAnchor: { x: 49.7, y: 8.3 },
+    },
+  },
+  T8: {
+    order: 8,
+    tileId: 'T8',
+    adjacency: ['T1', 'T2', 'T7', 'T9'],
+    shape: {
+      points: '60.5,2.3 67.1,2.4 71.8,4.7 74.1,9.1 74.0,13.2 70.4,16.0 64.6,15.5 60.5,12.0 58.9,7.3',
+      tokenAnchor: { x: 66.7, y: 8.1 },
+    },
+  },
+  T9: {
+    order: 9,
+    tileId: 'T9',
+    adjacency: ['T2', 'T8', 'T10'],
+    shape: {
+      points: '81.4,0.1 99.7,49.0 78.5,49.6 70.4,20.9',
+      tokenAnchor: { x: 81.9, y: 29.1 },
+    },
+  },
+  T10: {
+    order: 10,
+    tileId: 'T10',
+    adjacency: ['T2', 'T9', 'T11'],
+    shape: {
+      points: '85.2,51.3 92.9,51.3 92.9,60.6 85.2,60.6',
+      tokenAnchor: { x: 89.1, y: 56.0 },
+    },
+  },
+  T11: {
+    order: 11,
+    tileId: 'T11',
+    color: 'orange',
+    serviceId: 'izi-confort',
+    adjacency: ['T3', 'T10', 'T22'],
+    shape: {
+      points: '72.8,58.9 87.2,65.2 94.0,85.0 81.4,74.3',
+      tokenAnchor: { x: 82.0, y: 68.5 },
+    },
+  },
+  T12: {
+    order: 12,
+    tileId: 'T12',
+    adjacency: ['T4', 'T5', 'T13', 'T14'],
+    shape: {
+      points: '34.3,85.7 37.4,83.6 39.9,84.5 40.9,87.4 40.3,92.0 38.0,95.7 36.0,98.6 33.1,99.2 31.5,96.0 31.8,90.4',
+      tokenAnchor: { x: 36.1, y: 91.2 },
+    },
+  },
+  T13: {
+    order: 13,
+    tileId: 'T13',
+    color: 'blue',
+    serviceId: 'assistance-depannage',
+    adjacency: ['T4', 'T12', 'T21'],
+    shape: {
+      points: '40.0,82.8 60.7,82.8 61.0,100.0 39.0,100.0',
+      tokenAnchor: { x: 50.0, y: 91.4 },
+    },
+  },
+  T14: {
+    order: 14,
+    tileId: 'T14',
+    adjacency: ['T5', 'T12', 'T15'],
+    shape: {
+      points: '19.0,80.0 27.8,80.0 27.8,88.7 19.0,88.7',
+      tokenAnchor: { x: 23.4, y: 84.4 },
+    },
+  },
+  T15: {
+    order: 15,
+    tileId: 'T15',
+    color: 'green',
+    serviceId: 'izi-by-edf',
+    adjacency: ['T5', 'T14', 'T16'],
+    shape: {
+      points: '0.0,65.6 9.8,65.0 27.0,69.1 13.0,84.9 4.4,74.8',
+      tokenAnchor: { x: 14.5, y: 74.2 },
+    },
+  },
+  T16: {
+    order: 16,
+    tileId: 'T16',
+    adjacency: ['T5', 'T15', 'T17'],
+    shape: {
+      points: '2.4,55.6 4.8,52.1 10.8,51.7 15.7,52.8 17.7,55.6 17.2,59.6 10.9,60.0 4.2,59.4',
+      tokenAnchor: { x: 10.7, y: 55.9 },
+    },
+  },
+  T17: {
+    order: 17,
+    tileId: 'T17',
+    adjacency: ['T6', 'T16', 'T18'],
+    shape: {
+      points: '7.0,38.6 13.0,38.6 13.0,47.0 7.0,47.0',
+      tokenAnchor: { x: 10.0, y: 42.8 },
+    },
+  },
+  T18: {
+    order: 18,
+    tileId: 'T18',
+    color: 'green',
+    serviceId: 'thermostat-connecte-sowee',
+    adjacency: ['T6', 'T17', 'T19'],
+    shape: {
+      points: '0.0,33.6 5.8,33.6 24.2,26.4 21.2,50.1 0.0,50.0',
+      tokenAnchor: { x: 10.0, y: 44.0 },
+    },
+  },
+  T19: {
+    order: 19,
+    tileId: 'T19',
+    adjacency: ['T6', 'T18', 'T20'],
+    shape: {
+      points: '16.0,8.8 20.8,9.1 24.6,11.3 27.5,14.6 29.3,18.2 29.2,20.9 25.4,20.9 20.8,18.0 17.6,14.7 15.0,11.3',
+      tokenAnchor: { x: 21.3, y: 15.1 },
+    },
+  },
+  T20: {
+    order: 20,
+    tileId: 'T20',
+    adjacency: ['T1', 'T6', 'T7', 'T19'],
+    shape: {
+      points: '29.7,2.0 37.7,2.0 37.7,10.7 29.7,10.7',
+      tokenAnchor: { x: 33.7, y: 6.4 },
+    },
+  },
+  T21: {
+    order: 21,
+    tileId: 'T21',
+    adjacency: ['T3', 'T4', 'T13', 'T22'],
+    shape: {
+      points: '62.8,89.8 70.8,89.8 70.8,98.5 62.8,98.5',
+      tokenAnchor: { x: 66.8, y: 94.1 },
+    },
+  },
+  T22: {
+    order: 22,
+    tileId: 'T22',
+    adjacency: ['T3', 'T11', 'T21'],
+    shape: {
+      points: '69.7,81.8 73.6,80.4 77.6,80.2 80.3,81.4 81.8,83.7 80.8,86.3 77.5,88.2 73.5,88.3 70.3,86.9 68.8,84.4',
+      tokenAnchor: { x: 75.2, y: 84.2 },
+    },
+  },
+};
 
-const getTileActionDefinition = (tile: BaseTile): TileActionDefinition => {
+const getTileActionDefinition = (tile: TileBlueprint): TileActionDefinition => {
   switch (tile.type) {
     case 'start':
       return {
@@ -504,17 +528,51 @@ const getTileActionDefinition = (tile: BaseTile): TileActionDefinition => {
   }
 };
 
-const BOARD_REGISTRY: Tile[] = RAW_BOARD_SPACES.map((tile) => ({
-  ...tile,
-  action: getTileActionDefinition(tile),
-})).sort((left, right) => left.order - right.order);
+const BOARD_REGISTRY: Tile[] = BOARD_TILE_ORDER.map((tileId) => {
+  const registryEntry = TECHNICAL_SOURCE_OF_TRUTH.registry[tileId];
+  const layout = TILE_LAYOUT[tileId];
+
+  if (!registryEntry) {
+    throw new Error(`Tile registry entry missing for ${tileId}.`);
+  }
+
+  if (!layout) {
+    throw new Error(`Tile layout missing for ${tileId}.`);
+  }
+
+  const tile: TileBlueprint = {
+    ...layout,
+    label: registryEntry.label,
+    type: TILE_TYPE_BY_REGISTRY_TYPE[registryEntry.type],
+    description: TILE_DESCRIPTIONS[tileId] ?? registryEntry.label,
+    color: TILE_SERVICE_METADATA[tileId]?.color ?? layout.color,
+    serviceId: TILE_SERVICE_METADATA[tileId]?.serviceId ?? layout.serviceId,
+  };
+
+  return {
+    ...tile,
+    action: getTileActionDefinition(tile),
+  };
+});
+
 const BOARD_BY_TILE_ID = new Map(BOARD_REGISTRY.map((tile) => [tile.tileId, tile]));
-const BOARD_BY_LEGACY_SHAPE_ID = new Map(BOARD_REGISTRY.map((tile) => [tile.legacyShapeId, tile]));
-const BOARD_TILE_ORDER = BOARD_REGISTRY.map((tile) => tile.tileId);
-const BOARD_TILE_ORDER_INDEX = new Map(BOARD_TILE_ORDER.map((tileId, index) => [tileId, index]));
+const BOARD_TILE_ORDER_INDEX = new Map<string, number>(BOARD_TILE_ORDER.map((tileId, index) => [tileId, index]));
 const TILE_GRAPH: Record<string, string[]> = Object.fromEntries(
   BOARD_REGISTRY.map((tile) => [tile.tileId, tile.adjacency]),
 );
+
+const STORED_TILE_ID_ALIASES: Record<string, string> = {
+  T00: 'T0',
+  T01: 'T1',
+  T02: 'T2',
+  T03: 'T3',
+  T04: 'T4',
+  T05: 'T5',
+  T06: 'T6',
+  T07: 'T7',
+  T08: 'T8',
+  T09: 'T9',
+};
 
 const parsePolygonPoints = (points: string): Point[] =>
   points
@@ -576,94 +634,60 @@ const insetPolygonPoints = (points: string, inset: number): string => {
   return serializePolygonPoints(insetPoints);
 };
 
-const EXPECTED_BOARD_REGISTRY = [
-  ['T00', 'Départ'],
-  ['T01', 'Place du Marché haut'],
-  ['T02', 'Place du Marché haut droite'],
-  ['T03', 'Place du Marché bas droite'],
-  ['T04', 'Place du Marché bas'],
-  ['T05', 'Place du Marché bas gauche'],
-  ['T06', 'Place du Marché haut gauche'],
-  ['T07', 'Protection Facture'],
-  ['T08', 'Bulle rose haut droite'],
-  ['T09', 'Chance'],
-  ['T10', '? droite'],
-  ['T11', 'IZI Confort'],
-  ['T12', 'Bulle rouge bas'],
-  ['T13', 'Assistance Dépannage'],
-  ['T14', '? bas gauche'],
-  ['T15', 'IZI by EDF'],
-  ['T16', 'Bulle orange gauche'],
-  ['T17', '? gauche'],
-  ['T18', 'Thermostat'],
-  ['T19', 'Bulle verte haut gauche'],
-  ['T20', '? haut'],
-] as const;
-
-const BUBBLE_TILE_IDS = ['T08', 'T12', 'T16', 'T19'] as const;
-
 const getBoardRegistryIssues = (tiles: Tile[]) => {
   const tileIds = new Set(tiles.map((tile) => tile.tileId));
-  const tileRegistryIds = new Set<string>();
   const issues: string[] = [];
-  const expectedByOrder = new Map(EXPECTED_BOARD_REGISTRY.map(([tileId, label], index) => [index, { tileId, label }]));
 
-  if (tiles.length !== EXPECTED_BOARD_REGISTRY.length) {
-    issues.push(`Le registre doit contenir exactement ${EXPECTED_BOARD_REGISTRY.length} cases.`);
+  if (!TECHNICAL_SOURCE_OF_TRUTH.image) {
+    issues.push('Image technique annotée introuvable.');
   }
 
-  tiles.forEach((tile) => {
-    const expected = expectedByOrder.get(tile.order);
+  if (tiles.length !== BOARD_TILE_ORDER.length) {
+    issues.push(`Le registre doit contenir exactement ${BOARD_TILE_ORDER.length} cases.`);
+  }
 
-    if (!expected) {
-      issues.push(`Case ${tile.tileId} hors ordre attendu (${tile.order}).`);
-    } else {
-      if (tile.tileId !== expected.tileId) {
-        issues.push(`Ordre ${tile.order} attendu ${expected.tileId} mais reçu ${tile.tileId}.`);
-      }
+  BOARD_TILE_ORDER.forEach((tileId, order) => {
+    const registryEntry = TECHNICAL_SOURCE_OF_TRUTH.registry[tileId];
+    const tile = tiles.find((candidate) => candidate.tileId === tileId);
 
-      if (tile.label !== expected.label) {
-        issues.push(`Libellé attendu pour ${tile.tileId} : ${expected.label}.`);
-      }
+    if (!registryEntry) {
+      issues.push(`Tuile absente du JSON technique : ${tileId}.`);
+      return;
     }
 
-    if (!tile.tileId.trim()) {
-      issues.push(`Case ordre ${tile.order} sans identifiant lisible.`);
+    if (!tile) {
+      issues.push(`Tuile absente du mapping SVG : ${tileId}.`);
+      return;
     }
 
-    if (!tile.label.trim()) {
-      issues.push(`Case ${tile.tileId} sans libellé.`);
+    if (tile.order !== order) {
+      issues.push(`Ordre ${tileId} attendu ${order} mais reçu ${tile.order}.`);
     }
 
-    if (!tile.description.trim()) {
-      issues.push(`Case ${tile.tileId} sans description.`);
+    if (tile.label !== registryEntry.label) {
+      issues.push(`Libellé attendu pour ${tileId} : ${registryEntry.label}.`);
+    }
+
+    if (tile.type !== TILE_TYPE_BY_REGISTRY_TYPE[registryEntry.type]) {
+      issues.push(`Type attendu pour ${tileId} : ${registryEntry.type}.`);
     }
 
     if (!tile.shape.points.trim()) {
-      issues.push(`Case ${tile.tileId} sans forme SVG.`);
+      issues.push(`Case ${tileId} sans forme SVG.`);
     }
 
     if (tile.adjacency.length === 0) {
-      issues.push(`Case ${tile.tileId} sans adjacency.`);
+      issues.push(`Case ${tileId} sans adjacency.`);
     }
-
-    if (!tile.action.summary.trim()) {
-      issues.push(`Case ${tile.tileId} sans définition d’action.`);
-    }
-
-    if (tileRegistryIds.has(tile.tileId)) {
-      issues.push(`Identifiant de case dupliqué : ${tile.tileId}.`);
-    }
-    tileRegistryIds.add(tile.tileId);
 
     tile.adjacency.forEach((neighborId) => {
       if (!tileIds.has(neighborId)) {
-        issues.push(`Case ${tile.tileId} reliée à une case inconnue (${neighborId}).`);
+        issues.push(`Case ${tileId} reliée à une case inconnue (${neighborId}).`);
         return;
       }
 
-      if (!TILE_GRAPH[neighborId]?.includes(tile.tileId)) {
-        issues.push(`Adjacency non symétrique entre ${tile.tileId} et ${neighborId}.`);
+      if (!TILE_GRAPH[neighborId]?.includes(tileId)) {
+        issues.push(`Adjacency non symétrique entre ${tileId} et ${neighborId}.`);
       }
     });
   });
@@ -861,12 +885,15 @@ const getTilePresentation = (
 };
 
 const normalizeStoredTileId = (value: unknown): string => {
-  if (typeof value === 'string' && BOARD_BY_TILE_ID.has(value)) {
-    return value;
-  }
+  if (typeof value === 'string') {
+    if (BOARD_BY_TILE_ID.has(value)) {
+      return value;
+    }
 
-  if (typeof value === 'number') {
-    return BOARD_BY_LEGACY_SHAPE_ID.get(value)?.tileId ?? BOARD_REGISTRY[0].tileId;
+    const aliasedTileId = STORED_TILE_ID_ALIASES[value];
+    if (aliasedTileId && BOARD_BY_TILE_ID.has(aliasedTileId)) {
+      return aliasedTileId;
+    }
   }
 
   return BOARD_REGISTRY[0].tileId;
