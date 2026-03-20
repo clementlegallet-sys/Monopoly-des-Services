@@ -789,6 +789,36 @@ button:disabled {
   color: #5c1812;
 }
 
+.deck-card {
+  display: grid;
+  gap: 10px;
+  border-radius: 20px;
+  padding: 16px;
+  background: linear-gradient(180deg, rgba(255, 248, 232, 0.98), rgba(248, 234, 205, 0.95));
+  color: #5c1812;
+}
+
+.deck-card strong {
+  color: #51120d;
+  font-size: 1.05rem;
+}
+
+.deck-card-label {
+  margin-bottom: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #8a4332;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.deck-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
 .score-card h3,
 .service-card h3 {
   color: #671a13;
@@ -860,6 +890,10 @@ button:disabled {
 .market-box {
   display: grid;
   gap: 14px;
+}
+
+.modal-deck-card {
+  margin-top: 18px;
 }
 
 .market-message {

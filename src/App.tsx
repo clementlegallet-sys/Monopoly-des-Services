@@ -69,6 +69,7 @@ type GameState = {
   lastRoll: number | null;
   winnerId: string | null;
   trainingMode: TrainingMode | null;
+  activeObjectionCard: string | null;
 };
 
 type DieFaceProps = {
@@ -89,6 +90,12 @@ type BubbleTileVisual = {
   alt: string;
 };
 
+type TilePresentation = {
+  title: string;
+  description: string;
+  typeLabel: string;
+};
+
 type BubbleTileOverlay = {
   left: number;
   top: number;
@@ -102,6 +109,14 @@ const INITIAL_CLIENTS = 2;
 const INITIAL_BANK = 40;
 const SALE_VALUES = [2, 3, 5] as const;
 const PLAYER_TOKEN_COLORS = ['#d9473f', '#2b6fdd', '#f59e0b', '#0f9d74'];
+const OBJECTION_CARDS = [
+  'C’est trop cher pour moi.',
+  'Je dois d’abord en parler avec mon conjoint.',
+  'Je n’en vois pas l’utilité aujourd’hui.',
+  'Je suis déjà équipé chez un concurrent.',
+  'Je préfère attendre avant de m’engager.',
+  'Je manque de temps pour regarder cela maintenant.',
+] as const;
 
 const TILE_OVERLAYS: Record<number, TileOverlay> = {
   0: {
@@ -450,6 +465,7 @@ const createInitialState = (): GameState => ({
   lastRoll: null,
   winnerId: null,
   trainingMode: null,
+  activeObjectionCard: null,
 });
 
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -466,6 +482,33 @@ const getBubbleTileOverlay = (tileId: number) =>
   MODE_BUBBLE_TILE_IDS.includes(tileId as (typeof MODE_BUBBLE_TILE_IDS)[number])
     ? BUBBLE_TILE_OVERLAYS[tileId as (typeof MODE_BUBBLE_TILE_IDS)[number]]
     : null;
+
+const getTilePresentation = (
+  tile: Tile,
+  trainingMode: TrainingMode | null,
+): TilePresentation => {
+  if (tile.type === 'objection') {
+    if (trainingMode === 'objections') {
+      return {
+        title: 'Objection',
+        description: 'Tirez une carte Objection et répondez avec la méthode AREF.',
+        typeLabel: 'Objection',
+      };
+    }
+
+    return {
+      title: 'Argument BAC',
+      description: 'Construire un argument bénéfice-avantage-caractéristique.',
+      typeLabel: 'Argument BAC',
+    };
+  }
+
+  return {
+    title: tile.title,
+    description: tile.description,
+    typeLabel: tileTypeLabels[tile.type],
+  };
+};
 
 const getServicesByColor = () =>
   servicePieces.reduce<Record<ServiceColor, string[]>>(
@@ -622,6 +665,7 @@ const App = () => {
     currentPlayer?.position ??
     0;
   const focusTile = board[boardFocusTileId] ?? board[0];
+  const focusTilePresentation = getTilePresentation(focusTile, game.trainingMode);
   const focusTileService = getService(focusTile.serviceId);
   const reachableTileIds = game.pendingMovement?.reachableTileIds ?? [];
   const isChoosingDestination = Boolean(game.pendingMovement);
@@ -696,6 +740,7 @@ const App = () => {
       lastRoll: null,
       winnerId: null,
       trainingMode: selectedTrainingMode,
+      activeObjectionCard: null,
     });
   };
 
@@ -796,6 +841,7 @@ const App = () => {
 
       const player = currentGame.players.find((candidate) => candidate.id === pendingMovement.playerId);
       const tile = board[tileId];
+      const tilePresentation = tile ? getTilePresentation(tile, currentGame.trainingMode) : null;
 
       if (!player || !tile) {
         return { ...currentGame, pendingMovement: null };
@@ -832,7 +878,7 @@ const App = () => {
         },
         history: appendHistoryEntry(
           currentGame.history,
-          `${player.name} choisit ${tile.title} comme destination après un ${pendingMovement.roll}.`,
+          `${player.name} choisit ${tilePresentation?.title ?? tile.title} comme destination après un ${pendingMovement.roll}.`,
         ),
       };
     });
@@ -856,7 +902,8 @@ const App = () => {
 
       let players = currentGame.players;
       let centralBank = currentGame.centralBank;
-      let message = `${player.name} réussit l'épreuve ${pendingAction.tile.title}.`;
+      const pendingTilePresentation = getTilePresentation(pendingAction.tile, currentGame.trainingMode);
+      let message = `${player.name} réussit l'épreuve ${pendingTilePresentation.title}.`;
 
       if (pendingAction.tile.type === 'chance') {
         const result = awardClients(players, player.id, 2, centralBank);
@@ -874,7 +921,7 @@ const App = () => {
         const result = awardClients(players, player.id, 1, centralBank);
         players = result.players;
         centralBank -= result.awarded;
-        message = `${player.name} gagne ${result.awarded} client après validation de ${pendingAction.tile.title}.`;
+        message = `${player.name} gagne ${result.awarded} client après validation de ${pendingTilePresentation.title}.`;
 
         if (currentGame.trainingMode) {
           message += ` ${bubbleModeCopy[currentGame.trainingMode].success}`;
@@ -922,12 +969,16 @@ const App = () => {
       const player = currentGame.players.find(
         (candidate) => candidate.id === currentGame.pendingAction?.playerId,
       );
+      const pendingTilePresentation = getTilePresentation(
+        currentGame.pendingAction.tile,
+        currentGame.trainingMode,
+      );
 
       return resolveTurn(
         currentGame,
         currentGame.players,
         currentGame.centralBank,
-        `${player?.name ?? 'Le joueur'} ne valide pas la case ${currentGame.pendingAction.tile.title}.`,
+        `${player?.name ?? 'Le joueur'} ne valide pas la case ${pendingTilePresentation.title}.`,
       );
     });
   };
@@ -966,6 +1017,25 @@ const App = () => {
     });
   };
 
+  const drawObjectionCard = () => {
+    setGame((currentGame) => {
+      if (currentGame.trainingMode !== 'objections') {
+        return currentGame;
+      }
+
+      const card = OBJECTION_CARDS[Math.floor(Math.random() * OBJECTION_CARDS.length)];
+
+      return {
+        ...currentGame,
+        activeObjectionCard: card,
+        history: appendHistoryEntry(currentGame.history, `Nouvelle carte Objection tirée : « ${card} »`),
+      };
+    });
+  };
+
+  const pendingActionTilePresentation = game.pendingAction
+    ? getTilePresentation(game.pendingAction.tile, game.trainingMode)
+    : null;
   const winner = game.players.find((player) => player.id === game.winnerId) ?? null;
 
   return (
@@ -1086,7 +1156,9 @@ const App = () => {
                     const overlay = TILE_OVERLAYS[tile.id];
                     const occupants = game.players.filter((player) => player.position === tile.id);
                     const service = getService(tile.serviceId);
-                    const tileLabel = tile.type === 'service' && service ? service.name : tile.title;
+                    const tilePresentation = getTilePresentation(tile, game.trainingMode);
+                    const tileLabel =
+                      tile.type === 'service' && service ? service.name : tilePresentation.title;
                     const bubbleVisual = getBubbleTileVisual(game.trainingMode);
                     const bubbleOverlay = getBubbleTileOverlay(tile.id);
                     const isFocused = tile.id === boardFocusTileId;
@@ -1117,8 +1189,10 @@ const App = () => {
                         onClick={() =>
                           isChoosingDestination ? handleDestinationSelection(tile.id) : setInspectedTileId(tile.id)
                         }
-                        title={`${tileLabel} · ${tile.description}`}
-                        aria-label={`${tileLabel}. ${isReachable ? 'Destination atteignable.' : tile.description}`}
+                        title={`${tileLabel} · ${tilePresentation.description}`}
+                        aria-label={`${tileLabel}. ${
+                          isReachable ? 'Destination atteignable.' : tilePresentation.description
+                        }`}
                         disabled={isDisabled}
                       >
                         <span className="board-zone-hit" />
@@ -1146,7 +1220,7 @@ const App = () => {
                           {tile.id}
                         </span>
                         <span className="board-zone-label sr-only">
-                          Case {tile.id} · {tileLabel} · {tileTypeLabels[tile.type]}
+                          Case {tile.id} · {tileLabel} · {tilePresentation.typeLabel}
                         </span>
                         <span className="board-zone-tokens" aria-hidden={occupants.length === 0}>
                           {occupants.map((player, occupantIndex) => {
@@ -1180,11 +1254,11 @@ const App = () => {
                 <div className="board-focus-card">
                   <div className="board-focus-copy">
                     <p className="eyebrow">Lecture du plateau</p>
-                    <h3>{focusTileService?.name ?? focusTile.title}</h3>
-                    <p>{focusTile.description}</p>
+                    <h3>{focusTileService?.name ?? focusTilePresentation.title}</h3>
+                    <p>{focusTilePresentation.description}</p>
                   </div>
                   <div className="board-focus-meta">
-                    <span className="status-chip">{tileTypeLabels[focusTile.type]}</span>
+                    <span className="status-chip">{focusTilePresentation.typeLabel}</span>
                     {focusTile.color && <span className="tile-family">Famille {colorLabels[focusTile.color]}</span>}
                   </div>
                 </div>
@@ -1240,7 +1314,10 @@ const App = () => {
                 )}
                 {game.pendingAction && (
                   <div className="turn-helper">
-                    <strong>Destination choisie : {game.pendingAction.tile.title}</strong>
+                    <strong>
+                      Destination choisie :{' '}
+                      {pendingActionTilePresentation?.title ?? game.pendingAction.tile.title}
+                    </strong>
                     <span>Validez maintenant l’action de la case pour terminer le tour.</span>
                   </div>
                 )}
@@ -1305,6 +1382,28 @@ const App = () => {
               </div>
             </section>
 
+            {game.trainingMode === 'objections' && (
+              <section className="panel deck-panel">
+                <div className="panel-header compact-header">
+                  <div>
+                    <p className="eyebrow">Pioche</p>
+                    <h2>Deck Objections</h2>
+                  </div>
+                  <button className="secondary-button" onClick={drawObjectionCard}>
+                    Tirer une carte
+                  </button>
+                </div>
+                <div className="deck-card">
+                  <p className="deck-card-label">Carte active</p>
+                  <strong>{game.activeObjectionCard ?? 'Aucune carte tirée pour le moment.'}</strong>
+                  <p>
+                    Utilisez cette carte pendant les challenges Objection. Le deck disparaît entièrement en
+                    mode Arguments de vente.
+                  </p>
+                </div>
+              </section>
+            )}
+
             <section className="panel history-panel">
               <div className="panel-header compact-header">
                 <div>
@@ -1326,8 +1425,8 @@ const App = () => {
         <div className="modal-backdrop">
           <section className="modal-card">
             <p className="eyebrow">Résolution de case</p>
-            <h2>{game.pendingAction.tile.title}</h2>
-            <p>{game.pendingAction.tile.description}</p>
+            <h2>{pendingActionTilePresentation?.title ?? game.pendingAction.tile.title}</h2>
+            <p>{pendingActionTilePresentation?.description ?? game.pendingAction.tile.description}</p>
 
             {game.pendingAction.tile.type === 'market' && currentPlayer && (
               <div className="market-box">
@@ -1378,6 +1477,18 @@ const App = () => {
                     Passer le tour
                   </button>
                 </div>
+              </div>
+            )}
+
+            {game.pendingAction.tile.type === 'objection' && game.trainingMode === 'objections' && (
+              <div className="deck-card modal-deck-card">
+                <div className="deck-card-header">
+                  <p className="deck-card-label">Carte Objection</p>
+                  <button className="secondary-button" onClick={drawObjectionCard}>
+                    {game.activeObjectionCard ? 'Retirer une carte' : 'Tirer une carte'}
+                  </button>
+                </div>
+                <strong>{game.activeObjectionCard ?? 'Tirez une carte pour lancer le challenge.'}</strong>
               </div>
             )}
 
