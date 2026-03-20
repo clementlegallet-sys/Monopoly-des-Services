@@ -27,7 +27,15 @@ type ServicePiece = {
   description: string;
 };
 
-type Tile = {
+type TileActionDefinition = {
+  kind: 'start' | 'chance' | 'service' | 'question' | 'bubble' | 'market' | 'objection';
+  summary: string;
+  rewardClients?: number;
+  grantsServiceId?: string;
+  drawObjectionCard?: boolean;
+};
+
+type BaseTile = {
   id: number;
   key: string;
   title: string;
@@ -37,6 +45,12 @@ type Tile = {
   serviceId?: string;
   neighbors: number[];
   shape: TileShapeDefinition;
+};
+
+type Tile = BaseTile & {
+  tileId: string;
+  label: string;
+  action: TileActionDefinition;
 };
 
 type Player = {
@@ -114,6 +128,7 @@ const INITIAL_CLIENTS = 2;
 const INITIAL_BANK = 40;
 const SALE_VALUES = [2, 3, 5] as const;
 const PLAYER_TOKEN_COLORS = ['#d9473f', '#2b6fdd', '#f59e0b', '#0f9d74'];
+const ENABLE_TILE_DEBUG = true;
 const OBJECTION_DECK: ObjectionCard[] = [
   {
     id: 'already-equipped',
@@ -153,7 +168,7 @@ const OBJECTION_DECK: ObjectionCard[] = [
   },
 ] as const;
 
-const BOARD_SPACES: Tile[] = [
+const RAW_BOARD_SPACES: BaseTile[] = [
   {
     id: 0,
     key: 'start',
@@ -418,8 +433,70 @@ const BOARD_SPACES: Tile[] = [
   },
 ];
 
+const getTileActionDefinition = (tile: BaseTile): TileActionDefinition => {
+  switch (tile.type) {
+    case 'start':
+      return {
+        kind: 'start',
+        summary: 'Point de départ et repère central des déplacements.',
+      };
+    case 'chance':
+      return {
+        kind: 'chance',
+        summary: 'Bonne réponse : gagner 2 clients.',
+        rewardClients: 2,
+      };
+    case 'service':
+      return {
+        kind: 'service',
+        summary: 'Réussir le challenge pour gagner la pièce service.',
+        grantsServiceId: tile.serviceId,
+      };
+    case 'question':
+      return {
+        kind: 'question',
+        summary: 'Poser une question ouverte pertinente pour gagner 1 client.',
+        rewardClients: 1,
+      };
+    case 'bubble':
+      return {
+        kind: 'bubble',
+        summary: 'Déclenche un argument BAC ou une objection selon le mode choisi.',
+        rewardClients: 1,
+        drawObjectionCard: true,
+      };
+    case 'market':
+      return {
+        kind: 'market',
+        summary: 'Échanger une pièce ou vendre une pièce à la banque.',
+      };
+    case 'objection':
+      return {
+        kind: 'objection',
+        summary: 'Traiter une objection client et gagner 1 client si validé.',
+        rewardClients: 1,
+        drawObjectionCard: true,
+      };
+    default:
+      return {
+        kind: tile.type,
+        summary: tile.description,
+      };
+  }
+};
+
+const BOARD_REGISTRY: Tile[] = RAW_BOARD_SPACES.map((tile) => ({
+  ...tile,
+  tileId: tile.key,
+  label: tile.title,
+  action: getTileActionDefinition(tile),
+}));
+
+const BOARD_BY_NUMERIC_ID = new Map(BOARD_REGISTRY.map((tile) => [tile.id, tile]));
+const BOARD_BY_TILE_ID = new Map(BOARD_REGISTRY.map((tile) => [tile.tileId, tile]));
+
 const TILE_GRAPH: Record<number, number[]> = Object.fromEntries(
-  BOARD_SPACES.map((tile) => [tile.id, tile.neighbors]),
+  BOARD_REGISTRY.map((tile) => [tile.id, tile.neighbors]),
 );
 
 const parsePolygonPoints = (points: string): Point[] =>
@@ -433,6 +510,19 @@ const parsePolygonPoints = (points: string): Point[] =>
 
 const serializePolygonPoints = (points: Point[]): string =>
   points.map(({ x, y }) => `${x.toFixed(2)},${y.toFixed(2)}`).join(' ');
+
+const getPolygonCentroid = (points: string): Point => {
+  const parsedPoints = parsePolygonPoints(points);
+  const total = parsedPoints.length || 1;
+
+  return parsedPoints.reduce(
+    (centroid, point) => ({
+      x: centroid.x + point.x / total,
+      y: centroid.y + point.y / total,
+    }),
+    { x: 0, y: 0 },
+  );
+};
 
 const insetPolygonPoints = (points: string, inset: number): string => {
   if (inset <= 0) {
@@ -471,14 +561,15 @@ const insetPolygonPoints = (points: string, inset: number): string => {
 
 const getBoardRegistryIssues = (tiles: Tile[]) => {
   const tileIds = new Set(tiles.map((tile) => tile.id));
+  const tileRegistryIds = new Set<string>();
   const issues: string[] = [];
 
   tiles.forEach((tile) => {
-    if (!tile.key.trim()) {
+    if (!tile.tileId.trim()) {
       issues.push(`Case ${tile.id} sans identifiant lisible.`);
     }
 
-    if (!tile.title.trim()) {
+    if (!tile.label.trim()) {
       issues.push(`Case ${tile.id} sans libellé.`);
     }
 
@@ -493,6 +584,15 @@ const getBoardRegistryIssues = (tiles: Tile[]) => {
     if (tile.neighbors.length === 0) {
       issues.push(`Case ${tile.id} sans adjacency.`);
     }
+
+    if (!tile.action.summary.trim()) {
+      issues.push(`Case ${tile.id} sans définition d’action.`);
+    }
+
+    if (tileRegistryIds.has(tile.tileId)) {
+      issues.push(`Identifiant de case dupliqué : ${tile.tileId}.`);
+    }
+    tileRegistryIds.add(tile.tileId);
 
     tile.neighbors.forEach((neighborId) => {
       if (!tileIds.has(neighborId)) {
@@ -509,7 +609,7 @@ const getBoardRegistryIssues = (tiles: Tile[]) => {
   return issues;
 };
 
-const BOARD_REGISTRY_ISSUES = getBoardRegistryIssues(BOARD_SPACES);
+const BOARD_REGISTRY_ISSUES = getBoardRegistryIssues(BOARD_REGISTRY);
 
 const DIE_PIPS: Record<number, string[]> = {
   1: ['center'],
@@ -559,7 +659,7 @@ const servicePieces: ServicePiece[] = [
   },
 ];
 
-const board = BOARD_SPACES;
+const board = BOARD_REGISTRY;
 
 const colorLabels: Record<ServiceColor, string> = {
   blue: 'Bleu',
@@ -682,7 +782,7 @@ const getTilePresentation = (
   }
 
   return {
-    title: tile.title,
+    title: tile.label,
     description: tile.description,
     typeLabel: tileTypeLabels[tile.type],
   };
@@ -816,7 +916,7 @@ const App = () => {
   const [saleValue, setSaleValue] = useState<number>(SALE_VALUES[0]);
   const [displayRoll, setDisplayRoll] = useState<number | null>(game.lastRoll);
   const [isRolling, setIsRolling] = useState(false);
-  const [inspectedTileId, setInspectedTileId] = useState<number | null>(null);
+  const [inspectedTileId, setInspectedTileId] = useState<string | null>(null);
   const rollIntervalRef = useRef<number | null>(null);
   const rollTimeoutRef = useRef<number | null>(null);
 
@@ -850,17 +950,33 @@ const App = () => {
 
   const currentPlayer = game.players[game.currentPlayerIndex] ?? null;
   const completeSets = useMemo(() => getCompleteSets(game.players), [game.players]);
-  const boardFocusTileId =
-    inspectedTileId ??
-    game.pendingAction?.tile.id ??
-    game.pendingMovement?.originTileId ??
-    currentPlayer?.position ??
-    0;
-  const focusTile = board[boardFocusTileId] ?? board[0];
+  const currentPlayerTile = currentPlayer ? BOARD_BY_NUMERIC_ID.get(currentPlayer.position) ?? null : null;
+  const pendingMovementOriginTile = game.pendingMovement
+    ? BOARD_BY_NUMERIC_ID.get(game.pendingMovement.originTileId) ?? null
+    : null;
+  const focusTile =
+    (inspectedTileId ? BOARD_BY_TILE_ID.get(inspectedTileId) ?? null : null) ??
+    game.pendingAction?.tile ??
+    pendingMovementOriginTile ??
+    currentPlayerTile ??
+    board[0];
   const focusTilePresentation = getTilePresentation(focusTile, game.trainingMode);
   const focusTileService = getService(focusTile.serviceId);
   const reachableTileIds = game.pendingMovement?.reachableTileIds ?? [];
   const isChoosingDestination = Boolean(game.pendingMovement);
+
+  const logTileInteraction = (tile: Tile, source: 'inspection' | 'destination') => {
+    if (!ENABLE_TILE_DEBUG) {
+      return;
+    }
+
+    console.info(`[board-debug:${source}] tileId=${tile.tileId} label="${tile.label}" type=${tile.type}`);
+  };
+
+  const inspectTile = (tile: Tile, source: 'inspection' | 'destination' = 'inspection') => {
+    setInspectedTileId(tile.tileId);
+    logTileInteraction(tile, source);
+  };
 
   const startSetup = () => {
     setGame((currentGame) => ({
@@ -920,7 +1036,7 @@ const App = () => {
     }));
 
     setDisplayRoll(null);
-    setInspectedTileId(0);
+    setInspectedTileId(board[0]?.tileId ?? null);
     setGame({
       phase: 'playing',
       players,
@@ -971,7 +1087,10 @@ const App = () => {
       const reachableDestinations = getReachableTileIds(currentPlayer.position, finalRoll);
 
       setDisplayRoll(finalRoll);
-      setInspectedTileId(currentPlayer.position);
+      const originTile = BOARD_BY_NUMERIC_ID.get(currentPlayer.position);
+      if (originTile) {
+        inspectTile(originTile);
+      }
       setIsRolling(false);
       setGame((currentGame) => ({
         ...currentGame,
@@ -1023,7 +1142,10 @@ const App = () => {
       return;
     }
 
-    setInspectedTileId(tileId);
+    const tile = BOARD_BY_NUMERIC_ID.get(tileId);
+    if (tile) {
+      inspectTile(tile, 'destination');
+    }
 
     setGame((currentGame) => {
       const pendingMovement = currentGame.pendingMovement;
@@ -1032,7 +1154,7 @@ const App = () => {
       }
 
       const player = currentGame.players.find((candidate) => candidate.id === pendingMovement.playerId);
-      const tile = board[tileId];
+      const tile = BOARD_BY_NUMERIC_ID.get(tileId);
       const tilePresentation = tile ? getTilePresentation(tile, currentGame.trainingMode) : null;
 
       if (!player || !tile) {
@@ -1064,8 +1186,8 @@ const App = () => {
       }
 
       const destinationMessage = triggeredObjectionCard
-        ? `${player.name} choisit ${tilePresentation?.title ?? tile.title} comme destination après un ${pendingMovement.roll}. Carte tirée : « ${triggeredObjectionCard.title} ».`
-        : `${player.name} choisit ${tilePresentation?.title ?? tile.title} comme destination après un ${pendingMovement.roll}.`;
+        ? `${player.name} choisit ${tilePresentation?.title ?? tile.label} comme destination après un ${pendingMovement.roll}. Carte tirée : « ${triggeredObjectionCard.title} ».`
+        : `${player.name} choisit ${tilePresentation?.title ?? tile.label} comme destination après un ${pendingMovement.roll}.`;
 
       return {
         ...currentGame,
@@ -1244,15 +1366,16 @@ const App = () => {
     const occupants = game.players.filter((player) => player.position === tile.id);
     const service = getService(tile.serviceId);
     const tilePresentation = getTilePresentation(tile, game.trainingMode);
-    const tileLabel = tile.type === 'service' && service ? service.name : tilePresentation.title;
-    const isFocused = tile.id === boardFocusTileId;
+    const tileLabel = tile.type === 'service' && service ? service.name : tile.label;
+    const isFocused = tile.tileId === focusTile.tileId;
     const isSelectedTile = tile.id === game.pendingAction?.tile.id;
     const isCurrentPlayerTile = tile.id === currentPlayer?.position;
     const isReachable = reachableTileIds.includes(tile.id);
     const isDisabled = isChoosingDestination && !isReachable;
     const visualPoints = insetPolygonPoints(shape.points, isReachable ? 1.1 : 0.95);
     const outlinePoints = insetPolygonPoints(shape.points, 0.5);
-    const hitPoints = insetPolygonPoints(shape.points, 0.85);
+    const hitPoints = shape.points;
+    const labelAnchor = getPolygonCentroid(shape.points);
 
     return {
       tile,
@@ -1269,6 +1392,7 @@ const App = () => {
       visualPoints,
       outlinePoints,
       hitPoints,
+      labelAnchor,
     };
   });
 
@@ -1469,6 +1593,7 @@ const App = () => {
                         isReachable,
                         isSelectedTile,
                         hitPoints,
+                        labelAnchor,
                         outlinePoints,
                         tileLabel,
                         tilePresentation,
@@ -1479,7 +1604,8 @@ const App = () => {
 
                         return (
                           <g
-                            key={tile.id}
+                            key={tile.tileId}
+                            data-tile-id={tile.tileId}
                             className={`board-space-group tile-${tile.type} tile-color-${tile.color ?? 'neutral'} ${
                               isFocused ? 'board-space-focused' : ''
                             } ${isSelectedTile ? 'board-space-selected' : ''} ${
@@ -1490,17 +1616,32 @@ const App = () => {
                           >
                             <polygon className="board-space-shape" points={visualPoints} />
                             <polygon className="board-space-outline" points={outlinePoints} />
+                            {game.trainingMode === 'objections' && tile.type === 'bubble' && (
+                              <text
+                                aria-hidden="true"
+                                className="board-space-objection-label"
+                                x={labelAnchor.x}
+                                y={labelAnchor.y}
+                                textAnchor="middle"
+                                dominantBaseline="middle"
+                              >
+                                Objection
+                              </text>
+                            )}
                             <polygon
                               className="board-space-hit"
                               points={hitPoints}
                               role="button"
                               tabIndex={isDisabled ? -1 : 0}
                               aria-disabled={isDisabled}
+                              data-tile-id={tile.tileId}
                               aria-label={`${tileLabel}. ${
                                 canSelectDestination ? 'Destination atteignable.' : tilePresentation.description
                               }`}
                               onClick={() =>
-                                isChoosingDestination ? handleDestinationSelection(tile.id) : setInspectedTileId(tile.id)
+                                isChoosingDestination
+                                  ? handleDestinationSelection(tile.id)
+                                  : inspectTile(tile, 'inspection')
                               }
                               onKeyDown={(event) => {
                                 if (isDisabled) {
@@ -1512,7 +1653,7 @@ const App = () => {
                                   if (isChoosingDestination) {
                                     handleDestinationSelection(tile.id);
                                   } else {
-                                    setInspectedTileId(tile.id);
+                                    inspectTile(tile, 'inspection');
                                   }
                                 }
                               }}
@@ -1529,8 +1670,10 @@ const App = () => {
                     <p className="eyebrow board-focus-eyebrow">Lecture du plateau</p>
                     <div className="board-focus-main">
                       <div className="board-focus-copy">
+                        <p className="board-focus-tile-id">tileId · {focusTile.tileId}</p>
                         <h3>{focusTileService?.name ?? focusTilePresentation.title}</h3>
                         <p>{focusTilePresentation.description}</p>
+                        <p className="board-focus-action">{focusTile.action.summary}</p>
                       </div>
                       <div className="board-focus-meta">
                         <span className="status-chip">{focusTilePresentation.typeLabel}</span>
@@ -1588,7 +1731,7 @@ const App = () => {
                   <div className="turn-helper">
                     <strong>
                       Destination choisie :{' '}
-                      {pendingActionTilePresentation?.title ?? game.pendingAction.tile.title}
+                      {pendingActionTilePresentation?.title ?? game.pendingAction.tile.label}
                     </strong>
                     <span>Validez maintenant l’action de la case pour terminer le tour.</span>
                   </div>
@@ -1675,7 +1818,7 @@ const App = () => {
         <div className="modal-backdrop">
           <section className="modal-card">
             <p className="eyebrow">Résolution de case</p>
-            <h2>{pendingActionTilePresentation?.title ?? game.pendingAction.tile.title}</h2>
+            <h2>{pendingActionTilePresentation?.title ?? game.pendingAction.tile.label}</h2>
             <p>{pendingActionTilePresentation?.description ?? game.pendingAction.tile.description}</p>
 
             {game.pendingAction.tile.type === 'market' && currentPlayer && (

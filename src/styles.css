@@ -421,6 +421,20 @@ button:disabled {
   pointer-events: none;
 }
 
+.board-space-objection-label {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 3.2px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  fill: #fff1dd;
+  stroke: rgba(124, 18, 18, 0.88);
+  stroke-width: 0.18px;
+  paint-order: stroke fill;
+  pointer-events: none;
+  filter: drop-shadow(0 0 2px rgba(79, 12, 12, 0.24));
+}
+
 .board-space-hit {
   fill: transparent;
   cursor: pointer;
@@ -580,6 +594,22 @@ button:disabled {
 .board-focus-main {
   display: grid;
   gap: 10px;
+}
+
+.board-focus-tile-id,
+.board-focus-action {
+  margin-bottom: 0;
+}
+
+.board-focus-tile-id {
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f6d79b;
+}
+
+.board-focus-action {
+  color: #ffe8bc;
 }
 
 .board-focus-copy h3 {
