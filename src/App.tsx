@@ -97,6 +97,10 @@ type TileShapeDefinition = {
   };
 };
 
+type Point = {
+  x: number;
+  y: number;
+};
 
 type TilePresentation = {
   title: string;
@@ -417,6 +421,53 @@ const BOARD_SPACES: Tile[] = [
 const TILE_GRAPH: Record<number, number[]> = Object.fromEntries(
   BOARD_SPACES.map((tile) => [tile.id, tile.neighbors]),
 );
+
+const parsePolygonPoints = (points: string): Point[] =>
+  points
+    .trim()
+    .split(/\s+/)
+    .map((pair) => {
+      const [x, y] = pair.split(',').map(Number);
+      return { x, y };
+    });
+
+const serializePolygonPoints = (points: Point[]): string =>
+  points.map(({ x, y }) => `${x.toFixed(2)},${y.toFixed(2)}`).join(' ');
+
+const insetPolygonPoints = (points: string, inset: number): string => {
+  if (inset <= 0) {
+    return points;
+  }
+
+  const parsedPoints = parsePolygonPoints(points);
+  const centroid = parsedPoints.reduce(
+    (accumulator, point) => ({
+      x: accumulator.x + point.x / parsedPoints.length,
+      y: accumulator.y + point.y / parsedPoints.length,
+    }),
+    { x: 0, y: 0 },
+  );
+
+  const insetPoints = parsedPoints.map((point) => {
+    const deltaX = centroid.x - point.x;
+    const deltaY = centroid.y - point.y;
+    const distance = Math.hypot(deltaX, deltaY);
+
+    if (distance === 0) {
+      return point;
+    }
+
+    const appliedInset = Math.min(inset, distance * 0.35);
+    const ratio = appliedInset / distance;
+
+    return {
+      x: point.x + deltaX * ratio,
+      y: point.y + deltaY * ratio,
+    };
+  });
+
+  return serializePolygonPoints(insetPoints);
+};
 
 const getBoardRegistryIssues = (tiles: Tile[]) => {
   const tileIds = new Set(tiles.map((tile) => tile.id));
@@ -1199,6 +1250,9 @@ const App = () => {
     const isCurrentPlayerTile = tile.id === currentPlayer?.position;
     const isReachable = reachableTileIds.includes(tile.id);
     const isDisabled = isChoosingDestination && !isReachable;
+    const visualPoints = insetPolygonPoints(shape.points, isReachable ? 1.1 : 0.95);
+    const outlinePoints = insetPolygonPoints(shape.points, 0.5);
+    const hitPoints = insetPolygonPoints(shape.points, 0.85);
 
     return {
       tile,
@@ -1212,7 +1266,9 @@ const App = () => {
       isCurrentPlayerTile,
       isReachable,
       isDisabled,
-      svgPoints: shape.points,
+      visualPoints,
+      outlinePoints,
+      hitPoints,
     };
   });
 
@@ -1412,9 +1468,11 @@ const App = () => {
                         isFocused,
                         isReachable,
                         isSelectedTile,
-                        svgPoints,
+                        hitPoints,
+                        outlinePoints,
                         tileLabel,
                         tilePresentation,
+                        visualPoints,
                       }) => {
                         const interactiveTitle = `${tileLabel} · ${tilePresentation.description}`;
                         const canSelectDestination = isChoosingDestination && isReachable;
@@ -1430,11 +1488,11 @@ const App = () => {
                               isDisabled ? 'board-space-disabled' : ''
                             }`}
                           >
-                            <polygon className="board-space-shape" points={svgPoints} />
-                            <polygon className="board-space-outline" points={svgPoints} />
+                            <polygon className="board-space-shape" points={visualPoints} />
+                            <polygon className="board-space-outline" points={outlinePoints} />
                             <polygon
                               className="board-space-hit"
-                              points={svgPoints}
+                              points={hitPoints}
                               role="button"
                               tabIndex={isDisabled ? -1 : 0}
                               aria-disabled={isDisabled}
