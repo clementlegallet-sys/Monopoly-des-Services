@@ -410,13 +410,14 @@ button:disabled {
 .board-space-shape {
   fill: rgba(255, 248, 232, 0);
   stroke: rgba(255, 242, 214, 0);
-  stroke-width: 0.12;
+  stroke-width: 0.1;
+  paint-order: stroke fill;
 }
 
 .board-space-outline {
   fill: none;
   stroke: rgba(58, 20, 16, 0);
-  stroke-width: 0.08;
+  stroke-width: 0.07;
   pointer-events: none;
 }
 
@@ -430,57 +431,57 @@ button:disabled {
 .board-space-group:hover .board-space-shape,
 .board-space-group:focus-within .board-space-shape,
 .board-space-focused .board-space-shape {
-  fill: rgba(255, 249, 235, 0.1);
-  stroke: rgba(255, 239, 198, 0.45);
-  stroke-width: 0.16;
-  filter: drop-shadow(0 4px 10px rgba(32, 5, 4, 0.08));
+  fill: rgba(255, 249, 235, 0.04);
+  stroke: rgba(255, 239, 198, 0.34);
+  stroke-width: 0.12;
+  filter: drop-shadow(0 2px 8px rgba(32, 5, 4, 0.05));
 }
 
 .board-space-group:focus-within .board-space-outline,
 .board-space-focused .board-space-outline {
-  stroke: rgba(255, 239, 198, 0.38);
-  stroke-width: 0.14;
-}
-
-.board-space-current .board-space-shape {
-  fill: rgba(112, 182, 255, 0.12);
-  stroke: rgba(157, 211, 255, 0.5);
-  stroke-width: 0.18;
-  filter: drop-shadow(0 0 10px rgba(90, 169, 255, 0.16));
-}
-
-.board-space-current .board-space-outline {
-  stroke: rgba(58, 141, 228, 0.34);
-  stroke-width: 0.12;
-}
-
-.board-space-reachable .board-space-shape {
-  fill: rgba(248, 214, 110, 0.18);
-  stroke: rgba(255, 244, 207, 0.7);
-  stroke-width: 0.2;
-  filter: drop-shadow(0 0 12px rgba(246, 206, 101, 0.18));
-}
-
-.board-space-reachable .board-space-outline {
-  stroke: rgba(167, 108, 24, 0.22);
+  stroke: rgba(255, 239, 198, 0.28);
   stroke-width: 0.1;
 }
 
+.board-space-current .board-space-shape {
+  fill: rgba(112, 182, 255, 0.07);
+  stroke: rgba(157, 211, 255, 0.44);
+  stroke-width: 0.14;
+  filter: drop-shadow(0 0 8px rgba(90, 169, 255, 0.1));
+}
+
+.board-space-current .board-space-outline {
+  stroke: rgba(58, 141, 228, 0.26);
+  stroke-width: 0.09;
+}
+
+.board-space-reachable .board-space-shape {
+  fill: rgba(248, 214, 110, 0.08);
+  stroke: rgba(255, 244, 207, 0.52);
+  stroke-width: 0.14;
+  filter: drop-shadow(0 0 8px rgba(246, 206, 101, 0.08));
+}
+
+.board-space-reachable .board-space-outline {
+  stroke: rgba(167, 108, 24, 0.18);
+  stroke-width: 0.08;
+}
+
 .board-space-selected .board-space-shape {
-  fill: rgba(222, 105, 76, 0.22);
-  stroke: rgba(255, 239, 213, 0.9);
-  stroke-width: 0.24;
-  filter: drop-shadow(0 0 14px rgba(214, 96, 67, 0.2));
+  fill: rgba(222, 105, 76, 0.1);
+  stroke: rgba(255, 239, 213, 0.7);
+  stroke-width: 0.16;
+  filter: drop-shadow(0 0 10px rgba(214, 96, 67, 0.12));
 }
 
 .board-space-selected .board-space-outline {
-  stroke: rgba(122, 35, 22, 0.24);
-  stroke-width: 0.12;
+  stroke: rgba(122, 35, 22, 0.2);
+  stroke-width: 0.09;
 }
 
 .board-space-disabled .board-space-shape,
 .board-space-disabled .board-space-outline {
-  opacity: 0.1;
+  opacity: 0.18;
   filter: none;
 }
 
