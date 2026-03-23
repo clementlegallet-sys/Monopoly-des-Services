@@ -652,27 +652,54 @@ button:disabled {
 }
 
 .board-player-token {
-  position: absolute;
-  width: 38px;
-  height: 38px;
-  border: 2px solid rgba(255, 248, 231, 0.9);
-  color: #ffffff;
-  font-size: 0.68rem;
-  letter-spacing: 0.02em;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.42);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.42),
-    0 10px 20px rgba(12, 2, 2, 0.28),
-    0 0 0 1px rgba(32, 9, 8, 0.18);
-  backdrop-filter: blur(1px);
+  transform-box: fill-box;
 }
 
-.board-player-token::after {
-  content: '';
-  position: absolute;
-  inset: -5px;
-  border-radius: inherit;
-  border: 1px solid rgba(255, 244, 223, 0.2);
+.board-player-token-body {
+  fill: currentColor;
+  stroke: rgba(255, 248, 231, 0.92);
+  stroke-width: 0.45;
+  filter: drop-shadow(0 0.7px 0 rgba(255, 255, 255, 0.3)) drop-shadow(0 1.8px 2.6px rgba(12, 2, 2, 0.32));
+}
+
+.board-player-token-ring {
+  fill: none;
+  stroke: rgba(255, 244, 223, 0.26);
+  stroke-width: 0.18;
+}
+
+.board-player-token-label {
+  fill: #ffffff;
+  font-size: 1.12px;
+  font-weight: 800;
+  letter-spacing: 0.04px;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.38);
+  stroke-width: 0.22px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.board-token-anchor-debug {
+  pointer-events: none;
+}
+
+.board-token-anchor-debug line {
+  stroke: rgba(255, 80, 80, 0.96);
+  stroke-width: 0.24;
+}
+
+.board-token-anchor-debug-ring {
+  fill: none;
+  stroke: rgba(255, 80, 80, 0.42);
+  stroke-width: 0.24;
+  stroke-dasharray: 0.9 0.7;
+}
+
+.board-token-anchor-debug-center {
+  fill: rgba(255, 244, 223, 0.98);
+  stroke: rgba(180, 28, 28, 0.92);
+  stroke-width: 0.24;
 }
 
 .board-focus-card {
