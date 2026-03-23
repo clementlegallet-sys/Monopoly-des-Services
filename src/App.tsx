@@ -2140,17 +2140,31 @@ const App = () => {
                               points={outlinePoints}
                               data-tile-id={tile.tileId}
                             />
-                            {tile.type === 'bubble' && (
-                              <text
-                                aria-hidden="true"
-                                className="board-space-objection-label"
-                                x={labelAnchor.x}
-                                y={labelAnchor.y}
-                                textAnchor="middle"
-                                dominantBaseline="middle"
-                              >
-                                {tilePresentation.identityLabel}
-                              </text>
+                            {tile.type === 'bubble' && tilePresentation.identityLabel && (
+                              <>
+                                <clipPath id={`bubble-label-clip-${tile.tileId}`}>
+                                  <polygon points={visualPoints} />
+                                </clipPath>
+                                <g
+                                  aria-hidden="true"
+                                  className="board-space-bubble-badge"
+                                  clipPath={`url(#bubble-label-clip-${tile.tileId})`}
+                                  transform={`translate(${labelAnchor.x} ${labelAnchor.y})`}
+                                >
+                                  <ellipse className="board-space-bubble-badge-fill" rx={5.9} ry={3.65} />
+                                  <ellipse className="board-space-bubble-badge-ring" rx={5.9} ry={3.65} />
+                                  <text className="board-space-objection-label" textAnchor="middle">
+                                    {game.trainingMode === 'objections' ? (
+                                      <>
+                                        <tspan x="0" dy="-0.46em">Object</tspan>
+                                        <tspan x="0" dy="1.02em">ion</tspan>
+                                      </>
+                                    ) : (
+                                      <tspan x="0" dy="0.32em">{tilePresentation.identityLabel}</tspan>
+                                    )}
+                                  </text>
+                                </g>
+                              </>
                             )}
                             <polygon
                               className="board-space-hit"

@@ -515,18 +515,32 @@ button:disabled {
   pointer-events: none;
 }
 
+.board-space-bubble-badge {
+  pointer-events: none;
+}
+
+.board-space-bubble-badge-fill {
+  fill: rgba(129, 22, 18, 0.78);
+}
+
+.board-space-bubble-badge-ring {
+  fill: none;
+  stroke: rgba(255, 238, 211, 0.92);
+  stroke-width: 0.18px;
+}
+
 .board-space-objection-label {
   font-family: 'Georgia', 'Times New Roman', serif;
-  font-size: 3.2px;
+  font-size: 1.72px;
   font-weight: 900;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  fill: #fff1dd;
-  stroke: rgba(124, 18, 18, 0.88);
-  stroke-width: 0.18px;
+  fill: #fff3e3;
+  stroke: rgba(85, 15, 14, 0.92);
+  stroke-width: 0.14px;
   paint-order: stroke fill;
   pointer-events: none;
-  filter: drop-shadow(0 0 2px rgba(79, 12, 12, 0.24));
+  filter: drop-shadow(0 0 1.2px rgba(44, 8, 8, 0.22));
 }
 
 .board-space-hit {
