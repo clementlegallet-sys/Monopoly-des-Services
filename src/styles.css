@@ -1189,12 +1189,71 @@ button:disabled {
 .objection-card-viewer {
   margin: 0;
   display: grid;
-  gap: 10px;
+  gap: 12px;
+  justify-items: center;
+}
+
+.objection-card-flip-button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  width: min(100%, 360px);
+}
+
+.objection-card-flip-button:disabled {
+  cursor: default;
+}
+
+.objection-card-flip-scene {
+  display: block;
+  width: 100%;
+  perspective: 1500px;
+}
+
+.objection-card-flip-inner {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4.4;
+  transform-style: preserve-3d;
+  transition: transform 0.82s cubic-bezier(0.22, 1, 0.36, 1), filter 0.3s ease;
+  filter: drop-shadow(0 22px 32px rgba(17, 6, 6, 0.28));
+}
+
+.objection-card-flip-button:hover:not(:disabled) .objection-card-flip-inner,
+.objection-card-flip-button:focus-visible .objection-card-flip-inner {
+  filter: drop-shadow(0 28px 36px rgba(17, 6, 6, 0.34));
+}
+
+.objection-card-flip-button.is-revealed .objection-card-flip-inner,
+.objection-card-flip-button.is-flipping .objection-card-flip-inner {
+  transform: rotateY(180deg);
+}
+
+.objection-card-face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 12px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.objection-card-face-back {
+  transform: rotateY(180deg);
+}
+
+.objection-card-face-caption {
+  color: #ffe9bb;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-shadow: 0 2px 10px rgba(21, 8, 8, 0.35);
 }
 
 .objection-card-image {
-  width: min(100%, 340px);
-  justify-self: center;
+  width: 100%;
   border-radius: 20px;
   border: 2px solid rgba(120, 45, 30, 0.16);
   box-shadow: 0 18px 32px rgba(47, 10, 9, 0.22);
@@ -1204,6 +1263,7 @@ button:disabled {
 .objection-card-viewer figcaption {
   color: #7b332a;
   text-align: center;
+  max-width: 42ch;
 }
 
 .deck-card strong {
