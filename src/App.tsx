@@ -1038,6 +1038,7 @@ const App = () => {
   const [mappingExportMessage, setMappingExportMessage] = useState('');
   const [isObjectionCardRevealed, setIsObjectionCardRevealed] = useState(false);
   const [isObjectionCardFlipping, setIsObjectionCardFlipping] = useState(false);
+  const [hasObjectionCardStartedFlip, setHasObjectionCardStartedFlip] = useState(false);
   const isDeveloperMode = useMemo(() => {
     if (typeof window === 'undefined') {
       return false;
@@ -1077,6 +1078,7 @@ const App = () => {
     if (!isObjectionChallenge) {
       setIsObjectionCardRevealed(false);
       setIsObjectionCardFlipping(false);
+      setHasObjectionCardStartedFlip(false);
       if (objectionRevealTimeoutRef.current) {
         window.clearTimeout(objectionRevealTimeoutRef.current);
         objectionRevealTimeoutRef.current = null;
@@ -1086,6 +1088,7 @@ const App = () => {
 
     setIsObjectionCardRevealed(false);
     setIsObjectionCardFlipping(false);
+    setHasObjectionCardStartedFlip(false);
 
     if (objectionRevealTimeoutRef.current) {
       window.clearTimeout(objectionRevealTimeoutRef.current);
@@ -1711,12 +1714,23 @@ const App = () => {
       return;
     }
 
-    setIsObjectionCardFlipping(true);
-    objectionRevealTimeoutRef.current = window.setTimeout(() => {
-      setIsObjectionCardRevealed(true);
-      setIsObjectionCardFlipping(false);
+    if (objectionRevealTimeoutRef.current) {
+      window.clearTimeout(objectionRevealTimeoutRef.current);
       objectionRevealTimeoutRef.current = null;
-    }, 420);
+    }
+
+    setHasObjectionCardStartedFlip(true);
+    setIsObjectionCardFlipping(true);
+  };
+
+  const handleObjectionCardFlipTransitionEnd = () => {
+    if (!isObjectionCardFlipping) {
+      return;
+    }
+
+    setIsObjectionCardRevealed(true);
+    setIsObjectionCardFlipping(false);
+    objectionRevealTimeoutRef.current = null;
   };
 
   const drawObjectionCard = () => {
@@ -2584,7 +2598,7 @@ const App = () => {
                   <figure className="objection-card-viewer">
                     <button
                       type="button"
-                      className={`objection-card-flip-button${isObjectionCardRevealed ? ' is-revealed' : ''}${isObjectionCardFlipping ? ' is-flipping' : ''}`}
+                      className={`objection-card-flip-button${hasObjectionCardStartedFlip ? ' has-started-flip' : ''}${isObjectionCardRevealed ? ' is-revealed' : ''}${isObjectionCardFlipping ? ' is-flipping' : ''}`}
                       onClick={handleRevealObjectionCard}
                       disabled={isObjectionCardRevealed || isObjectionCardFlipping}
                       aria-label={
@@ -2594,7 +2608,7 @@ const App = () => {
                       }
                     >
                       <span className="objection-card-flip-scene">
-                        <span className="objection-card-flip-inner">
+                        <span className="objection-card-flip-inner" onTransitionEnd={handleObjectionCardFlipTransitionEnd}>
                           <span className="objection-card-face objection-card-face-front">
                             <img
                               src={objectionsDeckFaceImage}
