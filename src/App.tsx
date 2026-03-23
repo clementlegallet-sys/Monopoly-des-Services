@@ -772,24 +772,46 @@ const getService = (serviceId?: string) =>
 
 const appendHistoryEntry = (history: string[], message: string) => [message, ...history].slice(0, 12);
 
-const TOKEN_OFFSETS = [
-  { x: 0, y: 0 },
-  { x: 2.6, y: -2.2 },
-  { x: -2.6, y: 2.2 },
-  { x: 2.6, y: 2.2 },
-  { x: -2.6, y: -2.2 },
-] as const;
+const TOKEN_RADIUS = 2.4;
+const TOKEN_DEBUG_MARKER_RADIUS = 0.72;
+const TOKEN_STACK_SPACING = 2.8;
 
-const getTokenOffset = (occupantIndex: number) => {
-  const preset = TOKEN_OFFSETS[occupantIndex];
-
-  if (preset) {
-    return preset;
+const getTokenOffset = (occupantIndex: number, occupantCount: number) => {
+  if (occupantCount <= 1) {
+    return { x: 0, y: 0 };
   }
 
-  const ringIndex = occupantIndex - TOKEN_OFFSETS.length;
-  const angle = ((ringIndex % 6) / 6) * Math.PI * 2;
-  const radius = 4.4 + Math.floor(ringIndex / 6) * 1.8;
+  if (occupantCount === 2) {
+    return {
+      x: occupantIndex === 0 ? -TOKEN_STACK_SPACING / 2 : TOKEN_STACK_SPACING / 2,
+      y: 0,
+    };
+  }
+
+  if (occupantCount === 3) {
+    const triangleOffsets = [
+      { x: 0, y: -TOKEN_STACK_SPACING * 0.7 },
+      { x: -TOKEN_STACK_SPACING * 0.78, y: TOKEN_STACK_SPACING * 0.52 },
+      { x: TOKEN_STACK_SPACING * 0.78, y: TOKEN_STACK_SPACING * 0.52 },
+    ] as const;
+
+    return triangleOffsets[occupantIndex] ?? { x: 0, y: 0 };
+  }
+
+  if (occupantCount === 4) {
+    const gridOffsets = [
+      { x: -TOKEN_STACK_SPACING / 2, y: -TOKEN_STACK_SPACING / 2 },
+      { x: TOKEN_STACK_SPACING / 2, y: -TOKEN_STACK_SPACING / 2 },
+      { x: -TOKEN_STACK_SPACING / 2, y: TOKEN_STACK_SPACING / 2 },
+      { x: TOKEN_STACK_SPACING / 2, y: TOKEN_STACK_SPACING / 2 },
+    ] as const;
+
+    return gridOffsets[occupantIndex] ?? { x: 0, y: 0 };
+  }
+
+  const ringIndex = occupantIndex;
+  const angle = ((ringIndex % occupantCount) / occupantCount) * Math.PI * 2 - Math.PI / 2;
+  const radius = TOKEN_STACK_SPACING * 0.92 + Math.floor(ringIndex / occupantCount) * 1.2;
 
   return {
     x: Math.cos(angle) * radius,
@@ -1734,6 +1756,10 @@ const App = () => {
     };
   });
 
+  const debugAnchorTile = isTileDebugEnabled && inspectedTileId
+    ? boardTiles.find(({ tile }) => tile.tileId === inspectedTileId) ?? null
+    : null;
+
   return (
     <div className="app-shell">
       <header className="hero-card">
@@ -2009,31 +2035,52 @@ const App = () => {
                   <img src={boardReferenceImage} alt="Plateau Monopoly des Services" className="board-base-image" />
                   <div className="board-image-shade" />
 
-                  <div className="board-token-layer" aria-hidden="true">
+                  <svg
+                    className="board-token-layer"
+                    viewBox="0 0 100 100"
+                    preserveAspectRatio="none"
+                    aria-hidden="true"
+                  >
                     {boardTiles.map(({ tile, shape, occupants }) =>
                       occupants.map((player, occupantIndex) => {
                         const playerIndex = game.players.findIndex((entry) => entry.id === player.id);
-                        const offset = getTokenOffset(occupantIndex);
+                        const offset = getTokenOffset(occupantIndex, occupants.length);
+                        const tokenCenterX = shape.tokenAnchor.x + offset.x;
+                        const tokenCenterY = shape.tokenAnchor.y + offset.y;
 
                         return (
-                          <span
-                            className="player-token board-player-token"
+                          <g
+                            className="board-player-token"
                             key={`${tile.tileId}-${player.id}`}
-                            style={{
-                              background: PLAYER_TOKEN_COLORS[playerIndex % PLAYER_TOKEN_COLORS.length],
-                              left: `${shape.tokenAnchor.x}%`,
-                              top: `${shape.tokenAnchor.y}%`,
-                              transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`,
-                              zIndex: 5 + occupantIndex,
-                            }}
-                            title={player.name}
+                            transform={`translate(${tokenCenterX} ${tokenCenterY})`}
+                            style={{ color: PLAYER_TOKEN_COLORS[playerIndex % PLAYER_TOKEN_COLORS.length] }}
                           >
-                            {getPlayerInitials(player.name)}
-                          </span>
+                            <title>{player.name}</title>
+                            <circle className="board-player-token-body" r={TOKEN_RADIUS} />
+                            <circle className="board-player-token-ring" r={TOKEN_RADIUS + 0.34} />
+                            <text
+                              className="board-player-token-label"
+                              textAnchor="middle"
+                              dominantBaseline="central"
+                            >
+                              {getPlayerInitials(player.name)}
+                            </text>
+                          </g>
                         );
                       }),
                     )}
-                  </div>
+                    {debugAnchorTile && (
+                      <g
+                        className="board-token-anchor-debug"
+                        transform={`translate(${debugAnchorTile.shape.tokenAnchor.x} ${debugAnchorTile.shape.tokenAnchor.y})`}
+                      >
+                        <circle className="board-token-anchor-debug-ring" r={TOKEN_RADIUS + 0.9} />
+                        <circle className="board-token-anchor-debug-center" r={TOKEN_DEBUG_MARKER_RADIUS} />
+                        <line x1={-(TOKEN_RADIUS + 1.35)} y1={0} x2={TOKEN_RADIUS + 1.35} y2={0} />
+                        <line x1={0} y1={-(TOKEN_RADIUS + 1.35)} x2={0} y2={TOKEN_RADIUS + 1.35} />
+                      </g>
+                    )}
+                  </svg>
 
                   <svg
                     className={`board-overlay-svg ${isBoardMappingMode ? 'board-overlay-svg-passive' : ''}`}
