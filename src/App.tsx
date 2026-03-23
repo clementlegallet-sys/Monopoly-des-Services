@@ -137,7 +137,6 @@ type MappingTool = 'polygon' | 'anchor';
 type TilePresentation = {
   title: string;
   description: string;
-  typeLabel: string;
   identityLabel?: string;
 };
 
@@ -155,6 +154,7 @@ const INITIAL_BANK = 40;
 const SALE_VALUES = [2, 3, 5] as const;
 const PLAYER_TOKEN_COLORS = ['#d9473f', '#2b6fdd', '#f59e0b', '#0f9d74'];
 const ENABLE_TILE_DEBUG = true;
+const DEVELOPER_QUERY_PARAM = 'dev';
 const TILE_DEBUG_FLASH_DURATION_MS = 950;
 const BOARD_MAP_SOURCE = boardMapJson as BoardMapFile;
 const BOARD_MAP_TILE_LOOKUP = new Map(BOARD_MAP_SOURCE.tiles.map((tile) => [tile.tileId, tile]));
@@ -831,7 +831,6 @@ const getTilePresentation = (
         trainingMode === 'objections'
           ? 'Case bulle en mode Objections : affiche et déclenche une objection.'
           : 'Case bulle en mode Arguments de vente : affiche et déclenche un BAC.',
-      typeLabel: tileTypeLabels[tile.type],
       identityLabel: trainingMode === 'objections' ? 'Objection' : 'BAC',
     };
   }
@@ -840,7 +839,6 @@ const getTilePresentation = (
     return {
       title: tile.label,
       description: 'Tirez une carte Objection et répondez avec la méthode AREF.',
-      typeLabel: tileTypeLabels[tile.type],
       identityLabel: 'Objection',
     };
   }
@@ -848,7 +846,6 @@ const getTilePresentation = (
   return {
     title: tile.label,
     description: tile.description,
-    typeLabel: tileTypeLabels[tile.type],
   };
 };
 
@@ -1039,6 +1036,14 @@ const App = () => {
   const [mappingTool, setMappingTool] = useState<MappingTool>('polygon');
   const [finalizedMappingTileIds, setFinalizedMappingTileIds] = useState<string[]>([]);
   const [mappingExportMessage, setMappingExportMessage] = useState('');
+  const isDeveloperMode = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    const searchParams = new URLSearchParams(window.location.search);
+    return searchParams.get(DEVELOPER_QUERY_PARAM) === '1';
+  }, []);
   const rollIntervalRef = useRef<number | null>(null);
   const rollTimeoutRef = useRef<number | null>(null);
   const debugFlashTimeoutRef = useRef<number | null>(null);
@@ -1049,10 +1054,10 @@ const App = () => {
   }, [game]);
 
   useEffect(() => {
-    if (BOARD_REGISTRY_ISSUES.length > 0) {
+    if (isDeveloperMode && BOARD_REGISTRY_ISSUES.length > 0) {
       console.warn('Board registry issues detected:', BOARD_REGISTRY_ISSUES);
     }
-  }, []);
+  }, [isDeveloperMode]);
 
   useEffect(() => {
     if (!isRolling) {
@@ -1224,7 +1229,7 @@ const App = () => {
   };
 
   const logTileInteraction = (tile: Tile, source: 'inspection' | 'destination') => {
-    if (!ENABLE_TILE_DEBUG) {
+    if (!ENABLE_TILE_DEBUG || !isDeveloperMode) {
       return;
     }
 
@@ -1246,7 +1251,7 @@ const App = () => {
     setInspectedTileId(tile.tileId);
     logTileInteraction(tile, source);
 
-    if (isTileDebugEnabled) {
+    if (isDeveloperMode && isTileDebugEnabled) {
       setTileDebugState({
         tileId: tile.tileId,
         label: tile.label,
@@ -1331,6 +1336,10 @@ const App = () => {
     setDisplayRoll(null);
     setIsRolling(false);
     setInspectedTileId(null);
+    setIsTileDebugEnabled(false);
+    setTileDebugState(null);
+    setDebugFlashTileId(null);
+    setIsBoardMappingMode(false);
     setGame(createInitialState());
   };
 
@@ -1691,6 +1700,9 @@ const App = () => {
     : null;
   const canInspectObjectionCard = Boolean(game.activeObjectionCard);
   const winner = game.players.find((player) => player.id === game.winnerId) ?? null;
+  const focusTileActionLabel = isChoosingDestination && reachableTileIds.includes(focusTile.tileId)
+    ? 'Case atteignable ce tour : cliquez pour la choisir comme destination.'
+    : getResolvedActionSummary(focusTile, game.trainingMode);
 
   const boardMapValidation = useMemo(() => {
     const expectedLabels: Record<string, string> = {
@@ -1756,7 +1768,7 @@ const App = () => {
     };
   });
 
-  const debugAnchorTile = isTileDebugEnabled && inspectedTileId
+  const debugAnchorTile = isDeveloperMode && isTileDebugEnabled && inspectedTileId
     ? boardTiles.find(({ tile }) => tile.tileId === inspectedTileId) ?? null
     : null;
 
@@ -1764,11 +1776,10 @@ const App = () => {
     <div className="app-shell">
       <header className="hero-card">
         <div>
-          <p className="eyebrow">Plateau interactif · React + TypeScript + Vite</p>
+          <p className="eyebrow">Plateau interactif</p>
           <h1>Monopoly des Services</h1>
           <p className="hero-copy">
-            Une version digitale recentrée sur le tapis de jeu d’origine&nbsp;: le plateau devient la
-            surface principale, la géométrie des cases colle au nouveau visuel à bordures épaisses et les pions se repèrent immédiatement sur les espaces jouables.
+            Une version digitale fidèle au tapis de jeu d’origine&nbsp;: le plateau reste au centre de l’expérience, les déplacements sont lisibles et chaque case guide clairement l’animation de la partie.
           </p>
         </div>
         <div className="hero-actions">
@@ -1860,7 +1871,7 @@ const App = () => {
                 )}
               </div>
               <div className="board-header-status">
-                {ENABLE_TILE_DEBUG && (
+                {isDeveloperMode && ENABLE_TILE_DEBUG && (
                   <button
                     type="button"
                     className={`secondary-button board-debug-toggle ${
@@ -1886,11 +1897,13 @@ const App = () => {
                     Debug clic {isTileDebugEnabled ? 'activé' : 'désactivé'}
                   </button>
                 )}
-                <div className={`status-chip ${BOARD_REGISTRY_ISSUES.length > 0 ? 'status-chip-warning' : ''}`}>
-                  {BOARD_REGISTRY_ISSUES.length > 0
-                    ? `${BOARD_REGISTRY_ISSUES.length} alerte(s) registre`
-                    : `${board.length} cases jouables`}
-                </div>
+                {isDeveloperMode && (
+                  <div className={`status-chip ${BOARD_REGISTRY_ISSUES.length > 0 ? 'status-chip-warning' : ''}`}>
+                    {BOARD_REGISTRY_ISSUES.length > 0
+                      ? `${BOARD_REGISTRY_ISSUES.length} alerte(s) registre`
+                      : `${board.length} cases jouables`}
+                  </div>
+                )}
                 {game.trainingMode && (
                   <div className="status-chip status-chip-mode">{trainingModeLabels[game.trainingMode]}</div>
                 )}
@@ -1898,7 +1911,7 @@ const App = () => {
               </div>
             </div>
 
-            {ENABLE_TILE_DEBUG && isTileDebugEnabled && (
+            {isDeveloperMode && ENABLE_TILE_DEBUG && isTileDebugEnabled && (
               <details className="developer-panel">
                 <summary>Developer section · Board Mapping Mode</summary>
                 <div className="developer-panel-body">
@@ -1986,7 +1999,7 @@ const App = () => {
 
             <div
               className={`board-stage-layout ${game.trainingMode === 'objections' ? 'board-stage-layout-objections' : ''} ${
-                isBoardMappingMode ? 'board-stage-layout-mapping' : ''
+                isDeveloperMode && isBoardMappingMode ? 'board-stage-layout-mapping' : ''
               }`}
             >
               {game.trainingMode === 'objections' && (
@@ -2016,7 +2029,7 @@ const App = () => {
                     <p className="deck-card-label">Pile active</p>
                     <strong>{game.activeObjectionCard?.title ?? 'Aucune carte révélée'}</strong>
                     <p>
-                      La pioche reste dans la zone libre à gauche du plateau et la carte de défi s’ouvre lors d’une case Objection.
+                      Gardez cette pioche à portée de vue : elle alimente les défis du mode Objections et reste lisible pendant toute la partie.
                     </p>
                     {game.activeObjectionCard && (
                       <button className="secondary-button objections-view-button" onClick={drawObjectionCard}>
@@ -2029,7 +2042,7 @@ const App = () => {
 
               <div className="board-frame">
                 <div
-                  className={`board-surface ${isBoardMappingMode ? 'board-surface-mapping' : ''}`}
+                  className={`board-surface ${isDeveloperMode && isBoardMappingMode ? 'board-surface-mapping' : ''}`}
                   ref={boardSurfaceRef}
                 >
                   <img src={boardReferenceImage} alt="Plateau Monopoly des Services" className="board-base-image" />
@@ -2083,7 +2096,7 @@ const App = () => {
                   </svg>
 
                   <svg
-                    className={`board-overlay-svg ${isBoardMappingMode ? 'board-overlay-svg-passive' : ''}`}
+                    className={`board-overlay-svg ${isDeveloperMode && isBoardMappingMode ? 'board-overlay-svg-passive' : ''}`}
                     viewBox="0 0 100 100"
                     preserveAspectRatio="none"
                     aria-label="Cases du plateau"
@@ -2160,7 +2173,7 @@ const App = () => {
                     )}
                   </svg>
 
-                    {isBoardMappingMode && (
+                    {isDeveloperMode && isBoardMappingMode && (
                     <>
                       <div
                         className="board-mapping-capture"
@@ -2237,21 +2250,14 @@ const App = () => {
                     <p className="eyebrow board-focus-eyebrow">Lecture du plateau</p>
                     <div className="board-focus-main">
                       <div className="board-focus-copy">
-                        <p className="board-focus-tile-id">tileId · {focusTile.tileId}</p>
                         <h3>{focusTilePresentation.title}</h3>
                         <p>{focusTilePresentation.description}</p>
-                        <p className="board-focus-action">
-                          {getResolvedActionSummary(focusTile, game.trainingMode)}
-                        </p>
-                      </div>
-                      <div className="board-focus-meta">
-                        <span className="status-chip">{focusTilePresentation.typeLabel}</span>
-                        {focusTile.color && <span className="tile-family">Famille {colorLabels[focusTile.color]}</span>}
+                        <p className="board-focus-action">{focusTileActionLabel}</p>
                       </div>
                     </div>
                   </aside>
 
-                  {ENABLE_TILE_DEBUG && isTileDebugEnabled && tileDebugState && (
+                  {isDeveloperMode && ENABLE_TILE_DEBUG && isTileDebugEnabled && tileDebugState && (
                     <aside className="board-debug-card" aria-live="polite">
                       <p className="eyebrow board-debug-eyebrow">Debug clic</p>
                       <div className="board-debug-main">
@@ -2275,7 +2281,7 @@ const App = () => {
                 </div>
               </div>
 
-              {isBoardMappingMode && selectedMappingTile && (
+              {isDeveloperMode && isBoardMappingMode && selectedMappingTile && (
                 <aside className="board-mapping-panel panel">
                   <p className="eyebrow">Board Mapping Mode</p>
                   <h3>
@@ -2316,9 +2322,9 @@ const App = () => {
                   <h2>{currentPlayer ? currentPlayer.name : 'En attente'}</h2>
                   <p>
                     {isChoosingDestination
-                      ? 'Choisissez votre case de destination.'
+                      ? 'Choisissez votre prochaine case parmi les emplacements mis en évidence.'
                       : currentPlayer
-                        ? 'Lancez le dé puis sélectionnez une case atteignable sur le plateau.'
+                        ? 'Lancez le dé puis sélectionnez une destination atteignable sur le plateau.'
                         : 'Configurez une partie pour commencer.'}
                   </p>
                   {game.trainingMode && <p>Mode : {trainingModeLabels[game.trainingMode]}</p>}
@@ -2343,7 +2349,7 @@ const App = () => {
                   <div className="turn-helper">
                     <strong>Choisissez votre case de destination</strong>
                     <span>
-                      Départ : tileId {game.pendingMovement.originTileId} · {game.pendingMovement.roll} déplacement
+                      Départ : {pendingMovementOriginTile?.label ?? 'case actuelle'} · {game.pendingMovement.roll} déplacement
                       {game.pendingMovement.roll > 1 ? 's' : ''} possible
                       {game.pendingMovement.roll > 1 ? 's' : ''}.
                     </span>
@@ -2380,12 +2386,12 @@ const App = () => {
                       </span>
                       <div>
                         <h3>{player.name}</h3>
-                        <p>tileId {player.position}</p>
+                        <p>{BOARD_BY_TILE_ID.get(player.position)?.label ?? 'Case actuelle'}</p>
                       </div>
                     </div>
                     <div className="score-stats">
                       <strong>{player.clients} clients</strong>
-                      <span>{player.pieces.length} pièce(s)</span>
+                      <span>{player.pieces.length} pièce(s) service</span>
                       <span>Premier lancer : {player.rollsTaken === 0 ? 'pas encore joué' : 'effectué'}</span>
                       <span>
                         Enseignes :{' '}
