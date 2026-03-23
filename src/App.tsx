@@ -1757,6 +1757,31 @@ const App = () => {
     ? getTilePresentation(game.pendingAction.tile, game.trainingMode)
     : null;
   const canInspectObjectionCard = Boolean(game.activeObjectionCard);
+  const objectionFrontImageSource = objectionsDeckFaceImage;
+  const objectionBackImageSource = game.activeObjectionCard?.image ?? null;
+
+  useEffect(() => {
+    if (!canInspectObjectionCard) {
+      return;
+    }
+
+    console.debug('Objection card face image sources', {
+      frontFaceImage: objectionFrontImageSource,
+      backFaceImage: objectionBackImageSource,
+      activeObjectionCardId: game.activeObjectionCard?.id ?? null,
+      activeObjectionCardTitle: game.activeObjectionCard?.title ?? null,
+      isObjectionCardRevealed,
+      hasObjectionCardStartedFlip,
+    });
+  }, [
+    canInspectObjectionCard,
+    game.activeObjectionCard?.id,
+    game.activeObjectionCard?.title,
+    hasObjectionCardStartedFlip,
+    isObjectionCardRevealed,
+    objectionBackImageSource,
+    objectionFrontImageSource,
+  ]);
   const winner = game.players.find((player) => player.id === game.winnerId) ?? null;
   const focusTileActionLabel = isChoosingDestination && reachableTileIds.includes(focusTile.tileId)
     ? 'Case atteignable ce tour : cliquez pour la choisir comme destination.'
@@ -2080,7 +2105,7 @@ const App = () => {
                     <span className="objections-deck-shadow objections-deck-shadow-back" aria-hidden="true" />
                     <span className="objections-deck-shadow objections-deck-shadow-mid" aria-hidden="true" />
                     <span className="objections-deck-top-card">
-                      <img src={objectionsDeckFaceImage} alt="Dos du deck Objections" />
+                      <img src={objectionFrontImageSource} alt="Dos du deck Objections" />
                     </span>
                   </button>
                   <div className="deck-card objections-deck-copy">
@@ -2597,6 +2622,7 @@ const App = () => {
                 {game.activeObjectionCard ? (
                   <figure className="objection-card-viewer">
                     <button
+                      key={game.activeObjectionCard.id}
                       type="button"
                       className={`objection-card-flip-button${hasObjectionCardStartedFlip ? ' has-started-flip' : ''}${isObjectionCardRevealed ? ' is-revealed' : ''}${isObjectionCardFlipping ? ' is-flipping' : ''}`}
                       onClick={handleRevealObjectionCard}
@@ -2611,7 +2637,7 @@ const App = () => {
                         <div className="objection-card-flip-inner" onTransitionEnd={handleObjectionCardFlipTransitionEnd}>
                           <div className="objection-card-face objection-card-face-front">
                             <img
-                              src={objectionsDeckFaceImage}
+                              src={objectionFrontImageSource}
                               alt="Face commune du deck Objections"
                               className="objection-card-image"
                             />
@@ -2619,7 +2645,7 @@ const App = () => {
                           </div>
                           <div className="objection-card-face objection-card-face-back">
                             <img
-                              src={game.activeObjectionCard.image}
+                              src={objectionBackImageSource ?? ''}
                               alt={`Carte objection : ${game.activeObjectionCard.title}`}
                               className="objection-card-image"
                             />
