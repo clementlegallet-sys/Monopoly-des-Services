@@ -1036,6 +1036,8 @@ const App = () => {
   const [mappingTool, setMappingTool] = useState<MappingTool>('polygon');
   const [finalizedMappingTileIds, setFinalizedMappingTileIds] = useState<string[]>([]);
   const [mappingExportMessage, setMappingExportMessage] = useState('');
+  const [isObjectionCardRevealed, setIsObjectionCardRevealed] = useState(false);
+  const [isObjectionCardFlipping, setIsObjectionCardFlipping] = useState(false);
   const isDeveloperMode = useMemo(() => {
     if (typeof window === 'undefined') {
       return false;
@@ -1047,6 +1049,7 @@ const App = () => {
   const rollIntervalRef = useRef<number | null>(null);
   const rollTimeoutRef = useRef<number | null>(null);
   const debugFlashTimeoutRef = useRef<number | null>(null);
+  const objectionRevealTimeoutRef = useRef<number | null>(null);
   const boardSurfaceRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -1065,6 +1068,31 @@ const App = () => {
     }
   }, [game.lastRoll, isRolling]);
 
+  useEffect(() => {
+    const isObjectionChallenge =
+      game.pendingAction &&
+      (game.pendingAction.tile.type === 'bubble' || game.pendingAction.tile.type === 'objection') &&
+      game.trainingMode === 'objections';
+
+    if (!isObjectionChallenge) {
+      setIsObjectionCardRevealed(false);
+      setIsObjectionCardFlipping(false);
+      if (objectionRevealTimeoutRef.current) {
+        window.clearTimeout(objectionRevealTimeoutRef.current);
+        objectionRevealTimeoutRef.current = null;
+      }
+      return;
+    }
+
+    setIsObjectionCardRevealed(false);
+    setIsObjectionCardFlipping(false);
+
+    if (objectionRevealTimeoutRef.current) {
+      window.clearTimeout(objectionRevealTimeoutRef.current);
+      objectionRevealTimeoutRef.current = null;
+    }
+  }, [game.pendingAction, game.activeObjectionCard?.id, game.trainingMode]);
+
   useEffect(
     () => () => {
       if (rollIntervalRef.current) {
@@ -1075,6 +1103,9 @@ const App = () => {
       }
       if (debugFlashTimeoutRef.current) {
         window.clearTimeout(debugFlashTimeoutRef.current);
+      }
+      if (objectionRevealTimeoutRef.current) {
+        window.clearTimeout(objectionRevealTimeoutRef.current);
       }
     },
     [],
@@ -1673,6 +1704,19 @@ const App = () => {
       setSelectedPieceId('');
       return resolveTurn(currentGame, players, currentGame.centralBank - awarded, message);
     });
+  };
+
+  const handleRevealObjectionCard = () => {
+    if (!game.activeObjectionCard || isObjectionCardRevealed || isObjectionCardFlipping) {
+      return;
+    }
+
+    setIsObjectionCardFlipping(true);
+    objectionRevealTimeoutRef.current = window.setTimeout(() => {
+      setIsObjectionCardRevealed(true);
+      setIsObjectionCardFlipping(false);
+      objectionRevealTimeoutRef.current = null;
+    }, 420);
   };
 
   const drawObjectionCard = () => {
@@ -2520,22 +2564,56 @@ const App = () => {
               <div className="deck-card modal-deck-card objection-viewer">
                 <div className="deck-card-header">
                   <div>
-                    <p className="deck-card-label">Carte Objection tirée</p>
-                    <strong>{game.activeObjectionCard?.title ?? 'Carte en attente'}</strong>
+                    <p className="deck-card-label">Carte Objection</p>
+                    <strong>
+                      {isObjectionCardRevealed
+                        ? game.activeObjectionCard?.title ?? 'Carte en attente'
+                        : 'Cliquez pour révéler la carte'}
+                    </strong>
                   </div>
                   <button className="secondary-button" onClick={drawObjectionCard}>
                     Changer la carte
                   </button>
                 </div>
-                <p>Utilisez la carte réelle ci-dessous pour mener le challenge et valider la réponse.</p>
+                <p>
+                  {isObjectionCardRevealed
+                    ? 'Utilisez la carte réelle révélée ci-dessous pour mener le challenge et valider la réponse.'
+                    : 'La carte reste face cachée au départ. Cliquez dessus pour lancer le flip et découvrir l’objection tirée.'}
+                </p>
                 {game.activeObjectionCard ? (
                   <figure className="objection-card-viewer">
-                    <img
-                      src={game.activeObjectionCard.image}
-                      alt={`Carte objection : ${game.activeObjectionCard.title}`}
-                      className="objection-card-image"
-                    />
-                    <figcaption>{game.activeObjectionCard.prompt}</figcaption>
+                    <button
+                      type="button"
+                      className={`objection-card-flip-button${isObjectionCardRevealed ? ' is-revealed' : ''}${isObjectionCardFlipping ? ' is-flipping' : ''}`}
+                      onClick={handleRevealObjectionCard}
+                      disabled={isObjectionCardRevealed || isObjectionCardFlipping}
+                      aria-label={
+                        isObjectionCardRevealed
+                          ? `Carte objection révélée : ${game.activeObjectionCard.title}`
+                          : 'Révéler la carte Objection'
+                      }
+                    >
+                      <span className="objection-card-flip-scene">
+                        <span className="objection-card-flip-inner">
+                          <span className="objection-card-face objection-card-face-front">
+                            <img
+                              src={objectionsDeckFaceImage}
+                              alt="Face commune du deck Objections"
+                              className="objection-card-image"
+                            />
+                            <span className="objection-card-face-caption">Cliquer pour révéler</span>
+                          </span>
+                          <span className="objection-card-face objection-card-face-back">
+                            <img
+                              src={game.activeObjectionCard.image}
+                              alt={`Carte objection : ${game.activeObjectionCard.title}`}
+                              className="objection-card-image"
+                            />
+                          </span>
+                        </span>
+                      </span>
+                    </button>
+                    {isObjectionCardRevealed && <figcaption>{game.activeObjectionCard.prompt}</figcaption>}
                   </figure>
                 ) : (
                   <p className="market-message">Aucune carte disponible. Relancez une pioche pour continuer.</p>
@@ -2543,7 +2621,12 @@ const App = () => {
               </div>
             )}
 
-            {game.pendingAction.tile.type !== 'market' && (
+            {(game.pendingAction.tile.type !== 'market' &&
+              !(
+                game.trainingMode === 'objections' &&
+                (game.pendingAction.tile.type === 'bubble' || game.pendingAction.tile.type === 'objection') &&
+                !isObjectionCardRevealed
+              )) && (
               <div className="modal-actions">
                 <button className="primary-button" onClick={handleValidatedAction}>
                   Réponse validée
