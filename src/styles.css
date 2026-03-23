@@ -1183,13 +1183,21 @@ button:disabled {
 }
 
 .objection-viewer {
-  gap: 14px;
+  gap: 18px;
+  justify-items: center;
+  text-align: center;
+}
+
+.objection-viewer .deck-card-header,
+.objection-viewer > p {
+  width: 100%;
 }
 
 .objection-card-viewer {
   margin: 0;
+  width: 100%;
   display: grid;
-  gap: 12px;
+  gap: 16px;
   justify-items: center;
 }
 
@@ -1198,7 +1206,7 @@ button:disabled {
   padding: 0;
   background: transparent;
   cursor: pointer;
-  width: min(100%, 360px);
+  width: min(100%, 460px);
 }
 
 .objection-card-flip-button:disabled {
@@ -1208,23 +1216,25 @@ button:disabled {
 .objection-card-flip-scene {
   display: block;
   width: 100%;
-  perspective: 1500px;
+  perspective: 2200px;
+  perspective-origin: center;
 }
 
 .objection-card-flip-inner {
   position: relative;
   width: 100%;
-  aspect-ratio: 3 / 4.4;
+  aspect-ratio: 3 / 4.35;
   transform-style: preserve-3d;
-  transition: transform 0.82s cubic-bezier(0.22, 1, 0.36, 1), filter 0.3s ease;
-  filter: drop-shadow(0 22px 32px rgba(17, 6, 6, 0.28));
+  transition: transform 0.95s cubic-bezier(0.22, 0.78, 0.2, 1), filter 0.25s ease;
+  filter: drop-shadow(0 24px 38px rgba(17, 6, 6, 0.34));
 }
 
 .objection-card-flip-button:hover:not(:disabled) .objection-card-flip-inner,
 .objection-card-flip-button:focus-visible .objection-card-flip-inner {
-  filter: drop-shadow(0 28px 36px rgba(17, 6, 6, 0.34));
+  filter: drop-shadow(0 30px 42px rgba(17, 6, 6, 0.4));
 }
 
+.objection-card-flip-button.has-started-flip .objection-card-flip-inner,
 .objection-card-flip-button.is-revealed .objection-card-flip-inner,
 .objection-card-flip-button.is-flipping .objection-card-flip-inner {
   transform: rotateY(180deg);
@@ -1236,34 +1246,59 @@ button:disabled {
   display: grid;
   justify-items: center;
   align-content: center;
-  gap: 12px;
+  gap: 14px;
+  padding: 0;
+  border-radius: 24px;
+  overflow: hidden;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
 
+.objection-card-face::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.16), transparent 28%, transparent 72%, rgba(0, 0, 0, 0.08));
+  pointer-events: none;
+}
+
+.objection-card-face-front {
+  background: linear-gradient(180deg, rgba(255, 249, 237, 0.92), rgba(224, 190, 153, 0.82));
+}
+
 .objection-card-face-back {
   transform: rotateY(180deg);
+  background: linear-gradient(180deg, rgba(255, 249, 237, 0.94), rgba(233, 215, 184, 0.88));
 }
 
 .objection-card-face-caption {
-  color: #ffe9bb;
-  font-weight: 700;
+  position: absolute;
+  inset: auto 18px 18px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(86, 23, 16, 0.78);
+  color: #ffeec6;
+  font-weight: 800;
   letter-spacing: 0.02em;
   text-shadow: 0 2px 10px rgba(21, 8, 8, 0.35);
+  box-shadow: 0 10px 18px rgba(21, 8, 8, 0.22);
 }
 
 .objection-card-image {
   width: 100%;
-  border-radius: 20px;
-  border: 2px solid rgba(120, 45, 30, 0.16);
-  box-shadow: 0 18px 32px rgba(47, 10, 9, 0.22);
-  background: #fff6eb;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 24px;
+  border: 2px solid rgba(120, 45, 30, 0.18);
+  box-shadow: 0 26px 38px rgba(47, 10, 9, 0.24);
+  background: linear-gradient(180deg, #fffdf8, #f7e6cf);
 }
 
 .objection-card-viewer figcaption {
   color: #7b332a;
   text-align: center;
-  max-width: 42ch;
+  max-width: 48ch;
+  font-weight: 600;
 }
 
 .deck-card strong {
@@ -1353,7 +1388,7 @@ button:disabled {
 }
 
 .modal-card {
-  width: min(680px, 100%);
+  width: min(780px, 100%);
   border-radius: 28px;
   padding: 24px;
 }
