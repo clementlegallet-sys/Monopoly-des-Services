@@ -7,185 +7,659 @@
       "label": "Départ",
       "type": "start",
       "actionType": "start",
-      "tokenAnchor": { "x": 50, "y": 50 },
-      "polygon": []
+      "tokenAnchor": {
+        "x": 50.63,
+        "y": 36.48
+      },
+      "polygon": [
+        {
+          "x": 43.46,
+          "y": 31.6
+        },
+        {
+          "x": 55.84,
+          "y": 31.07
+        },
+        {
+          "x": 55.97,
+          "y": 39.26
+        },
+        {
+          "x": 55.84,
+          "y": 45.54
+        },
+        {
+          "x": 46.46,
+          "y": 44.49
+        },
+        {
+          "x": 42.42,
+          "y": 40.66
+        }
+      ]
     },
     {
       "tileId": "T1",
       "label": "Place du Marché haut",
       "type": "market",
       "actionType": "market",
-      "tokenAnchor": { "x": 50, "y": 50 },
-      "polygon": []
+      "tokenAnchor": {
+        "x": 50.11,
+        "y": 20.44
+      },
+      "polygon": [
+        {
+          "x": 43.46,
+          "y": 12.07
+        },
+        {
+          "x": 54.8,
+          "y": 12.77
+        },
+        {
+          "x": 55.06,
+          "y": 22.88
+        },
+        {
+          "x": 44.63,
+          "y": 28.81
+        }
+      ]
     },
     {
       "tileId": "T2",
       "label": "Place du Marché haut droite",
       "type": "market",
       "actionType": "market",
-      "tokenAnchor": { "x": 50, "y": 50 },
-      "polygon": []
+      "tokenAnchor": {
+        "x": 64.69,
+        "y": 29.16
+      },
+      "polygon": [
+        {
+          "x": 57.14,
+          "y": 27.59
+        },
+        {
+          "x": 68.86,
+          "y": 22.53
+        },
+        {
+          "x": 71.73,
+          "y": 31.94
+        },
+        {
+          "x": 61.05,
+          "y": 37.17
+        }
+      ]
     },
     {
       "tileId": "T3",
       "label": "Place du Marché bas droite",
       "type": "market",
       "actionType": "market",
-      "tokenAnchor": { "x": 50, "y": 50 },
-      "polygon": []
+      "tokenAnchor": {
+        "x": 67.04,
+        "y": 44.32
+      },
+      "polygon": [
+        {
+          "x": 61.05,
+          "y": 38.57
+        },
+        {
+          "x": 73.03,
+          "y": 45.71
+        },
+        {
+          "x": 71.21,
+          "y": 52.86
+        },
+        {
+          "x": 60.66,
+          "y": 47.11
+        }
+      ]
     },
     {
       "tileId": "T4",
       "label": "Place du Marché bas",
       "type": "market",
       "actionType": "market",
-      "tokenAnchor": { "x": 50, "y": 50 },
-      "polygon": []
+      "tokenAnchor": {
+        "x": 49.85,
+        "y": 52.69
+      },
+      "polygon": [
+        {
+          "x": 44.37,
+          "y": 46.58
+        },
+        {
+          "x": 55.84,
+          "y": 47.98
+        },
+        {
+          "x": 55.84,
+          "y": 57.57
+        },
+        {
+          "x": 45.16,
+          "y": 59.48
+        }
+      ]
     },
     {
       "tileId": "T5",
       "label": "Place du Marché bas gauche",
       "type": "market",
       "actionType": "market",
-      "tokenAnchor": { "x": 50, "y": 50 },
-      "polygon": []
+      "tokenAnchor": {
+        "x": 35.65,
+        "y": 42.23
+      },
+      "polygon": [
+        {
+          "x": 38.77,
+          "y": 38.92
+        },
+        {
+          "x": 40.34,
+          "y": 46.41
+        },
+        {
+          "x": 28.74,
+          "y": 54.95
+        },
+        {
+          "x": 26.92,
+          "y": 41.53
+        }
+      ]
     },
     {
       "tileId": "T6",
       "label": "Place du Marché haut gauche",
       "type": "market",
       "actionType": "market",
-      "tokenAnchor": { "x": 50, "y": 50 },
-      "polygon": []
+      "tokenAnchor": {
+        "x": 35.52,
+        "y": 27.06
+      },
+      "polygon": [
+        {
+          "x": 30.05,
+          "y": 21.31
+        },
+        {
+          "x": 40.99,
+          "y": 29.85
+        },
+        {
+          "x": 39.69,
+          "y": 34.73
+        },
+        {
+          "x": 28.22,
+          "y": 26.71
+        }
+      ]
     },
     {
       "tileId": "T7",
       "label": "Protection Facture",
       "type": "service",
       "actionType": "service",
-      "tokenAnchor": { "x": 50, "y": 50 },
-      "polygon": []
+      "tokenAnchor": {
+        "x": 48.67,
+        "y": 5.28
+      },
+      "polygon": [
+        {
+          "x": 39.29,
+          "y": 0.4
+        },
+        {
+          "x": 58.57,
+          "y": 0.57
+        },
+        {
+          "x": 54.4,
+          "y": 8.94
+        },
+        {
+          "x": 43.98,
+          "y": 9.63
+        }
+      ]
     },
     {
       "tileId": "T8",
       "label": "Bulle rose haut droite",
       "type": "bubble_mode",
       "actionType": "bubble_mode",
-      "tokenAnchor": { "x": 50, "y": 50 },
-      "polygon": []
+      "tokenAnchor": {
+        "x": 66.52,
+        "y": 5.45
+      },
+      "polygon": [
+        {
+          "x": 60.14,
+          "y": 0.57
+        },
+        {
+          "x": 79.28,
+          "y": 1.09
+        },
+        {
+          "x": 67.56,
+          "y": 10.16
+        },
+        {
+          "x": 60.01,
+          "y": 8.76
+        }
+      ]
     },
     {
       "tileId": "T9",
       "label": "Chance",
       "type": "chance",
       "actionType": "chance",
-      "tokenAnchor": { "x": 50, "y": 50 },
-      "polygon": []
+      "tokenAnchor": {
+        "x": 82.41,
+        "y": 22.53
+      },
+      "polygon": [
+        {
+          "x": 81.11,
+          "y": 1.27
+        },
+        {
+          "x": 94,
+          "y": 35.26
+        },
+        {
+          "x": 80.46,
+          "y": 35.26
+        },
+        {
+          "x": 72.51,
+          "y": 9.98
+        }
+      ]
     },
     {
       "tileId": "T10",
       "label": "? droite",
       "type": "question",
       "actionType": "question",
-      "tokenAnchor": { "x": 50, "y": 50 },
-      "polygon": []
+      "tokenAnchor": {
+        "x": 88.27,
+        "y": 42.23
+      },
+      "polygon": [
+        {
+          "x": 77.98,
+          "y": 39.26
+        },
+        {
+          "x": 97.26,
+          "y": 37.52
+        },
+        {
+          "x": 95.04,
+          "y": 49.72
+        },
+        {
+          "x": 78.76,
+          "y": 46.41
+        }
+      ]
     },
     {
       "tileId": "T11",
       "label": "IZI Confort",
       "type": "service",
       "actionType": "service",
-      "tokenAnchor": { "x": 50, "y": 50 },
-      "polygon": []
+      "tokenAnchor": {
+        "x": 82.15,
+        "y": 50.59
+      },
+      "polygon": [
+        {
+          "x": 77.46,
+          "y": 45.02
+        },
+        {
+          "x": 92.05,
+          "y": 50.77
+        },
+        {
+          "x": 87.1,
+          "y": 61.75
+        },
+        {
+          "x": 76.16,
+          "y": 55.47
+        }
+      ]
     },
     {
       "tileId": "T12",
       "label": "Bulle rouge bas",
       "type": "bubble_mode",
       "actionType": "bubble_mode",
-      "tokenAnchor": { "x": 50, "y": 50 },
-      "polygon": []
+      "tokenAnchor": {
+        "x": 35.26,
+        "y": 67.5
+      },
+      "polygon": [
+        {
+          "x": 33.17,
+          "y": 63.84
+        },
+        {
+          "x": 43.07,
+          "y": 65.23
+        },
+        {
+          "x": 41.77,
+          "y": 80.05
+        },
+        {
+          "x": 32.13,
+          "y": 76.56
+        }
+      ]
     },
     {
       "tileId": "T13",
       "label": "Assistance Dépannage",
       "type": "service",
       "actionType": "service",
-      "tokenAnchor": { "x": 50, "y": 50 },
-      "polygon": []
+      "tokenAnchor": {
+        "x": 51.41,
+        "y": 67.85
+      },
+      "polygon": [
+        {
+          "x": 43.98,
+          "y": 65.06
+        },
+        {
+          "x": 56.62,
+          "y": 65.76
+        },
+        {
+          "x": 57.01,
+          "y": 99.4
+        },
+        {
+          "x": 43.98,
+          "y": 98.53
+        }
+      ]
     },
     {
       "tileId": "T14",
       "label": "? bas gauche",
       "type": "question",
       "actionType": "question",
-      "tokenAnchor": { "x": 50, "y": 50 },
-      "polygon": []
+      "tokenAnchor": {
+        "x": 25.23,
+        "y": 60.18
+      },
+      "polygon": [
+        {
+          "x": 25.36,
+          "y": 56.17
+        },
+        {
+          "x": 30.57,
+          "y": 61.05
+        },
+        {
+          "x": 19.1,
+          "y": 73.78
+        },
+        {
+          "x": 14.15,
+          "y": 67.85
+        }
+      ]
     },
     {
       "tileId": "T15",
       "label": "IZI by EDF",
       "type": "service",
       "actionType": "service",
-      "tokenAnchor": { "x": 50, "y": 50 },
-      "polygon": []
+      "tokenAnchor": {
+        "x": 16.5,
+        "y": 52.69
+      },
+      "polygon": [
+        {
+          "x": 23.01,
+          "y": 44.84
+        },
+        {
+          "x": 25.23,
+          "y": 51.12
+        },
+        {
+          "x": 12.59,
+          "y": 59.66
+        },
+        {
+          "x": 7.12,
+          "y": 52.16
+        }
+      ]
     },
     {
       "tileId": "T16",
       "label": "Bulle orange gauche",
       "type": "bubble_mode",
       "actionType": "bubble_mode",
-      "tokenAnchor": { "x": 50, "y": 50 },
-      "polygon": []
+      "tokenAnchor": {
+        "x": 13.11,
+        "y": 41.36
+      },
+      "polygon": [
+        {
+          "x": 20.54,
+          "y": 37.87
+        },
+        {
+          "x": 21.58,
+          "y": 41.01
+        },
+        {
+          "x": 6.08,
+          "y": 46.93
+        },
+        {
+          "x": 1.13,
+          "y": 36.13
+        }
+      ]
     },
     {
       "tileId": "T17",
       "label": "? gauche",
       "type": "question",
       "actionType": "question",
-      "tokenAnchor": { "x": 50, "y": 50 },
-      "polygon": []
+      "tokenAnchor": {
+        "x": 11.55,
+        "y": 31.07
+      },
+      "polygon": [
+        {
+          "x": 23.66,
+          "y": 29.5
+        },
+        {
+          "x": 21.58,
+          "y": 34.04
+        },
+        {
+          "x": 1.78,
+          "y": 34.38
+        },
+        {
+          "x": 5.95,
+          "y": 21.83
+        }
+      ]
     },
     {
       "tileId": "T18",
       "label": "Thermostat",
       "type": "service",
       "actionType": "service",
-      "tokenAnchor": { "x": 50, "y": 50 },
-      "polygon": []
+      "tokenAnchor": {
+        "x": 17.8,
+        "y": 17.83
+      },
+      "polygon": [
+        {
+          "x": 8.16,
+          "y": 19.74
+        },
+        {
+          "x": 24.18,
+          "y": 28.28
+        },
+        {
+          "x": 27.44,
+          "y": 16.95
+        },
+        {
+          "x": 13.76,
+          "y": 10.85
+        }
+      ]
     },
     {
       "tileId": "T19",
       "label": "Bulle verte haut gauche",
       "type": "bubble_mode",
       "actionType": "bubble_mode",
-      "tokenAnchor": { "x": 50, "y": 50 },
-      "polygon": []
+      "tokenAnchor": {
+        "x": 25.62,
+        "y": 10.68
+      },
+      "polygon": [
+        {
+          "x": 18.84,
+          "y": 0.22
+        },
+        {
+          "x": 32.13,
+          "y": 11.55
+        },
+        {
+          "x": 29,
+          "y": 18.7
+        },
+        {
+          "x": 16.24,
+          "y": 6.15
+        }
+      ]
     },
     {
       "tileId": "T20",
       "label": "? haut",
       "type": "question",
       "actionType": "question",
-      "tokenAnchor": { "x": 50, "y": 50 },
-      "polygon": []
+      "tokenAnchor": {
+        "x": 33.69,
+        "y": 4.58
+      },
+      "polygon": [
+        {
+          "x": 20.41,
+          "y": 0.22
+        },
+        {
+          "x": 38.25,
+          "y": 0.92
+        },
+        {
+          "x": 40.73,
+          "y": 9.46
+        },
+        {
+          "x": 34.61,
+          "y": 8.94
+        }
+      ]
     },
     {
       "tileId": "T21",
       "label": "? bas centre",
       "type": "question",
       "actionType": "question",
-      "tokenAnchor": { "x": 50, "y": 50 },
-      "polygon": []
+      "tokenAnchor": {
+        "x": 66,
+        "y": 70.99
+      },
+      "polygon": [
+        {
+          "x": 57.92,
+          "y": 63.67
+        },
+        {
+          "x": 67.82,
+          "y": 65.06
+        },
+        {
+          "x": 76.29,
+          "y": 78.48
+        },
+        {
+          "x": 61.18,
+          "y": 76.39
+        }
+      ]
     },
     {
       "tileId": "T22",
       "label": "Bulle jaune bas droite",
       "type": "bubble_mode",
       "actionType": "bubble_mode",
-      "tokenAnchor": { "x": 50, "y": 50 },
-      "polygon": []
+      "tokenAnchor": {
+        "x": 75.38,
+        "y": 63.32
+      },
+      "polygon": [
+        {
+          "x": 69.12,
+          "y": 64.54
+        },
+        {
+          "x": 70.95,
+          "y": 52.69
+        },
+        {
+          "x": 86.58,
+          "y": 65.23
+        },
+        {
+          "x": 81.63,
+          "y": 75
+        }
+      ]
     }
   ],
-  "bubbleTiles": ["T8", "T12", "T16", "T19", "T22"]
+  "bubbleTiles": [
+    "T8",
+    "T12",
+    "T16",
+    "T19",
+    "T22"
+  ]
 }
