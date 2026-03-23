@@ -1287,15 +1287,15 @@ button:disabled {
 
 .objection-card-face-front {
   z-index: 2;
-  transform: rotateY(0deg) translateZ(1px);
-  -webkit-transform: rotateY(0deg) translateZ(1px);
+  transform: rotateY(0deg) translateZ(3px);
+  -webkit-transform: rotateY(0deg) translateZ(3px);
   background: linear-gradient(180deg, rgba(255, 249, 237, 0.92), rgba(224, 190, 153, 0.82));
 }
 
 .objection-card-face-back {
   z-index: 1;
-  transform: rotateY(180deg) translateZ(1px);
-  -webkit-transform: rotateY(180deg) translateZ(1px);
+  transform: rotateY(180deg) translateZ(3px);
+  -webkit-transform: rotateY(180deg) translateZ(3px);
   background: linear-gradient(180deg, rgba(255, 249, 237, 0.94), rgba(233, 215, 184, 0.88));
 }
 
@@ -1324,6 +1324,8 @@ button:disabled {
   -webkit-backface-visibility: hidden;
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
+  transform-style: flat;
+  -webkit-transform-style: flat;
 }
 
 .objection-card-viewer figcaption {
