@@ -2607,25 +2607,25 @@ const App = () => {
                           : 'Révéler la carte Objection'
                       }
                     >
-                      <span className="objection-card-flip-scene">
-                        <span className="objection-card-flip-inner" onTransitionEnd={handleObjectionCardFlipTransitionEnd}>
-                          <span className="objection-card-face objection-card-face-front">
+                      <div className="objection-card-flip-scene">
+                        <div className="objection-card-flip-inner" onTransitionEnd={handleObjectionCardFlipTransitionEnd}>
+                          <div className="objection-card-face objection-card-face-front">
                             <img
                               src={objectionsDeckFaceImage}
                               alt="Face commune du deck Objections"
                               className="objection-card-image"
                             />
                             <span className="objection-card-face-caption">Cliquer pour révéler</span>
-                          </span>
-                          <span className="objection-card-face objection-card-face-back">
+                          </div>
+                          <div className="objection-card-face objection-card-face-back">
                             <img
                               src={game.activeObjectionCard.image}
                               alt={`Carte objection : ${game.activeObjectionCard.title}`}
                               className="objection-card-image"
                             />
-                          </span>
-                        </span>
-                      </span>
+                          </div>
+                        </div>
+                      </div>
                     </button>
                     {isObjectionCardRevealed && <figcaption>{game.activeObjectionCard.prompt}</figcaption>}
                   </figure>

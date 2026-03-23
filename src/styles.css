@@ -1227,6 +1227,8 @@ button:disabled {
   min-height: 464px;
   perspective: 2200px;
   perspective-origin: center;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
   pointer-events: none;
 }
 
@@ -1238,8 +1240,11 @@ button:disabled {
   aspect-ratio: 3 / 4.35;
   transform-style: preserve-3d;
   -webkit-transform-style: preserve-3d;
+  transform: rotateY(0deg);
+  -webkit-transform: rotateY(0deg);
   transition: transform 0.95s cubic-bezier(0.22, 0.78, 0.2, 1), filter 0.25s ease;
   filter: drop-shadow(0 24px 38px rgba(17, 6, 6, 0.34));
+  will-change: transform;
 }
 
 .objection-card-flip-button:hover:not(:disabled) .objection-card-flip-inner,
@@ -1251,6 +1256,7 @@ button:disabled {
 .objection-card-flip-button.is-revealed .objection-card-flip-inner,
 .objection-card-flip-button.is-flipping .objection-card-flip-inner {
   transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg);
 }
 
 .objection-card-face {
@@ -1267,6 +1273,8 @@ button:disabled {
   overflow: hidden;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
 }
 
 .objection-card-face::after {
@@ -1279,12 +1287,15 @@ button:disabled {
 
 .objection-card-face-front {
   z-index: 2;
+  transform: rotateY(0deg) translateZ(1px);
+  -webkit-transform: rotateY(0deg) translateZ(1px);
   background: linear-gradient(180deg, rgba(255, 249, 237, 0.92), rgba(224, 190, 153, 0.82));
 }
 
 .objection-card-face-back {
   z-index: 1;
-  transform: rotateY(180deg);
+  transform: rotateY(180deg) translateZ(1px);
+  -webkit-transform: rotateY(180deg) translateZ(1px);
   background: linear-gradient(180deg, rgba(255, 249, 237, 0.94), rgba(233, 215, 184, 0.88));
 }
 
@@ -1309,6 +1320,10 @@ button:disabled {
   border: 2px solid rgba(120, 45, 30, 0.18);
   box-shadow: 0 26px 38px rgba(47, 10, 9, 0.24);
   background: linear-gradient(180deg, #fffdf8, #f7e6cf);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 .objection-card-viewer figcaption {
