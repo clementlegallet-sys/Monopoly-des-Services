@@ -36,7 +36,8 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -359,6 +360,14 @@ button:disabled {
   grid-template-columns: minmax(170px, 210px) minmax(0, 1fr);
 }
 
+.board-stage-layout-mapping {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+}
+
+.board-stage-layout-objections.board-stage-layout-mapping {
+  grid-template-columns: minmax(170px, 210px) minmax(0, 1fr) minmax(280px, 340px);
+}
+
 .board-base-image,
 .board-image-shade,
 .board-token-layer,
@@ -392,6 +401,87 @@ button:disabled {
   z-index: 2;
   overflow: visible;
   pointer-events: none;
+}
+
+.board-overlay-svg-passive,
+.board-surface-mapping .board-token-layer {
+  opacity: 0.35;
+}
+
+.board-mapping-capture,
+.board-mapping-svg {
+  position: absolute;
+  inset: 0;
+}
+
+.board-mapping-capture {
+  z-index: 4;
+  cursor: crosshair;
+}
+
+.board-mapping-svg {
+  z-index: 5;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.board-mapping-group {
+  opacity: 0.72;
+}
+
+.board-mapping-group-selected {
+  opacity: 1;
+}
+
+.board-mapping-polygon,
+.board-mapping-polyline,
+.board-mapping-anchor circle,
+.board-mapping-anchor line,
+.board-mapping-point {
+  vector-effect: non-scaling-stroke;
+}
+
+.board-mapping-polygon {
+  fill: rgba(82, 220, 160, 0.18);
+  stroke: rgba(205, 255, 234, 0.9);
+  stroke-width: 0.34;
+}
+
+.board-mapping-polygon-finalized {
+  fill: rgba(255, 207, 92, 0.22);
+  stroke: rgba(255, 247, 228, 0.96);
+}
+
+.board-mapping-polyline {
+  fill: none;
+  stroke: rgba(255, 230, 176, 0.92);
+  stroke-width: 0.32;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.board-mapping-point {
+  fill: #fff6df;
+  stroke: rgba(109, 28, 20, 0.95);
+  stroke-width: 0.18;
+}
+
+.board-mapping-point-label {
+  fill: #fff6dd;
+  font-size: 1.7px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-shadow: 0 1px 1px rgba(20, 5, 4, 0.25);
+}
+
+.board-mapping-anchor circle,
+.board-mapping-anchor line {
+  stroke: rgba(76, 24, 18, 0.94);
+  stroke-width: 0.24;
+}
+
+.board-mapping-anchor circle {
+  fill: rgba(117, 222, 255, 0.9);
 }
 
 .board-space-group {
@@ -644,6 +734,126 @@ button:disabled {
   background: rgba(255, 220, 135, 0.22);
   border-color: rgba(255, 226, 154, 0.64);
   color: #fff4d6;
+}
+
+.developer-panel {
+  margin-bottom: 14px;
+  border-radius: 20px;
+  border: 1px dashed rgba(255, 219, 140, 0.5);
+  background: rgba(53, 9, 8, 0.34);
+}
+
+.developer-panel summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 14px 16px;
+  color: #fff1cf;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.developer-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.developer-panel-body {
+  padding: 0 16px 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.developer-panel-copy {
+  margin-bottom: 0;
+  color: #ffe4b2;
+}
+
+.developer-panel-copy code {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(255, 239, 199, 0.12);
+}
+
+.developer-toggle,
+.mapping-tool-option {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: #fff1cf;
+}
+
+.developer-controls-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.mapping-toolset {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 226, 157, 0.24);
+  background: rgba(255, 241, 208, 0.06);
+  display: grid;
+  gap: 10px;
+}
+
+.mapping-toolset legend {
+  padding: 0 8px;
+  color: #fff3d4;
+  font-weight: 700;
+}
+
+.mapping-button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.developer-status-line {
+  margin-bottom: 0;
+  color: #ffe2ab;
+}
+
+.board-mapping-panel {
+  display: grid;
+  gap: 12px;
+  align-self: start;
+  padding: 16px;
+}
+
+.board-mapping-panel h3,
+.mapping-data-block strong {
+  margin-bottom: 0;
+}
+
+.mapping-data-block {
+  display: grid;
+  gap: 8px;
+}
+
+.mapping-data-block pre,
+.mapping-data-block textarea {
+  width: 100%;
+  margin: 0;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 226, 157, 0.2);
+  background: rgba(58, 10, 9, 0.64);
+  color: #fff3d8;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.mapping-data-block pre {
+  max-height: 200px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.mapping-data-block textarea {
+  resize: vertical;
+  min-height: 220px;
 }
 
 .board-focus-eyebrow {
@@ -1102,7 +1312,12 @@ button:disabled {
 }
 
 @media (max-width: 980px) {
+  .board-stage-layout-mapping,
   .board-stage-layout-objections {
+    grid-template-columns: 1fr;
+  }
+
+  .board-stage-layout-objections.board-stage-layout-mapping {
     grid-template-columns: 1fr;
   }
 
