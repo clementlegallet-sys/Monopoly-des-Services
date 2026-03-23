@@ -56,6 +56,7 @@ type TileBlueprint = {
   serviceId?: string;
   adjacency: string[];
   shape: TileShapeDefinition;
+  actionType: string;
 };
 
 type Tile = TileBlueprint & { action: TileActionDefinition };
@@ -147,7 +148,6 @@ type TileInteractionDebugState = {
   source: 'inspection' | 'destination';
 };
 
-type RegistryEntry = Pick<BoardMapTile, 'label' | 'type'>;
 
 const STORAGE_KEY = 'monopoly-des-services-state';
 const INITIAL_CLIENTS = 2;
@@ -156,15 +156,11 @@ const SALE_VALUES = [2, 3, 5] as const;
 const PLAYER_TOKEN_COLORS = ['#d9473f', '#2b6fdd', '#f59e0b', '#0f9d74'];
 const ENABLE_TILE_DEBUG = true;
 const TILE_DEBUG_FLASH_DURATION_MS = 950;
-const DEFAULT_TOKEN_ANCHOR: Point = { x: 50, y: 50 };
 const BOARD_MAP_SOURCE = boardMapJson as BoardMapFile;
-const BOARD_MAP_REGISTRY = Object.fromEntries(
-  BOARD_MAP_SOURCE.tiles.map((tile) => [tile.tileId, { label: tile.label, type: tile.type } satisfies RegistryEntry]),
-);
 const BOARD_MAP_TILE_LOOKUP = new Map(BOARD_MAP_SOURCE.tiles.map((tile) => [tile.tileId, tile]));
 const TECHNICAL_SOURCE_OF_TRUTH = {
   image: boardReferenceImage,
-  registry: BOARD_MAP_REGISTRY as Record<string, RegistryEntry>,
+  boardMap: BOARD_MAP_SOURCE,
 } as const;
 const OBJECTION_DECK: ObjectionCard[] = [
   {
@@ -284,223 +280,121 @@ const TILE_DESCRIPTIONS: Partial<Record<string, string>> = {
   T22: 'Case bulle : affiche une objection en mode Objections et un BAC en mode Arguments de vente.',
 };
 
-const TILE_LAYOUT: Record<string, Omit<TileBlueprint, 'label' | 'type' | 'description'>> = {
+const TILE_LAYOUT: Record<string, Pick<TileBlueprint, 'order' | 'tileId' | 'adjacency'>> = {
   T0: {
     order: 0,
     tileId: 'T0',
     adjacency: ['T1', 'T2', 'T3', 'T4', 'T5', 'T6'],
-    shape: {
-      points: '39.6,37.5 55.9,37.2 60.8,48.8 56.0,61.4 44.4,61.7 39.2,49.0',
-      tokenAnchor: { x: 49.9, y: 49.3 },
-    },
   },
   T1: {
     order: 1,
     tileId: 'T1',
     adjacency: ['T0', 'T6', 'T7', 'T8', 'T2', 'T20'],
-    shape: {
-      points: '42.7,16.1 55.8,16.1 56.2,37.2 43.0,37.3',
-      tokenAnchor: { x: 49.5, y: 26.4 },
-    },
   },
   T2: {
     order: 2,
     tileId: 'T2',
     adjacency: ['T0', 'T1', 'T8', 'T9', 'T10', 'T3'],
-    shape: {
-      points: '56.2,37.2 70.6,28.6 79.0,41.5 67.8,49.8 60.0,49.8',
-      tokenAnchor: { x: 67.0, y: 38.0 },
-    },
   },
   T3: {
     order: 3,
     tileId: 'T3',
     adjacency: ['T0', 'T2', 'T11', 'T22', 'T21', 'T4'],
-    shape: {
-      points: '56.0,61.5 67.8,49.8 73.2,69.2 60.8,82.2 56.8,82.3',
-      tokenAnchor: { x: 64.2, y: 58.9 },
-    },
   },
   T4: {
     order: 4,
     tileId: 'T4',
     adjacency: ['T0', 'T3', 'T21', 'T13', 'T12', 'T5'],
-    shape: {
-      points: '43.0,61.5 56.0,61.5 56.8,82.3 39.4,82.2',
-      tokenAnchor: { x: 50.0, y: 71.4 },
-    },
   },
   T5: {
     order: 5,
     tileId: 'T5',
     adjacency: ['T0', 'T4', 'T12', 'T14', 'T15', 'T6'],
-    shape: {
-      points: '21.2,50.1 39.2,37.8 43.0,61.5 27.0,69.1',
-      tokenAnchor: { x: 31.7, y: 58.8 },
-    },
   },
   T6: {
     order: 6,
     tileId: 'T6',
     adjacency: ['T0', 'T5', 'T17', 'T18', 'T19', 'T20', 'T1'],
-    shape: {
-      points: '32.8,16.1 42.7,16.1 43.0,37.3 39.0,37.7 24.2,26.4',
-      tokenAnchor: { x: 33.2, y: 28.7 },
-    },
   },
   T7: {
     order: 7,
     tileId: 'T7',
-    color: 'blue',
-    serviceId: 'protection-facture',
     adjacency: ['T1', 'T20', 'T8'],
-    shape: {
-      points: '40.4,0.0 59.2,0.0 55.8,16.1 42.7,16.1',
-      tokenAnchor: { x: 49.7, y: 8.3 },
-    },
   },
   T8: {
     order: 8,
     tileId: 'T8',
     adjacency: ['T1', 'T2', 'T7', 'T9'],
-    shape: {
-      points: '60.5,2.3 67.1,2.4 71.8,4.7 74.1,9.1 74.0,13.2 70.4,16.0 64.6,15.5 60.5,12.0 58.9,7.3',
-      tokenAnchor: { x: 66.7, y: 8.1 },
-    },
   },
   T9: {
     order: 9,
     tileId: 'T9',
     adjacency: ['T2', 'T8', 'T10'],
-    shape: {
-      points: '81.4,0.1 99.7,49.0 78.5,49.6 70.4,20.9',
-      tokenAnchor: { x: 81.9, y: 29.1 },
-    },
   },
   T10: {
     order: 10,
     tileId: 'T10',
     adjacency: ['T2', 'T9', 'T11'],
-    shape: {
-      points: '85.2,51.3 92.9,51.3 92.9,60.6 85.2,60.6',
-      tokenAnchor: { x: 89.1, y: 56.0 },
-    },
   },
   T11: {
     order: 11,
     tileId: 'T11',
-    color: 'orange',
-    serviceId: 'izi-confort',
     adjacency: ['T3', 'T10', 'T22'],
-    shape: {
-      points: '72.8,58.9 87.2,65.2 94.0,85.0 81.4,74.3',
-      tokenAnchor: { x: 82.0, y: 68.5 },
-    },
   },
   T12: {
     order: 12,
     tileId: 'T12',
     adjacency: ['T4', 'T5', 'T13', 'T14'],
-    shape: {
-      points: '34.3,85.7 37.4,83.6 39.9,84.5 40.9,87.4 40.3,92.0 38.0,95.7 36.0,98.6 33.1,99.2 31.5,96.0 31.8,90.4',
-      tokenAnchor: { x: 36.1, y: 91.2 },
-    },
   },
   T13: {
     order: 13,
     tileId: 'T13',
-    color: 'blue',
-    serviceId: 'assistance-depannage',
     adjacency: ['T4', 'T12', 'T21'],
-    shape: {
-      points: '40.0,82.8 60.7,82.8 61.0,100.0 39.0,100.0',
-      tokenAnchor: { x: 50.0, y: 91.4 },
-    },
   },
   T14: {
     order: 14,
     tileId: 'T14',
     adjacency: ['T5', 'T12', 'T15'],
-    shape: {
-      points: '19.0,80.0 27.8,80.0 27.8,88.7 19.0,88.7',
-      tokenAnchor: { x: 23.4, y: 84.4 },
-    },
   },
   T15: {
     order: 15,
     tileId: 'T15',
-    color: 'green',
-    serviceId: 'izi-by-edf',
     adjacency: ['T5', 'T14', 'T16'],
-    shape: {
-      points: '0.0,65.6 9.8,65.0 27.0,69.1 13.0,84.9 4.4,74.8',
-      tokenAnchor: { x: 14.5, y: 74.2 },
-    },
   },
   T16: {
     order: 16,
     tileId: 'T16',
     adjacency: ['T5', 'T15', 'T17'],
-    shape: {
-      points: '2.4,55.6 4.8,52.1 10.8,51.7 15.7,52.8 17.7,55.6 17.2,59.6 10.9,60.0 4.2,59.4',
-      tokenAnchor: { x: 10.7, y: 55.9 },
-    },
   },
   T17: {
     order: 17,
     tileId: 'T17',
     adjacency: ['T6', 'T16', 'T18'],
-    shape: {
-      points: '7.0,38.6 13.0,38.6 13.0,47.0 7.0,47.0',
-      tokenAnchor: { x: 10.0, y: 42.8 },
-    },
   },
   T18: {
     order: 18,
     tileId: 'T18',
-    color: 'green',
-    serviceId: 'thermostat-connecte-sowee',
     adjacency: ['T6', 'T17', 'T19'],
-    shape: {
-      points: '0.0,33.6 5.8,33.6 24.2,26.4 21.2,50.1 0.0,50.0',
-      tokenAnchor: { x: 10.0, y: 44.0 },
-    },
   },
   T19: {
     order: 19,
     tileId: 'T19',
     adjacency: ['T6', 'T18', 'T20'],
-    shape: {
-      points: '16.0,8.8 20.8,9.1 24.6,11.3 27.5,14.6 29.3,18.2 29.2,20.9 25.4,20.9 20.8,18.0 17.6,14.7 15.0,11.3',
-      tokenAnchor: { x: 21.3, y: 15.1 },
-    },
   },
   T20: {
     order: 20,
     tileId: 'T20',
     adjacency: ['T1', 'T6', 'T7', 'T19'],
-    shape: {
-      points: '29.7,2.0 37.7,2.0 37.7,10.7 29.7,10.7',
-      tokenAnchor: { x: 33.7, y: 6.4 },
-    },
   },
   T21: {
     order: 21,
     tileId: 'T21',
     adjacency: ['T3', 'T4', 'T13', 'T22'],
-    shape: {
-      points: '62.8,89.8 70.8,89.8 70.8,98.5 62.8,98.5',
-      tokenAnchor: { x: 66.8, y: 94.1 },
-    },
   },
   T22: {
     order: 22,
     tileId: 'T22',
     adjacency: ['T3', 'T11', 'T21'],
-    shape: {
-      points: '69.7,81.8 73.6,80.4 77.6,80.2 80.3,81.4 81.8,83.7 80.8,86.3 77.5,88.2 73.5,88.3 70.3,86.9 68.8,84.4',
-      tokenAnchor: { x: 75.2, y: 84.2 },
-    },
   },
 };
 
@@ -557,13 +451,8 @@ const getTileActionDefinition = (tile: TileBlueprint): TileActionDefinition => {
 };
 
 const BOARD_REGISTRY: Tile[] = BOARD_TILE_ORDER.map((tileId) => {
-  const registryEntry = TECHNICAL_SOURCE_OF_TRUTH.registry[tileId];
   const layout = TILE_LAYOUT[tileId];
   const boardMapTile = BOARD_MAP_TILE_LOOKUP.get(tileId);
-
-  if (!registryEntry) {
-    throw new Error(`Tile registry entry missing for ${tileId}.`);
-  }
 
   if (!layout) {
     throw new Error(`Tile layout missing for ${tileId}.`);
@@ -573,24 +462,22 @@ const BOARD_REGISTRY: Tile[] = BOARD_TILE_ORDER.map((tileId) => {
     throw new Error(`Board map entry missing for ${tileId}.`);
   }
 
-  const hasMappedPolygon = boardMapTile.polygon.length >= 3;
-  const resolvedPoints = hasMappedPolygon ? serializePolygonPoints(boardMapTile.polygon) : layout.shape.points;
-  const resolvedTokenAnchor =
-    hasMappedPolygon || !isDefaultTokenAnchor(boardMapTile.tokenAnchor)
-      ? boardMapTile.tokenAnchor
-      : layout.shape.tokenAnchor;
+  if (boardMapTile.polygon.length < 3) {
+    throw new Error(`Board map polygon missing or invalid for ${tileId}.`);
+  }
 
   const tile: TileBlueprint = {
     ...layout,
     shape: {
-      points: resolvedPoints,
-      tokenAnchor: resolvedTokenAnchor,
+      points: serializePolygonPoints(boardMapTile.polygon),
+      tokenAnchor: boardMapTile.tokenAnchor,
     },
-    label: registryEntry.label,
-    type: TILE_TYPE_BY_REGISTRY_TYPE[registryEntry.type],
-    description: TILE_DESCRIPTIONS[tileId] ?? registryEntry.label,
-    color: TILE_SERVICE_METADATA[tileId]?.color ?? layout.color,
-    serviceId: TILE_SERVICE_METADATA[tileId]?.serviceId ?? layout.serviceId,
+    label: boardMapTile.label,
+    type: TILE_TYPE_BY_REGISTRY_TYPE[boardMapTile.type],
+    actionType: boardMapTile.actionType,
+    description: TILE_DESCRIPTIONS[tileId] ?? boardMapTile.label,
+    color: TILE_SERVICE_METADATA[tileId]?.color,
+    serviceId: TILE_SERVICE_METADATA[tileId]?.serviceId,
   };
 
   return {
@@ -639,10 +526,6 @@ function cloneBoardMap(boardMap: BoardMapFile): BoardMapFile {
 
 function clampBoardCoordinate(value: number): number {
   return Number(Math.min(100, Math.max(0, value)).toFixed(2));
-}
-
-function isDefaultTokenAnchor(tokenAnchor: Point): boolean {
-  return tokenAnchor.x === DEFAULT_TOKEN_ANCHOR.x && tokenAnchor.y === DEFAULT_TOKEN_ANCHOR.y;
 }
 
 const getPolygonCentroid = (points: string): Point => {
@@ -706,10 +589,10 @@ const getBoardRegistryIssues = (tiles: Tile[]) => {
   }
 
   BOARD_TILE_ORDER.forEach((tileId, order) => {
-    const registryEntry = TECHNICAL_SOURCE_OF_TRUTH.registry[tileId];
+    const boardMapTile = BOARD_MAP_TILE_LOOKUP.get(tileId);
     const tile = tiles.find((candidate) => candidate.tileId === tileId);
 
-    if (!registryEntry) {
+    if (!boardMapTile) {
       issues.push(`Tuile absente du JSON technique : ${tileId}.`);
       return;
     }
@@ -723,16 +606,20 @@ const getBoardRegistryIssues = (tiles: Tile[]) => {
       issues.push(`Ordre ${tileId} attendu ${order} mais reçu ${tile.order}.`);
     }
 
-    if (tile.label !== registryEntry.label) {
-      issues.push(`Libellé attendu pour ${tileId} : ${registryEntry.label}.`);
+    if (tile.label !== boardMapTile.label) {
+      issues.push(`Libellé attendu pour ${tileId} : ${boardMapTile.label}.`);
     }
 
-    if (tile.type !== TILE_TYPE_BY_REGISTRY_TYPE[registryEntry.type]) {
-      issues.push(`Type attendu pour ${tileId} : ${registryEntry.type}.`);
+    if (tile.type !== TILE_TYPE_BY_REGISTRY_TYPE[boardMapTile.type]) {
+      issues.push(`Type attendu pour ${tileId} : ${boardMapTile.type}.`);
     }
 
     if (!tile.shape.points.trim()) {
       issues.push(`Case ${tileId} sans forme SVG.`);
+    }
+
+    if (boardMapTile.polygon.length < 3) {
+      issues.push(`Case ${tileId} sans polygone final exploitable.`);
     }
 
     if (tile.adjacency.length === 0) {
@@ -1782,6 +1669,36 @@ const App = () => {
     : null;
   const canInspectObjectionCard = Boolean(game.activeObjectionCard);
   const winner = game.players.find((player) => player.id === game.winnerId) ?? null;
+
+  const boardMapValidation = useMemo(() => {
+    const expectedLabels: Record<string, string> = {
+      T11: 'IZI Confort',
+      T13: 'Assistance Dépannage',
+      T15: 'IZI by EDF',
+      T22: 'Bulle jaune bas droite',
+      T8: 'Bulle rose haut droite',
+      T12: 'Bulle rouge bas',
+      T16: 'Bulle orange gauche',
+      T19: 'Bulle verte haut gauche',
+    };
+
+    return Object.entries(expectedLabels).map(([tileId, expectedLabel]) => {
+      const tile = BOARD_BY_TILE_ID.get(tileId);
+      const boardMapTile = BOARD_MAP_TILE_LOOKUP.get(tileId);
+      const isBubbleValidation = ['T8', 'T12', 'T16', 'T19', 'T22'].includes(tileId);
+
+      return {
+        tileId,
+        expectedLabel,
+        actualLabel: tile?.label ?? null,
+        passed:
+          tile?.label === expectedLabel &&
+          Boolean(boardMapTile) &&
+          (!isBubbleValidation || tile?.type === 'bubble'),
+      };
+    });
+  }, []);
+
   const boardTiles = board.map((tile) => {
     const shape = tile.shape;
     const occupants = game.players.filter((player) => player.position === tile.tileId);
@@ -1955,25 +1872,26 @@ const App = () => {
               </div>
             </div>
 
-            <details className="developer-panel">
-              <summary>Developer section · Board Mapping Mode</summary>
-              <div className="developer-panel-body">
-                <p className="developer-panel-copy">
-                  Outil temporaire de mapping manuel : sélectionnez une tuile du fichier
-                  <code> board_map_final.json </code>
-                  puis cliquez sur le plateau pour placer les points de polygone ou déplacer le tokenAnchor.
-                </p>
-                <label className="developer-toggle">
-                  <input
-                    type="checkbox"
-                    checked={isBoardMappingMode}
-                    onChange={(event) => setIsBoardMappingMode(event.target.checked)}
-                  />
-                  <span>Activer Board Mapping Mode</span>
-                </label>
+            {ENABLE_TILE_DEBUG && isTileDebugEnabled && (
+              <details className="developer-panel">
+                <summary>Developer section · Board Mapping Mode</summary>
+                <div className="developer-panel-body">
+                  <p className="developer-panel-copy">
+                    Outil développeur masqué en lecture normale : sélectionnez une tuile du fichier
+                    <code> board_map_final.json </code>
+                    puis cliquez sur le plateau pour inspecter ou ajuster localement le polygone et le tokenAnchor.
+                  </p>
+                  <label className="developer-toggle">
+                    <input
+                      type="checkbox"
+                      checked={isBoardMappingMode}
+                      onChange={(event) => setIsBoardMappingMode(event.target.checked)}
+                    />
+                    <span>Activer Board Mapping Mode</span>
+                  </label>
 
-                {isBoardMappingMode && (
-                  <div className="developer-controls-grid">
+                  {isBoardMappingMode && (
+                    <div className="developer-controls-grid">
                     <label className="field">
                       <span>Tuile à mapper</span>
                       <select
@@ -2034,10 +1952,11 @@ const App = () => {
                           ? 'Cliquez sur le plateau pour positionner le tokenAnchor.'
                           : 'Cliquez sur le plateau pour ajouter des points au polygone courant.')}
                     </p>
-                  </div>
-                )}
-              </div>
-            </details>
+                    </div>
+                  )}
+                </div>
+              </details>
+            )}
 
             <div
               className={`board-stage-layout ${game.trainingMode === 'objections' ? 'board-stage-layout-objections' : ''} ${
@@ -2194,7 +2113,7 @@ const App = () => {
                     )}
                   </svg>
 
-                  {isBoardMappingMode && (
+                    {isBoardMappingMode && (
                     <>
                       <div
                         className="board-mapping-capture"
@@ -2293,6 +2212,16 @@ const App = () => {
                         <p className="board-debug-line">tileId · {tileDebugState.tileId}</p>
                         <p className="board-debug-line">label · {tileDebugState.label}</p>
                         <p className="board-debug-line">type · {tileTypeLabels[tileDebugState.type]}</p>
+                      </div>
+                      <div className="board-debug-validation">
+                        <strong>Validation board_map_final.json</strong>
+                        <ul>
+                          {boardMapValidation.map((entry) => (
+                            <li key={entry.tileId}>
+                              {entry.passed ? '✓' : '⚠'} {entry.tileId} → {entry.actualLabel ?? 'introuvable'}
+                            </li>
+                          ))}
+                        </ul>
                       </div>
                     </aside>
                   )}
