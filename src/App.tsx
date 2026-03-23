@@ -1038,7 +1038,7 @@ const App = () => {
   const [mappingExportMessage, setMappingExportMessage] = useState('');
   const [isObjectionCardRevealed, setIsObjectionCardRevealed] = useState(false);
   const [isObjectionCardFlipping, setIsObjectionCardFlipping] = useState(false);
-  const [hasObjectionCardStartedFlip, setHasObjectionCardStartedFlip] = useState(false);
+  const [isObjectionCardShowingBack, setIsObjectionCardShowingBack] = useState(false);
   const isDeveloperMode = useMemo(() => {
     if (typeof window === 'undefined') {
       return false;
@@ -1078,7 +1078,7 @@ const App = () => {
     if (!isObjectionChallenge) {
       setIsObjectionCardRevealed(false);
       setIsObjectionCardFlipping(false);
-      setHasObjectionCardStartedFlip(false);
+      setIsObjectionCardShowingBack(false);
       if (objectionRevealTimeoutRef.current) {
         window.clearTimeout(objectionRevealTimeoutRef.current);
         objectionRevealTimeoutRef.current = null;
@@ -1088,7 +1088,7 @@ const App = () => {
 
     setIsObjectionCardRevealed(false);
     setIsObjectionCardFlipping(false);
-    setHasObjectionCardStartedFlip(false);
+    setIsObjectionCardShowingBack(false);
 
     if (objectionRevealTimeoutRef.current) {
       window.clearTimeout(objectionRevealTimeoutRef.current);
@@ -1719,18 +1719,16 @@ const App = () => {
       objectionRevealTimeoutRef.current = null;
     }
 
-    setHasObjectionCardStartedFlip(true);
     setIsObjectionCardFlipping(true);
-  };
+    objectionRevealTimeoutRef.current = window.setTimeout(() => {
+      setIsObjectionCardShowingBack(true);
 
-  const handleObjectionCardFlipTransitionEnd = () => {
-    if (!isObjectionCardFlipping) {
-      return;
-    }
-
-    setIsObjectionCardRevealed(true);
-    setIsObjectionCardFlipping(false);
-    objectionRevealTimeoutRef.current = null;
+      objectionRevealTimeoutRef.current = window.setTimeout(() => {
+        setIsObjectionCardRevealed(true);
+        setIsObjectionCardFlipping(false);
+        objectionRevealTimeoutRef.current = null;
+      }, 280);
+    }, 280);
   };
 
   const drawObjectionCard = () => {
@@ -1759,29 +1757,7 @@ const App = () => {
   const canInspectObjectionCard = Boolean(game.activeObjectionCard);
   const objectionFrontImageSource = objectionsDeckFaceImage;
   const objectionBackImageSource = game.activeObjectionCard?.image ?? null;
-
-  useEffect(() => {
-    if (!canInspectObjectionCard) {
-      return;
-    }
-
-    console.debug('Objection card face image sources', {
-      frontFaceImage: objectionFrontImageSource,
-      backFaceImage: objectionBackImageSource,
-      activeObjectionCardId: game.activeObjectionCard?.id ?? null,
-      activeObjectionCardTitle: game.activeObjectionCard?.title ?? null,
-      isObjectionCardRevealed,
-      hasObjectionCardStartedFlip,
-    });
-  }, [
-    canInspectObjectionCard,
-    game.activeObjectionCard?.id,
-    game.activeObjectionCard?.title,
-    hasObjectionCardStartedFlip,
-    isObjectionCardRevealed,
-    objectionBackImageSource,
-    objectionFrontImageSource,
-  ]);
+  const displayedObjectionImageSource = isObjectionCardShowingBack ? objectionBackImageSource : objectionFrontImageSource;
   const winner = game.players.find((player) => player.id === game.winnerId) ?? null;
   const focusTileActionLabel = isChoosingDestination && reachableTileIds.includes(focusTile.tileId)
     ? 'Case atteignable ce tour : cliquez pour la choisir comme destination.'
@@ -2624,7 +2600,7 @@ const App = () => {
                     <button
                       key={game.activeObjectionCard.id}
                       type="button"
-                      className={`objection-card-flip-button${hasObjectionCardStartedFlip ? ' has-started-flip' : ''}${isObjectionCardRevealed ? ' is-revealed' : ''}${isObjectionCardFlipping ? ' is-flipping' : ''}`}
+                      className={`objection-card-flip-button${isObjectionCardShowingBack ? ' is-showing-back' : ''}${isObjectionCardRevealed ? ' is-revealed' : ''}${isObjectionCardFlipping ? ' is-flipping' : ''}`}
                       onClick={handleRevealObjectionCard}
                       disabled={isObjectionCardRevealed || isObjectionCardFlipping}
                       aria-label={
@@ -2633,25 +2609,22 @@ const App = () => {
                           : 'Révéler la carte Objection'
                       }
                     >
-                      <div className="objection-card-flip-scene">
-                        <div className="objection-card-flip-inner" onTransitionEnd={handleObjectionCardFlipTransitionEnd}>
-                          <div className="objection-card-face objection-card-face-front">
-                            <img
-                              src={objectionFrontImageSource}
-                              alt="Face commune du deck Objections"
-                              className="objection-card-image"
-                            />
+                      <span className="objection-card-flip-scene">
+                        <span className="objection-card-flip-illusion">
+                          <img
+                            src={displayedObjectionImageSource ?? ''}
+                            alt={
+                              isObjectionCardShowingBack
+                                ? `Carte objection : ${game.activeObjectionCard.title}`
+                                : 'Face commune du deck Objections'
+                            }
+                            className="objection-card-image"
+                          />
+                          {!isObjectionCardShowingBack && (
                             <span className="objection-card-face-caption">Cliquer pour révéler</span>
-                          </div>
-                          <div className="objection-card-face objection-card-face-back">
-                            <img
-                              src={objectionBackImageSource ?? ''}
-                              alt={`Carte objection : ${game.activeObjectionCard.title}`}
-                              className="objection-card-image"
-                            />
-                          </div>
-                        </div>
-                      </div>
+                          )}
+                        </span>
+                      </span>
                     </button>
                     {isObjectionCardRevealed && <figcaption>{game.activeObjectionCard.prompt}</figcaption>}
                   </figure>
