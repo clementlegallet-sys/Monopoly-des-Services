@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
 import boardReferenceImage from '../plateau-reference-bordures-epaisses.png';
-import annotatedBoardImage from '../plateau_annoté_final_T0_T22.png';
-import boardRegistryJson from '../board_registry_final_T0_T22.json';
+import boardMapJson from '../board_map_final.json';
 import objectionsDeckFaceImage from '../carte objection FACE.png';
 import objectionCardAlreadySameImage from '../objection-j-ai-deja-la-meme-chose.png';
 import objectionCardNotInterestedImage from '../objection-ca-ne-m-interesse-pas.png';
@@ -116,6 +115,24 @@ type Point = {
   y: number;
 };
 
+type BoardMapTile = {
+  tileId: string;
+  label: string;
+  type: RegistryTileType;
+  actionType: string;
+  tokenAnchor: Point;
+  polygon: Point[];
+};
+
+type BoardMapFile = {
+  version: number;
+  boardImage: string;
+  tiles: BoardMapTile[];
+  bubbleTiles: string[];
+};
+
+type MappingTool = 'polygon' | 'anchor';
+
 type TilePresentation = {
   title: string;
   description: string;
@@ -130,10 +147,7 @@ type TileInteractionDebugState = {
   source: 'inspection' | 'destination';
 };
 
-type RegistryEntry = {
-  label: string;
-  type: RegistryTileType;
-};
+type RegistryEntry = Pick<BoardMapTile, 'label' | 'type'>;
 
 const STORAGE_KEY = 'monopoly-des-services-state';
 const INITIAL_CLIENTS = 2;
@@ -142,9 +156,15 @@ const SALE_VALUES = [2, 3, 5] as const;
 const PLAYER_TOKEN_COLORS = ['#d9473f', '#2b6fdd', '#f59e0b', '#0f9d74'];
 const ENABLE_TILE_DEBUG = true;
 const TILE_DEBUG_FLASH_DURATION_MS = 950;
+const DEFAULT_TOKEN_ANCHOR: Point = { x: 50, y: 50 };
+const BOARD_MAP_SOURCE = boardMapJson as BoardMapFile;
+const BOARD_MAP_REGISTRY = Object.fromEntries(
+  BOARD_MAP_SOURCE.tiles.map((tile) => [tile.tileId, { label: tile.label, type: tile.type } satisfies RegistryEntry]),
+);
+const BOARD_MAP_TILE_LOOKUP = new Map(BOARD_MAP_SOURCE.tiles.map((tile) => [tile.tileId, tile]));
 const TECHNICAL_SOURCE_OF_TRUTH = {
-  image: annotatedBoardImage,
-  registry: boardRegistryJson as Record<string, RegistryEntry>,
+  image: boardReferenceImage,
+  registry: BOARD_MAP_REGISTRY as Record<string, RegistryEntry>,
 } as const;
 const OBJECTION_DECK: ObjectionCard[] = [
   {
@@ -211,7 +231,7 @@ const BOARD_TILE_ORDER = [
   'T22',
 ] as const;
 
-const BUBBLE_TILE_IDS = ['T8', 'T12', 'T16', 'T19', 'T22'] as const;
+const BUBBLE_TILE_IDS = [...BOARD_MAP_SOURCE.bubbleTiles];
 
 const TILE_TYPE_BY_REGISTRY_TYPE: Record<RegistryTileType, TileType> = {
   start: 'start',
@@ -539,6 +559,7 @@ const getTileActionDefinition = (tile: TileBlueprint): TileActionDefinition => {
 const BOARD_REGISTRY: Tile[] = BOARD_TILE_ORDER.map((tileId) => {
   const registryEntry = TECHNICAL_SOURCE_OF_TRUTH.registry[tileId];
   const layout = TILE_LAYOUT[tileId];
+  const boardMapTile = BOARD_MAP_TILE_LOOKUP.get(tileId);
 
   if (!registryEntry) {
     throw new Error(`Tile registry entry missing for ${tileId}.`);
@@ -548,8 +569,23 @@ const BOARD_REGISTRY: Tile[] = BOARD_TILE_ORDER.map((tileId) => {
     throw new Error(`Tile layout missing for ${tileId}.`);
   }
 
+  if (!boardMapTile) {
+    throw new Error(`Board map entry missing for ${tileId}.`);
+  }
+
+  const hasMappedPolygon = boardMapTile.polygon.length >= 3;
+  const resolvedPoints = hasMappedPolygon ? serializePolygonPoints(boardMapTile.polygon) : layout.shape.points;
+  const resolvedTokenAnchor =
+    hasMappedPolygon || !isDefaultTokenAnchor(boardMapTile.tokenAnchor)
+      ? boardMapTile.tokenAnchor
+      : layout.shape.tokenAnchor;
+
   const tile: TileBlueprint = {
     ...layout,
+    shape: {
+      points: resolvedPoints,
+      tokenAnchor: resolvedTokenAnchor,
+    },
     label: registryEntry.label,
     type: TILE_TYPE_BY_REGISTRY_TYPE[registryEntry.type],
     description: TILE_DESCRIPTIONS[tileId] ?? registryEntry.label,
@@ -583,16 +619,31 @@ const STORED_TILE_ID_ALIASES: Record<string, string> = {
 };
 
 const parsePolygonPoints = (points: string): Point[] =>
-  points
-    .trim()
-    .split(/\s+/)
-    .map((pair) => {
-      const [x, y] = pair.split(',').map(Number);
-      return { x, y };
-    });
+  points.trim()
+    ? points
+        .trim()
+        .split(/\s+/)
+        .map((pair) => {
+          const [x, y] = pair.split(',').map(Number);
+          return { x, y };
+        })
+    : [];
 
-const serializePolygonPoints = (points: Point[]): string =>
-  points.map(({ x, y }) => `${x.toFixed(2)},${y.toFixed(2)}`).join(' ');
+function serializePolygonPoints(points: Point[]): string {
+  return points.map(({ x, y }) => `${x.toFixed(2)},${y.toFixed(2)}`).join(' ');
+}
+
+function cloneBoardMap(boardMap: BoardMapFile): BoardMapFile {
+  return JSON.parse(JSON.stringify(boardMap)) as BoardMapFile;
+}
+
+function clampBoardCoordinate(value: number): number {
+  return Number(Math.min(100, Math.max(0, value)).toFixed(2));
+}
+
+function isDefaultTokenAnchor(tokenAnchor: Point): boolean {
+  return tokenAnchor.x === DEFAULT_TOKEN_ANCHOR.x && tokenAnchor.y === DEFAULT_TOKEN_ANCHOR.y;
+}
 
 const getPolygonCentroid = (points: string): Point => {
   const parsedPoints = parsePolygonPoints(points);
@@ -1071,9 +1122,18 @@ const App = () => {
   const [isTileDebugEnabled, setIsTileDebugEnabled] = useState(false);
   const [tileDebugState, setTileDebugState] = useState<TileInteractionDebugState | null>(null);
   const [debugFlashTileId, setDebugFlashTileId] = useState<string | null>(null);
+  const [isBoardMappingMode, setIsBoardMappingMode] = useState(false);
+  const [boardMapDraft, setBoardMapDraft] = useState<BoardMapFile>(() => cloneBoardMap(BOARD_MAP_SOURCE));
+  const [selectedMappingTileId, setSelectedMappingTileId] = useState<string>(
+    BOARD_MAP_SOURCE.tiles[0]?.tileId ?? BOARD_REGISTRY[0]?.tileId ?? 'T0',
+  );
+  const [mappingTool, setMappingTool] = useState<MappingTool>('polygon');
+  const [finalizedMappingTileIds, setFinalizedMappingTileIds] = useState<string[]>([]);
+  const [mappingExportMessage, setMappingExportMessage] = useState('');
   const rollIntervalRef = useRef<number | null>(null);
   const rollTimeoutRef = useRef<number | null>(null);
   const debugFlashTimeoutRef = useRef<number | null>(null);
+  const boardSurfaceRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(game));
@@ -1119,8 +1179,140 @@ const App = () => {
     currentPlayerTile ??
     board[0];
   const focusTilePresentation = getTilePresentation(focusTile, game.trainingMode);
+  const selectedMappingTile =
+    boardMapDraft.tiles.find((tile) => tile.tileId === selectedMappingTileId) ?? boardMapDraft.tiles[0] ?? null;
+  const isSelectedMappingTileFinalized = selectedMappingTile
+    ? finalizedMappingTileIds.includes(selectedMappingTile.tileId)
+    : false;
+  const boardMapExport = useMemo(() => JSON.stringify(boardMapDraft, null, 2), [boardMapDraft]);
+  const mappingTiles = useMemo(
+    () =>
+      boardMapDraft.tiles.map((tile) => ({
+        ...tile,
+        polygonPoints: serializePolygonPoints(tile.polygon),
+      })),
+    [boardMapDraft],
+  );
   const reachableTileIds = game.pendingMovement?.reachableTileIds ?? [];
   const isChoosingDestination = Boolean(game.pendingMovement);
+
+  const updateMappingTile = (tileId: string, updater: (tile: BoardMapTile) => BoardMapTile) => {
+    setBoardMapDraft((currentBoardMap) => ({
+      ...currentBoardMap,
+      tiles: currentBoardMap.tiles.map((tile) => (tile.tileId === tileId ? updater(tile) : tile)),
+    }));
+  };
+
+  const getBoardPointerPoint = (clientX: number, clientY: number): Point | null => {
+    const boardRect = boardSurfaceRef.current?.getBoundingClientRect();
+
+    if (!boardRect) {
+      return null;
+    }
+
+    return {
+      x: clampBoardCoordinate(((clientX - boardRect.left) / boardRect.width) * 100),
+      y: clampBoardCoordinate(((clientY - boardRect.top) / boardRect.height) * 100),
+    };
+  };
+
+  const handleBoardMappingClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (!selectedMappingTile) {
+      return;
+    }
+
+    const point = getBoardPointerPoint(event.clientX, event.clientY);
+
+    if (!point) {
+      return;
+    }
+
+    if (mappingTool === 'anchor') {
+      updateMappingTile(selectedMappingTile.tileId, (tile) => ({
+        ...tile,
+        tokenAnchor: point,
+      }));
+      setMappingExportMessage(`Ancre déplacée pour ${selectedMappingTile.tileId}.`);
+      return;
+    }
+
+    if (isSelectedMappingTileFinalized) {
+      setMappingExportMessage(
+        `Le polygone de ${selectedMappingTile.tileId} est finalisé. Utilisez « Reprendre le polygone » ou « Réinitialiser ».`,
+      );
+      return;
+    }
+
+    updateMappingTile(selectedMappingTile.tileId, (tile) => ({
+      ...tile,
+      polygon: [...tile.polygon, point],
+    }));
+    setMappingExportMessage(`Point ajouté à ${selectedMappingTile.tileId} (${point.x}, ${point.y}).`);
+  };
+
+  const resetSelectedMappingTilePolygon = () => {
+    if (!selectedMappingTile) {
+      return;
+    }
+
+    updateMappingTile(selectedMappingTile.tileId, (tile) => ({
+      ...tile,
+      polygon: [],
+    }));
+    setFinalizedMappingTileIds((currentTileIds) =>
+      currentTileIds.filter((tileId) => tileId !== selectedMappingTile.tileId),
+    );
+    setMappingExportMessage(`Polygone réinitialisé pour ${selectedMappingTile.tileId}.`);
+  };
+
+  const finalizeSelectedMappingTilePolygon = () => {
+    if (!selectedMappingTile) {
+      return;
+    }
+
+    if (selectedMappingTile.polygon.length < 3) {
+      setMappingExportMessage('Ajoutez au moins 3 points avant de fermer le polygone.');
+      return;
+    }
+
+    setFinalizedMappingTileIds((currentTileIds) =>
+      currentTileIds.includes(selectedMappingTile.tileId)
+        ? currentTileIds
+        : [...currentTileIds, selectedMappingTile.tileId],
+    );
+    setMappingExportMessage(`Polygone finalisé pour ${selectedMappingTile.tileId}.`);
+  };
+
+  const reopenSelectedMappingTilePolygon = () => {
+    if (!selectedMappingTile) {
+      return;
+    }
+
+    setFinalizedMappingTileIds((currentTileIds) =>
+      currentTileIds.filter((tileId) => tileId !== selectedMappingTile.tileId),
+    );
+    setMappingExportMessage(`Édition du polygone reprise pour ${selectedMappingTile.tileId}.`);
+  };
+
+  const copyBoardMapExport = async () => {
+    try {
+      await navigator.clipboard.writeText(boardMapExport);
+      setMappingExportMessage('Le contenu mis à jour de board_map_final.json a été copié dans le presse-papiers.');
+    } catch {
+      setMappingExportMessage("Impossible de copier automatiquement le JSON. Utilisez la zone d'export ci-dessous.");
+    }
+  };
+
+  const downloadBoardMapExport = () => {
+    const exportBlob = new Blob([boardMapExport], { type: 'application/json' });
+    const exportUrl = window.URL.createObjectURL(exportBlob);
+    const exportLink = document.createElement('a');
+    exportLink.href = exportUrl;
+    exportLink.download = 'board_map_final.json';
+    exportLink.click();
+    window.URL.revokeObjectURL(exportUrl);
+    setMappingExportMessage('Le fichier board_map_final.json a été exporté.');
+  };
 
   const logTileInteraction = (tile: Tile, source: 'inspection' | 'destination') => {
     if (!ENABLE_TILE_DEBUG) {
@@ -1763,7 +1955,95 @@ const App = () => {
               </div>
             </div>
 
-            <div className={`board-stage-layout ${game.trainingMode === 'objections' ? 'board-stage-layout-objections' : ''}`}>
+            <details className="developer-panel">
+              <summary>Developer section · Board Mapping Mode</summary>
+              <div className="developer-panel-body">
+                <p className="developer-panel-copy">
+                  Outil temporaire de mapping manuel : sélectionnez une tuile du fichier
+                  <code> board_map_final.json </code>
+                  puis cliquez sur le plateau pour placer les points de polygone ou déplacer le tokenAnchor.
+                </p>
+                <label className="developer-toggle">
+                  <input
+                    type="checkbox"
+                    checked={isBoardMappingMode}
+                    onChange={(event) => setIsBoardMappingMode(event.target.checked)}
+                  />
+                  <span>Activer Board Mapping Mode</span>
+                </label>
+
+                {isBoardMappingMode && (
+                  <div className="developer-controls-grid">
+                    <label className="field">
+                      <span>Tuile à mapper</span>
+                      <select
+                        value={selectedMappingTileId}
+                        onChange={(event) => setSelectedMappingTileId(event.target.value)}
+                      >
+                        {boardMapDraft.tiles.map((tile) => (
+                          <option key={tile.tileId} value={tile.tileId}>
+                            {tile.tileId} · {tile.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <fieldset className="mapping-toolset">
+                      <legend>Mode de clic</legend>
+                      <label className="mapping-tool-option">
+                        <input
+                          type="radio"
+                          name="mapping-tool"
+                          checked={mappingTool === 'polygon'}
+                          onChange={() => setMappingTool('polygon')}
+                        />
+                        <span>Ajouter des points de polygone</span>
+                      </label>
+                      <label className="mapping-tool-option">
+                        <input
+                          type="radio"
+                          name="mapping-tool"
+                          checked={mappingTool === 'anchor'}
+                          onChange={() => setMappingTool('anchor')}
+                        />
+                        <span>Définir ou déplacer le tokenAnchor</span>
+                      </label>
+                    </fieldset>
+
+                    <div className="mapping-button-row">
+                      <button type="button" className="secondary-button" onClick={resetSelectedMappingTilePolygon}>
+                        Réinitialiser le polygone
+                      </button>
+                      <button type="button" className="secondary-button" onClick={finalizeSelectedMappingTilePolygon}>
+                        Fermer / finaliser
+                      </button>
+                      <button type="button" className="secondary-button" onClick={reopenSelectedMappingTilePolygon}>
+                        Reprendre le polygone
+                      </button>
+                      <button type="button" className="secondary-button" onClick={copyBoardMapExport}>
+                        Copier le JSON
+                      </button>
+                      <button type="button" className="secondary-button" onClick={downloadBoardMapExport}>
+                        Exporter board_map_final.json
+                      </button>
+                    </div>
+
+                    <p className="developer-status-line">
+                      {mappingExportMessage ||
+                        (mappingTool === 'anchor'
+                          ? 'Cliquez sur le plateau pour positionner le tokenAnchor.'
+                          : 'Cliquez sur le plateau pour ajouter des points au polygone courant.')}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </details>
+
+            <div
+              className={`board-stage-layout ${game.trainingMode === 'objections' ? 'board-stage-layout-objections' : ''} ${
+                isBoardMappingMode ? 'board-stage-layout-mapping' : ''
+              }`}
+            >
               {game.trainingMode === 'objections' && (
                 <section className="deck-sidecar deck-panel">
                   <div className="deck-sidecar-header">
@@ -1803,7 +2083,10 @@ const App = () => {
               )}
 
               <div className="board-frame">
-                <div className="board-surface">
+                <div
+                  className={`board-surface ${isBoardMappingMode ? 'board-surface-mapping' : ''}`}
+                  ref={boardSurfaceRef}
+                >
                   <img src={boardReferenceImage} alt="Plateau Monopoly des Services" className="board-base-image" />
                   <div className="board-image-shade" />
 
@@ -1834,7 +2117,7 @@ const App = () => {
                   </div>
 
                   <svg
-                    className="board-overlay-svg"
+                    className={`board-overlay-svg ${isBoardMappingMode ? 'board-overlay-svg-passive' : ''}`}
                     viewBox="0 0 100 100"
                     preserveAspectRatio="none"
                     aria-label="Cases du plateau"
@@ -1911,6 +2194,79 @@ const App = () => {
                     )}
                   </svg>
 
+                  {isBoardMappingMode && (
+                    <>
+                      <div
+                        className="board-mapping-capture"
+                        onClick={handleBoardMappingClick}
+                        aria-hidden="true"
+                      />
+                      <svg
+                        className="board-mapping-svg"
+                        viewBox="0 0 100 100"
+                        preserveAspectRatio="none"
+                        aria-label="Board Mapping Mode"
+                      >
+                        {mappingTiles.map((tile) => {
+                          const isSelectedTile = tile.tileId === selectedMappingTile?.tileId;
+                          const isFinalized = finalizedMappingTileIds.includes(tile.tileId);
+                          const hasPolygon = tile.polygon.length >= 3;
+                          const hasPath = tile.polygon.length >= 2;
+                          const renderedPoints = tile.polygonPoints;
+
+                          return (
+                            <g
+                              key={`mapping-${tile.tileId}`}
+                              className={`board-mapping-group ${isSelectedTile ? 'board-mapping-group-selected' : ''}`}
+                            >
+                              {hasPolygon && (
+                                <polygon
+                                  className={`board-mapping-polygon ${
+                                    isFinalized ? 'board-mapping-polygon-finalized' : ''
+                                  }`}
+                                  points={renderedPoints}
+                                />
+                              )}
+                              {!hasPolygon && hasPath && (
+                                <polyline className="board-mapping-polyline" points={renderedPoints} />
+                              )}
+                              {tile.polygon.map((point, index) => (
+                                <g key={`${tile.tileId}-point-${index}`}>
+                                  <circle
+                                    className="board-mapping-point"
+                                    cx={point.x}
+                                    cy={point.y}
+                                    r={isSelectedTile ? 0.7 : 0.45}
+                                  />
+                                  {isSelectedTile && (
+                                    <text className="board-mapping-point-label" x={point.x + 0.9} y={point.y - 0.9}>
+                                      {index + 1}
+                                    </text>
+                                  )}
+                                </g>
+                              ))}
+                              <g className="board-mapping-anchor">
+                                <circle cx={tile.tokenAnchor.x} cy={tile.tokenAnchor.y} r={isSelectedTile ? 1 : 0.65} />
+                                <line
+                                  x1={tile.tokenAnchor.x - 1.35}
+                                  y1={tile.tokenAnchor.y}
+                                  x2={tile.tokenAnchor.x + 1.35}
+                                  y2={tile.tokenAnchor.y}
+                                />
+                                <line
+                                  x1={tile.tokenAnchor.x}
+                                  y1={tile.tokenAnchor.y - 1.35}
+                                  x2={tile.tokenAnchor.x}
+                                  y2={tile.tokenAnchor.y + 1.35}
+                                />
+                              </g>
+                            </g>
+                          );
+                        })}
+                      </svg>
+                    </>
+                  )}
+
                   <aside className="board-focus-card" aria-live="polite">
                     <p className="eyebrow board-focus-eyebrow">Lecture du plateau</p>
                     <div className="board-focus-main">
@@ -1942,6 +2298,37 @@ const App = () => {
                   )}
                 </div>
               </div>
+
+              {isBoardMappingMode && selectedMappingTile && (
+                <aside className="board-mapping-panel panel">
+                  <p className="eyebrow">Board Mapping Mode</p>
+                  <h3>
+                    {selectedMappingTile.tileId} · {selectedMappingTile.label}
+                  </h3>
+                  <p>
+                    Mode de clic :{' '}
+                    <strong>
+                      {mappingTool === 'anchor' ? 'tokenAnchor' : 'points de polygone'}
+                    </strong>
+                  </p>
+                  <p>
+                    État du polygone :{' '}
+                    <strong>{isSelectedMappingTileFinalized ? 'finalisé' : 'en cours d’édition'}</strong>
+                  </p>
+                  <div className="mapping-data-block">
+                    <strong>polygon points</strong>
+                    <pre>{selectedMappingTile.polygon.length > 0 ? JSON.stringify(selectedMappingTile.polygon, null, 2) : '[]'}</pre>
+                  </div>
+                  <div className="mapping-data-block">
+                    <strong>tokenAnchor</strong>
+                    <pre>{JSON.stringify(selectedMappingTile.tokenAnchor, null, 2)}</pre>
+                  </div>
+                  <div className="mapping-data-block">
+                    <strong>Export JSON</strong>
+                    <textarea readOnly value={boardMapExport} rows={12} />
+                  </div>
+                </aside>
+              )}
             </div>
           </section>
 
