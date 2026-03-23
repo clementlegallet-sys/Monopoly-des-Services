@@ -1,0 +1,191 @@
+{
+  "version": 1,
+  "boardImage": "plateau-reference-bordures-epaisses.png",
+  "tiles": [
+    {
+      "tileId": "T0",
+      "label": "Départ",
+      "type": "start",
+      "actionType": "start",
+      "tokenAnchor": { "x": 50, "y": 50 },
+      "polygon": []
+    },
+    {
+      "tileId": "T1",
+      "label": "Place du Marché haut",
+      "type": "market",
+      "actionType": "market",
+      "tokenAnchor": { "x": 50, "y": 50 },
+      "polygon": []
+    },
+    {
+      "tileId": "T2",
+      "label": "Place du Marché haut droite",
+      "type": "market",
+      "actionType": "market",
+      "tokenAnchor": { "x": 50, "y": 50 },
+      "polygon": []
+    },
+    {
+      "tileId": "T3",
+      "label": "Place du Marché bas droite",
+      "type": "market",
+      "actionType": "market",
+      "tokenAnchor": { "x": 50, "y": 50 },
+      "polygon": []
+    },
+    {
+      "tileId": "T4",
+      "label": "Place du Marché bas",
+      "type": "market",
+      "actionType": "market",
+      "tokenAnchor": { "x": 50, "y": 50 },
+      "polygon": []
+    },
+    {
+      "tileId": "T5",
+      "label": "Place du Marché bas gauche",
+      "type": "market",
+      "actionType": "market",
+      "tokenAnchor": { "x": 50, "y": 50 },
+      "polygon": []
+    },
+    {
+      "tileId": "T6",
+      "label": "Place du Marché haut gauche",
+      "type": "market",
+      "actionType": "market",
+      "tokenAnchor": { "x": 50, "y": 50 },
+      "polygon": []
+    },
+    {
+      "tileId": "T7",
+      "label": "Protection Facture",
+      "type": "service",
+      "actionType": "service",
+      "tokenAnchor": { "x": 50, "y": 50 },
+      "polygon": []
+    },
+    {
+      "tileId": "T8",
+      "label": "Bulle rose haut droite",
+      "type": "bubble_mode",
+      "actionType": "bubble_mode",
+      "tokenAnchor": { "x": 50, "y": 50 },
+      "polygon": []
+    },
+    {
+      "tileId": "T9",
+      "label": "Chance",
+      "type": "chance",
+      "actionType": "chance",
+      "tokenAnchor": { "x": 50, "y": 50 },
+      "polygon": []
+    },
+    {
+      "tileId": "T10",
+      "label": "? droite",
+      "type": "question",
+      "actionType": "question",
+      "tokenAnchor": { "x": 50, "y": 50 },
+      "polygon": []
+    },
+    {
+      "tileId": "T11",
+      "label": "IZI Confort",
+      "type": "service",
+      "actionType": "service",
+      "tokenAnchor": { "x": 50, "y": 50 },
+      "polygon": []
+    },
+    {
+      "tileId": "T12",
+      "label": "Bulle rouge bas",
+      "type": "bubble_mode",
+      "actionType": "bubble_mode",
+      "tokenAnchor": { "x": 50, "y": 50 },
+      "polygon": []
+    },
+    {
+      "tileId": "T13",
+      "label": "Assistance Dépannage",
+      "type": "service",
+      "actionType": "service",
+      "tokenAnchor": { "x": 50, "y": 50 },
+      "polygon": []
+    },
+    {
+      "tileId": "T14",
+      "label": "? bas gauche",
+      "type": "question",
+      "actionType": "question",
+      "tokenAnchor": { "x": 50, "y": 50 },
+      "polygon": []
+    },
+    {
+      "tileId": "T15",
+      "label": "IZI by EDF",
+      "type": "service",
+      "actionType": "service",
+      "tokenAnchor": { "x": 50, "y": 50 },
+      "polygon": []
+    },
+    {
+      "tileId": "T16",
+      "label": "Bulle orange gauche",
+      "type": "bubble_mode",
+      "actionType": "bubble_mode",
+      "tokenAnchor": { "x": 50, "y": 50 },
+      "polygon": []
+    },
+    {
+      "tileId": "T17",
+      "label": "? gauche",
+      "type": "question",
+      "actionType": "question",
+      "tokenAnchor": { "x": 50, "y": 50 },
+      "polygon": []
+    },
+    {
+      "tileId": "T18",
+      "label": "Thermostat",
+      "type": "service",
+      "actionType": "service",
+      "tokenAnchor": { "x": 50, "y": 50 },
+      "polygon": []
+    },
+    {
+      "tileId": "T19",
+      "label": "Bulle verte haut gauche",
+      "type": "bubble_mode",
+      "actionType": "bubble_mode",
+      "tokenAnchor": { "x": 50, "y": 50 },
+      "polygon": []
+    },
+    {
+      "tileId": "T20",
+      "label": "? haut",
+      "type": "question",
+      "actionType": "question",
+      "tokenAnchor": { "x": 50, "y": 50 },
+      "polygon": []
+    },
+    {
+      "tileId": "T21",
+      "label": "? bas centre",
+      "type": "question",
+      "actionType": "question",
+      "tokenAnchor": { "x": 50, "y": 50 },
+      "polygon": []
+    },
+    {
+      "tileId": "T22",
+      "label": "Bulle jaune bas droite",
+      "type": "bubble_mode",
+      "actionType": "bubble_mode",
+      "tokenAnchor": { "x": 50, "y": 50 },
+      "polygon": []
+    }
+  ],
+  "bubbleTiles": ["T8", "T12", "T16", "T19", "T22"]
+}
