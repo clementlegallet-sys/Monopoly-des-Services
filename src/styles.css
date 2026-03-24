@@ -94,25 +94,22 @@ img {
 }
 
 .app-shell::before {
-  content: 'EDF';
-  top: 11vh;
-  right: 3vw;
-  font-size: clamp(7rem, 16vw, 16rem);
-  line-height: 1;
-  font-weight: 900;
-  letter-spacing: 0.06em;
-  color: rgba(0, 91, 187, 0.045);
+  inset: 50% auto auto 50%;
+  width: min(76vw, 1080px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  background: url('/logo-edf-officiel.png') center / contain no-repeat;
+  opacity: 0.07;
+  filter: saturate(0.95) contrast(1.02);
 }
 
 .app-shell::after {
-  width: min(34vw, 420px);
+  inset: 50% auto auto 50%;
+  width: min(76vw, 1080px);
   aspect-ratio: 1;
-  top: 7vh;
-  right: clamp(8px, 2vw, 30px);
+  transform: translate(-50%, -50%);
   background:
-    radial-gradient(circle at 58% 42%, rgba(255, 106, 19, 0.085), rgba(255, 106, 19, 0.02) 62%, transparent 68%),
-    radial-gradient(circle at 52% 48%, rgba(0, 91, 187, 0.05), transparent 70%);
-  filter: blur(1px);
+    radial-gradient(circle at 50% 56%, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0) 64%);
 }
 
 .hero-card,
