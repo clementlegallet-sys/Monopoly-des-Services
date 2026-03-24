@@ -132,62 +132,76 @@ img {
 .hero-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 18px;
-  padding: 18px 22px 20px;
-  border-radius: 24px;
-  margin-bottom: 16px;
+  gap: 14px 18px;
+  padding: 12px 18px 14px;
+  border-radius: 20px;
+  margin-bottom: 12px;
   position: relative;
   overflow: hidden;
+  align-items: center;
 }
 
 .hero-card::after {
   content: '';
   position: absolute;
-  inset: auto -14% -56% auto;
-  width: 300px;
+  inset: auto -16% -66% auto;
+  width: 250px;
   aspect-ratio: 1;
-  background: radial-gradient(circle, rgba(255, 106, 19, 0.2), transparent 68%);
+  background: radial-gradient(circle, rgba(255, 106, 19, 0.16), transparent 70%);
   pointer-events: none;
 }
 
-.hero-brand {
+.hero-main {
   display: grid;
-  gap: 12px;
+  gap: 8px;
+  min-width: 0;
+}
+
+.hero-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
 }
 
 .edf-logo-slot {
   width: fit-content;
-  padding: 8px 12px;
-  border-radius: 14px;
+  padding: 6px 10px;
+  border-radius: 12px;
   border: 1px solid rgba(0, 91, 187, 0.24);
   background: linear-gradient(180deg, rgba(0, 91, 187, 0.1), rgba(0, 91, 187, 0.03));
 }
 
 .edf-logo {
-  height: 36px;
+  height: 29px;
   width: auto;
   object-fit: contain;
 }
 
 .hero-copy {
-  max-width: 760px;
+  max-width: 860px;
   color: var(--edf-text-soft);
   margin-bottom: 0;
+  font-size: 0.95rem;
+  line-height: 1.35;
 }
 
 .hero-actions {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 220px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 250px;
+  align-items: center;
 }
 
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.18em;
   color: var(--edf-blue);
-  font-size: 0.72rem;
-  margin-bottom: 8px;
+  font-size: 0.64rem;
+  margin-bottom: 2px;
   font-weight: 700;
 }
 
@@ -411,14 +425,15 @@ button:disabled {
   width: 100%;
   border-radius: 30px;
   padding: 14px;
-  border: 1px solid rgba(0, 91, 187, 0.16);
+  border: 1px solid rgba(0, 91, 187, 0.14);
   background:
-    linear-gradient(135deg, rgba(0, 91, 187, 0.11), rgba(255, 255, 255, 0.26)),
+    linear-gradient(135deg, rgba(0, 91, 187, 0.09), rgba(255, 255, 255, 0.28)),
     linear-gradient(180deg, #fdfefe, #ecf2fb);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.55),
-    0 18px 34px rgba(17, 42, 82, 0.15),
-    var(--edf-shadow-lg);
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    inset 0 -1px 0 rgba(13, 36, 74, 0.06),
+    0 10px 20px rgba(17, 42, 82, 0.08),
+    0 18px 28px rgba(16, 39, 76, 0.08);
   transform: perspective(1600px) rotateX(2.1deg);
   transform-origin: center top;
   transition: transform 0.35s ease, box-shadow 0.35s ease;
@@ -441,8 +456,8 @@ button:disabled {
   overflow: hidden;
   background: #f4e3ba;
   box-shadow:
-    inset 0 0 0 1px rgba(255, 247, 224, 0.26),
-    0 12px 30px rgba(19, 37, 70, 0.18);
+    inset 0 0 0 1px rgba(255, 247, 224, 0.3),
+    0 8px 18px rgba(19, 37, 70, 0.11);
 }
 
 .board-surface::before,
@@ -456,16 +471,16 @@ button:disabled {
 .board-surface::before {
   inset: 0;
   background:
-    radial-gradient(120% 68% at 50% 104%, rgba(14, 34, 68, 0.2), transparent 70%),
-    radial-gradient(58% 44% at 14% 12%, rgba(255, 255, 255, 0.2), transparent 78%);
+    radial-gradient(120% 68% at 50% 104%, rgba(14, 34, 68, 0.12), transparent 72%),
+    radial-gradient(58% 44% at 14% 12%, rgba(255, 255, 255, 0.24), transparent 78%);
 }
 
 .board-surface::after {
   inset: auto 10% -4%;
   height: 12%;
   border-radius: 50%;
-  background: radial-gradient(ellipse at center, rgba(18, 40, 76, 0.22), transparent 74%);
-  filter: blur(12px);
+  background: radial-gradient(ellipse at center, rgba(18, 40, 76, 0.13), transparent 76%);
+  filter: blur(13px);
 }
 
 .board-stage-layout {

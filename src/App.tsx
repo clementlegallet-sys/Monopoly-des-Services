@@ -1835,18 +1835,20 @@ const App = () => {
   return (
     <div className="app-shell">
       <header className="hero-card">
-        <div className="hero-brand">
-          <div className="edf-logo-slot">
-            <img src={edfOfficialLogo} alt="EDF" className="edf-logo" />
+        <div className="hero-main">
+          <div className="hero-brand">
+            <div className="edf-logo-slot">
+              <img src={edfOfficialLogo} alt="EDF" className="edf-logo" />
+            </div>
+            <div>
+              <p className="eyebrow">Plateau interactif</p>
+              <h1>Monopoly des Services</h1>
+            </div>
           </div>
-          <div>
-            <p className="eyebrow">Plateau interactif</p>
-            <h1>Monopoly des Services</h1>
-          </div>
+          <p className="hero-copy">
+              Une version digitale fidèle au tapis de jeu d’origine&nbsp;: le plateau reste au centre de l’expérience, les déplacements sont lisibles et chaque case guide clairement l’animation de la partie.
+          </p>
         </div>
-        <p className="hero-copy">
-            Une version digitale fidèle au tapis de jeu d’origine&nbsp;: le plateau reste au centre de l’expérience, les déplacements sont lisibles et chaque case guide clairement l’animation de la partie.
-        </p>
         <div className="hero-actions">
           <button className="primary-button" onClick={game.phase === 'welcome' ? startSetup : resetGame}>
             {game.phase === 'welcome' ? 'Commencer' : 'Réinitialiser'}
