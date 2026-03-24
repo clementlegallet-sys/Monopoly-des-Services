@@ -8,6 +8,7 @@ import objectionCardNoBreakdownsImage from '../objection-je-n-ai-jamais-eu-de-pa
 import objectionCardBudgetImage from '../objection-j-ai-un-budget-restreint.png';
 import objectionCardSpouseImage from '../objection-je-dois-en-parler-a-mon-conjoint.png';
 import objectionCardReflectImage from '../objection-je-souhaite-reflechir.png';
+import edfOfficialLogo from '../logo-edf-officiel.png';
 
 type TileType =
   | 'start'
@@ -1835,8 +1836,8 @@ const App = () => {
     <div className="app-shell">
       <header className="hero-card">
         <div className="hero-brand">
-          <div className="edf-logo-slot" role="img" aria-label="Zone logo EDF">
-            <span>EDF</span>
+          <div className="edf-logo-slot">
+            <img src={edfOfficialLogo} alt="EDF" className="edf-logo" />
           </div>
           <div>
             <p className="eyebrow">Plateau interactif</p>

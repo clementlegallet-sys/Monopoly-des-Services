@@ -160,14 +160,16 @@ img {
 
 .edf-logo-slot {
   width: fit-content;
-  min-width: 104px;
-  padding: 8px 16px;
+  padding: 8px 12px;
   border-radius: 14px;
   border: 1px solid rgba(0, 91, 187, 0.24);
   background: linear-gradient(180deg, rgba(0, 91, 187, 0.1), rgba(0, 91, 187, 0.03));
-  color: var(--edf-blue);
-  font-weight: 900;
-  letter-spacing: 0.1em;
+}
+
+.edf-logo {
+  height: 36px;
+  width: auto;
+  object-fit: contain;
 }
 
 .hero-copy {
