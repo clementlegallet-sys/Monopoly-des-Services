@@ -286,6 +286,15 @@ button:disabled {
   margin-bottom: 18px;
 }
 
+.player-setup-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid var(--edf-border);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -301,6 +310,36 @@ button:disabled {
   border: 1px solid var(--edf-border);
   background: var(--edf-surface);
   color: var(--edf-text);
+}
+
+.avatar-picker {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.avatar-option {
+  min-height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--edf-border);
+  background: #ffffff;
+  color: var(--edf-blue-ink);
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.avatar-option-selected {
+  border-color: rgba(0, 91, 187, 0.5);
+  background: rgba(0, 91, 187, 0.08);
+  box-shadow: 0 8px 18px rgba(0, 91, 187, 0.14);
+}
+
+.avatar-reuse-toggle {
+  margin: 0 0 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--edf-text-soft);
 }
 
 
@@ -796,6 +835,7 @@ button:disabled {
 .player-badge {
   width: 42px;
   height: 42px;
+  font-size: 1.15rem;
 }
 
 .board-player-token {
@@ -830,12 +870,12 @@ button:disabled {
 
 .board-player-token-label {
   fill: #ffffff;
-  font-size: 1.16px;
-  font-weight: 900;
+  font-size: 1.65px;
+  font-weight: 700;
   letter-spacing: 0.02px;
   paint-order: stroke;
-  stroke: rgba(34, 8, 8, 0.44);
-  stroke-width: 0.24px;
+  stroke: rgba(34, 8, 8, 0.2);
+  stroke-width: 0.14px;
   pointer-events: none;
   user-select: none;
 }

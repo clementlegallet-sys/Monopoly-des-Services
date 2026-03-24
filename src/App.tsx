@@ -65,10 +65,16 @@ type Tile = TileBlueprint & { action: TileActionDefinition };
 type Player = {
   id: string;
   name: string;
+  avatarId: string;
   position: string;
   clients: number;
   pieces: string[];
   rollsTaken: number;
+};
+
+type PlayerDraft = {
+  name: string;
+  avatarId: string;
 };
 
 type PendingAction = {
@@ -154,6 +160,16 @@ const INITIAL_CLIENTS = 2;
 const INITIAL_BANK = 40;
 const SALE_VALUES = [2, 3, 5] as const;
 const PLAYER_TOKEN_COLORS = ['#d9473f', '#2b6fdd', '#f59e0b', '#0f9d74'];
+const PLAYER_AVATARS = [
+  { id: 'bolt', symbol: '⚡', label: 'Éclair' },
+  { id: 'house', symbol: '🏠', label: 'Maison' },
+  { id: 'shield', symbol: '🛡️', label: 'Protection' },
+  { id: 'plug', symbol: '🔌', label: 'Énergie' },
+  { id: 'sun', symbol: '☀️', label: 'Solaire' },
+  { id: 'leaf', symbol: '🌿', label: 'Durable' },
+  { id: 'wrench', symbol: '🔧', label: 'Maintenance' },
+  { id: 'spark', symbol: '✨', label: 'Étincelle' },
+] as const;
 const ENABLE_TILE_DEBUG = true;
 const DEVELOPER_QUERY_PARAM = 'dev';
 const TILE_DEBUG_FLASH_DURATION_MS = 950;
@@ -201,6 +217,7 @@ const OBJECTION_DECK: ObjectionCard[] = [
     image: objectionCardReflectImage,
   },
 ] as const;
+const DEFAULT_AVATAR_ID = PLAYER_AVATARS[0].id;
 
 const BOARD_TILE_ORDER = [
   'T0',
@@ -911,13 +928,8 @@ const awardClients = (
   };
 };
 
-const getPlayerInitials = (name: string) =>
-  name
-    .split(' ')
-    .filter(Boolean)
-    .map((part) => part[0]?.toUpperCase())
-    .join('')
-    .slice(0, 2) || '?';
+const getAvatarById = (avatarId: string) =>
+  PLAYER_AVATARS.find((avatar) => avatar.id === avatarId) ?? PLAYER_AVATARS[0];
 
 const getReachableTileIds = (originTileId: string, roll: number) => {
   if (roll <= 0) {
@@ -989,8 +1001,12 @@ const App = () => {
       return {
         ...createInitialState(),
         ...parsedGame,
-        players: (parsedGame.players ?? []).map((player) => ({
+        players: (parsedGame.players ?? []).map((player, index) => ({
           ...player,
+          avatarId:
+            typeof player.avatarId === 'string'
+              ? player.avatarId
+              : PLAYER_AVATARS[index % PLAYER_AVATARS.length].id,
           position: normalizeStoredTileId(player.position),
           rollsTaken: player.rollsTaken ?? 0,
         })) as Player[],
@@ -1019,7 +1035,11 @@ const App = () => {
       return createInitialState();
     }
   });
-  const [playerNames, setPlayerNames] = useState<string[]>(['', '']);
+  const [playerDrafts, setPlayerDrafts] = useState<PlayerDraft[]>([
+    { name: '', avatarId: PLAYER_AVATARS[0].id },
+    { name: '', avatarId: PLAYER_AVATARS[1].id },
+  ]);
+  const [allowAvatarReuse, setAllowAvatarReuse] = useState(false);
   const [selectedTrainingMode, setSelectedTrainingMode] = useState<TrainingMode | null>(null);
   const [selectedPieceId, setSelectedPieceId] = useState<string>('');
   const [saleValue, setSaleValue] = useState<number>(SALE_VALUES[0]);
@@ -1364,7 +1384,11 @@ const App = () => {
       window.clearTimeout(rollTimeoutRef.current);
     }
 
-    setPlayerNames(['', '']);
+    setPlayerDrafts([
+      { name: '', avatarId: PLAYER_AVATARS[0].id },
+      { name: '', avatarId: PLAYER_AVATARS[1].id },
+    ]);
+    setAllowAvatarReuse(false);
     setSelectedTrainingMode(null);
     setSelectedPieceId('');
     setSaleValue(SALE_VALUES[0]);
@@ -1379,14 +1403,34 @@ const App = () => {
   };
 
   const launchGame = () => {
-    const names = playerNames.map((name) => name.trim()).filter(Boolean);
+    const playersDraft = playerDrafts
+      .map((draft) => ({
+        name: draft.name.trim(),
+        avatarId: draft.avatarId || DEFAULT_AVATAR_ID,
+      }))
+      .filter((draft) => Boolean(draft.name));
 
-    if (names.length < 2) {
+    if (playersDraft.length < 2) {
       setGame((currentGame) => ({
         ...currentGame,
         history: appendHistoryEntry(currentGame.history, 'Ajoutez au moins 2 joueurs pour démarrer.'),
       }));
       return;
+    }
+
+    if (!allowAvatarReuse) {
+      const selectedAvatarIds = playersDraft.map((draft) => draft.avatarId);
+      const uniqueAvatarCount = new Set(selectedAvatarIds).size;
+      if (uniqueAvatarCount !== selectedAvatarIds.length) {
+        setGame((currentGame) => ({
+          ...currentGame,
+          history: appendHistoryEntry(
+            currentGame.history,
+            'Chaque joueur doit avoir un avatar unique (ou activez les doublons).',
+          ),
+        }));
+        return;
+      }
     }
 
     if (!selectedTrainingMode) {
@@ -1400,9 +1444,10 @@ const App = () => {
       return;
     }
 
-    const players = names.map<Player>((name) => ({
+    const players = playersDraft.map<Player>((draft) => ({
       id: uid(),
-      name,
+      name: draft.name,
+      avatarId: draft.avatarId,
       position: BOARD_REGISTRY[0].tileId,
       clients: INITIAL_CLIENTS,
       pieces: [],
@@ -1870,28 +1915,86 @@ const App = () => {
             </div>
             <button
               className="secondary-button"
-              onClick={() => setPlayerNames((current) => [...current, ''])}
-              disabled={playerNames.length >= 4}
+              onClick={() =>
+                setPlayerDrafts((current) => [
+                  ...current,
+                  {
+                    name: '',
+                    avatarId: PLAYER_AVATARS[current.length % PLAYER_AVATARS.length].id,
+                  },
+                ])
+              }
+              disabled={playerDrafts.length >= 4}
             >
               Ajouter un joueur
             </button>
           </div>
           <div className="setup-grid">
-            {playerNames.map((name, index) => (
-              <label className="field" key={`player-${index}`}>
-                <span>Joueur {index + 1}</span>
-                <input
-                  value={name}
-                  onChange={(event) => {
-                    const nextNames = [...playerNames];
-                    nextNames[index] = event.target.value;
-                    setPlayerNames(nextNames);
-                  }}
-                  placeholder={`Nom du joueur ${index + 1}`}
-                />
-              </label>
+            {playerDrafts.map((draft, index) => (
+              <div className="player-setup-card" key={`player-${index}`}>
+                <label className="field">
+                  <span>Joueur {index + 1}</span>
+                  <input
+                    value={draft.name}
+                    onChange={(event) => {
+                      setPlayerDrafts((current) =>
+                        current.map((currentDraft, currentIndex) =>
+                          currentIndex === index ? { ...currentDraft, name: event.target.value } : currentDraft,
+                        ),
+                      );
+                    }}
+                    placeholder={`Nom du joueur ${index + 1}`}
+                  />
+                </label>
+                <div className="field">
+                  <span>Avatar</span>
+                  <div className="avatar-picker" role="radiogroup" aria-label={`Avatar joueur ${index + 1}`}>
+                    {PLAYER_AVATARS.map((avatar) => {
+                      const isTakenByAnotherPlayer =
+                        !allowAvatarReuse &&
+                        playerDrafts.some(
+                          (playerDraft, playerDraftIndex) =>
+                            playerDraftIndex !== index && playerDraft.avatarId === avatar.id,
+                        );
+                      const isSelected = draft.avatarId === avatar.id;
+
+                      return (
+                        <button
+                          type="button"
+                          key={avatar.id}
+                          className={`avatar-option ${isSelected ? 'avatar-option-selected' : ''}`}
+                          onClick={() => {
+                            setPlayerDrafts((current) =>
+                              current.map((currentDraft, currentIndex) =>
+                                currentIndex === index ? { ...currentDraft, avatarId: avatar.id } : currentDraft,
+                              ),
+                            );
+                          }}
+                          disabled={isTakenByAnotherPlayer}
+                          aria-pressed={isSelected}
+                          title={
+                            isTakenByAnotherPlayer
+                              ? `${avatar.label} déjà sélectionné`
+                              : `Choisir ${avatar.label}`
+                          }
+                        >
+                          <span aria-hidden="true">{avatar.symbol}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
+          <label className="avatar-reuse-toggle">
+            <input
+              type="checkbox"
+              checked={allowAvatarReuse}
+              onChange={(event) => setAllowAvatarReuse(event.target.checked)}
+            />
+            <span>Autoriser les doublons d’avatar</span>
+          </label>
 
           <fieldset className="mode-selector">
             <legend>Mode d’entraînement obligatoire</legend>
@@ -2135,7 +2238,9 @@ const App = () => {
                             transform={`translate(${tokenCenterX} ${tokenCenterY})`}
                             style={{ color: PLAYER_TOKEN_COLORS[playerIndex % PLAYER_TOKEN_COLORS.length] }}
                           >
-                            <title>{player.name}</title>
+                            <title>
+                              {player.name} · {getAvatarById(player.avatarId).label}
+                            </title>
                             <circle className="board-player-token-shadow" r={TOKEN_RADIUS + 0.26} cy={0.5} />
                             <circle className="board-player-token-body" r={TOKEN_RADIUS} />
                             <circle className="board-player-token-gloss" r={TOKEN_RADIUS * 0.74} cx={-0.5} cy={-0.72} />
@@ -2145,7 +2250,7 @@ const App = () => {
                               textAnchor="middle"
                               dominantBaseline="central"
                             >
-                              {getPlayerInitials(player.name)}
+                              {getAvatarById(player.avatarId).symbol}
                             </text>
                           </g>
                         );
@@ -2465,7 +2570,7 @@ const App = () => {
                         className="player-badge"
                         style={{ background: PLAYER_TOKEN_COLORS[index % PLAYER_TOKEN_COLORS.length] }}
                       >
-                        {getPlayerInitials(player.name)}
+                        {getAvatarById(player.avatarId).symbol}
                       </span>
                       <div>
                         <h3>{player.name}</h3>
