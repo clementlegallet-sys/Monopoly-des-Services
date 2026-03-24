@@ -2134,7 +2134,9 @@ const App = () => {
                             style={{ color: PLAYER_TOKEN_COLORS[playerIndex % PLAYER_TOKEN_COLORS.length] }}
                           >
                             <title>{player.name}</title>
+                            <circle className="board-player-token-shadow" r={TOKEN_RADIUS + 0.26} cy={0.5} />
                             <circle className="board-player-token-body" r={TOKEN_RADIUS} />
+                            <circle className="board-player-token-gloss" r={TOKEN_RADIUS * 0.74} cx={-0.5} cy={-0.72} />
                             <circle className="board-player-token-ring" r={TOKEN_RADIUS + 0.34} />
                             <text
                               className="board-player-token-label"
