@@ -2415,18 +2415,6 @@ const App = () => {
                         <img src={objectionFrontImageSource} alt="Dos du deck Objections" />
                       </span>
                     </button>
-                    <div className="deck-card objections-deck-copy">
-                      <p className="deck-card-label">Pile active</p>
-                      <strong>{game.activeObjectionCard?.title ?? 'Aucune carte révélée'}</strong>
-                      <p>
-                        Gardez cette pioche à portée de vue : elle alimente les défis du mode Objections et reste lisible pendant toute la partie.
-                      </p>
-                      {game.activeObjectionCard && (
-                        <button className="secondary-button objections-view-button" onClick={drawObjectionCard}>
-                          Tirer une autre carte
-                        </button>
-                      )}
-                    </div>
                   </section>
                 )}
               </aside>
