@@ -9,6 +9,31 @@ import objectionCardBudgetImage from '../objection-j-ai-un-budget-restreint.png'
 import objectionCardSpouseImage from '../objection-je-dois-en-parler-a-mon-conjoint.png';
 import objectionCardReflectImage from '../objection-je-souhaite-reflechir.png';
 import edfOfficialLogo from '../logo-edf-officiel.png';
+import chanceCardsRegistry from '../chance_cards_registry.json';
+import chanceContactFrontImage from '../chance-contact-front.png';
+import chanceContactBackImage from '../chance-contact-back.png';
+import chanceContacteurFrontImage from '../chance-contacteur-front.png';
+import chanceContacteurBackImage from '../chance-contacteur-back.png';
+import chanceDelesteurFrontImage from '../chance-delesteur-front.png';
+import chanceDelesteurBackImage from '../chance-delesteur-back.png';
+import chanceDisjFrontImage from '../chance-disj-front.png';
+import chanceDisjBackImage from '../chance-disj-back.png';
+import chanceFilPiloteFrontImage from '../chance-filpilote-front.png';
+import chanceFilPiloteBackImage from '../chance-filpilote-back.png';
+import chanceGestionDelestFrontImage from '../chance-gestiondelest-front.png';
+import chanceGestionDelestBackImage from '../chance-gestiondelest-back.png';
+import chanceGestionnaireFrontImage from '../chance-gestionnaire-front.png';
+import chanceGestionnaireBackImage from '../chance-gestionnaire-back.png';
+import chanceManKelecFrontImage from '../chance-mankelec-front.png';
+import chanceManKelecBackImage from '../chance-mankelec-back.png';
+import chanceRadiateurFrontImage from '../chance-radiateur-front.png';
+import chanceRadiateurBackImage from '../chance-radiateur-back.png';
+import chanceTempoFrontImage from '../chance-tempo-front.png';
+import chanceTempoBackImage from '../chance-tempo-back.png';
+import chanceThermostatFrontImage from '../chance-thermostat-front.png';
+import chanceThermostatBackImage from '../chance-thermostat-back.png';
+import chanceThermostatiqueFrontImage from '../chance-thermostatique-front.png';
+import chanceThermostatiqueBackImage from '../chance-thermostatique-back.png';
 
 type TileType =
   | 'start'
@@ -99,6 +124,20 @@ type ObjectionCard = {
   image: string;
 };
 
+type ChanceCardRegistryEntry = {
+  cardId: string;
+  label: string;
+  frontImage: string;
+  backImage: string;
+};
+
+type ChanceCard = {
+  id: string;
+  title: string;
+  frontImage: string;
+  backImage: string;
+};
+
 type GameState = {
   phase: GamePhase;
   players: Player[];
@@ -111,6 +150,7 @@ type GameState = {
   winnerId: string | null;
   trainingMode: TrainingMode | null;
   activeObjectionCard: ObjectionCard | null;
+  activeChanceCard: ChanceCard | null;
 };
 
 type DieFaceProps = {
@@ -217,6 +257,40 @@ const OBJECTION_DECK: ObjectionCard[] = [
     image: objectionCardReflectImage,
   },
 ] as const;
+const CHANCE_IMAGE_BY_FILE: Record<string, string> = {
+  'chance-contact-front.png': chanceContactFrontImage,
+  'chance-contact-back.png': chanceContactBackImage,
+  'chance-contacteur-front.png': chanceContacteurFrontImage,
+  'chance-contacteur-back.png': chanceContacteurBackImage,
+  'chance-delesteur-front.png': chanceDelesteurFrontImage,
+  'chance-delesteur-back.png': chanceDelesteurBackImage,
+  'chance-disj-front.png': chanceDisjFrontImage,
+  'chance-disj-back.png': chanceDisjBackImage,
+  'chance-filpilote-front.png': chanceFilPiloteFrontImage,
+  'chance-filpilote-back.png': chanceFilPiloteBackImage,
+  'chance-gestiondelest-front.png': chanceGestionDelestFrontImage,
+  'chance-gestiondelest-back.png': chanceGestionDelestBackImage,
+  'chance-gestionnaire-front.png': chanceGestionnaireFrontImage,
+  'chance-gestionnaire-back.png': chanceGestionnaireBackImage,
+  'chance-mankelec-front.png': chanceManKelecFrontImage,
+  'chance-mankelec-back.png': chanceManKelecBackImage,
+  'chance-radiateur-front.png': chanceRadiateurFrontImage,
+  'chance-radiateur-back.png': chanceRadiateurBackImage,
+  'chance-tempo-front.png': chanceTempoFrontImage,
+  'chance-tempo-back.png': chanceTempoBackImage,
+  'chance-thermostat-front.png': chanceThermostatFrontImage,
+  'chance-thermostat-back.png': chanceThermostatBackImage,
+  'chance-thermostatique-front.png': chanceThermostatiqueFrontImage,
+  'chance-thermostatique-back.png': chanceThermostatiqueBackImage,
+};
+const CHANCE_DECK: ChanceCard[] = (chanceCardsRegistry.cards as ChanceCardRegistryEntry[])
+  .map((card) => ({
+    id: card.cardId,
+    title: card.label,
+    frontImage: CHANCE_IMAGE_BY_FILE[card.frontImage] ?? '',
+    backImage: CHANCE_IMAGE_BY_FILE[card.backImage] ?? '',
+  }))
+  .filter((card) => card.frontImage && card.backImage);
 const DEFAULT_AVATAR_ID = PLAYER_AVATARS[0].id;
 
 const BOARD_TILE_ORDER = [
@@ -769,6 +843,16 @@ const drawRandomObjectionCard = (excludedId?: string | null) => {
   return availableCards[Math.floor(Math.random() * availableCards.length)] ?? null;
 };
 
+const drawRandomChanceCard = (excludedId?: string | null) => {
+  const availableCards = CHANCE_DECK.filter((card) => card.id !== excludedId);
+
+  if (availableCards.length === 0) {
+    return CHANCE_DECK[0] ?? null;
+  }
+
+  return availableCards[Math.floor(Math.random() * availableCards.length)] ?? null;
+};
+
 const createInitialState = (): GameState => ({
   phase: 'welcome',
   players: [],
@@ -781,6 +865,7 @@ const createInitialState = (): GameState => ({
   winnerId: null,
   trainingMode: null,
   activeObjectionCard: null,
+  activeChanceCard: null,
 });
 
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -989,6 +1074,7 @@ const App = () => {
     try {
       const parsedGame = JSON.parse(savedGame) as Partial<GameState>;
       const parsedObjectionCard = parsedGame.activeObjectionCard;
+      const parsedChanceCard = parsedGame.activeChanceCard;
       const normalizedObjectionCard =
         parsedObjectionCard &&
         typeof parsedObjectionCard === 'object' &&
@@ -996,6 +1082,15 @@ const App = () => {
         'title' in parsedObjectionCard &&
         'image' in parsedObjectionCard
           ? (parsedObjectionCard as ObjectionCard)
+          : null;
+      const normalizedChanceCard =
+        parsedChanceCard &&
+        typeof parsedChanceCard === 'object' &&
+        'id' in parsedChanceCard &&
+        'title' in parsedChanceCard &&
+        'frontImage' in parsedChanceCard &&
+        'backImage' in parsedChanceCard
+          ? (parsedChanceCard as ChanceCard)
           : null;
 
       return {
@@ -1030,6 +1125,7 @@ const App = () => {
               }
             : null,
         activeObjectionCard: normalizedObjectionCard,
+        activeChanceCard: normalizedChanceCard,
       };
     } catch {
       return createInitialState();
@@ -1468,6 +1564,7 @@ const App = () => {
       winnerId: null,
       trainingMode: selectedTrainingMode,
       activeObjectionCard: null,
+      activeChanceCard: null,
     });
   };
 
@@ -1589,6 +1686,8 @@ const App = () => {
         (tile.type === 'bubble' || tile.type === 'objection') && currentGame.trainingMode === 'objections'
           ? drawRandomObjectionCard(currentGame.activeObjectionCard?.id)
           : null;
+      const triggeredChanceCard =
+        tile.type === 'chance' ? drawRandomChanceCard(currentGame.activeChanceCard?.id) : null;
 
       if (tile.type === 'market' && player.rollsTaken === 0 && pendingMovement.roll === 1) {
         return resolveTurn(
@@ -1606,6 +1705,8 @@ const App = () => {
 
       const destinationMessage = triggeredObjectionCard
         ? `${player.name} choisit ${tilePresentation?.title ?? tile.label} comme destination après un ${pendingMovement.roll}. Carte tirée : « ${triggeredObjectionCard.title} ».`
+        : triggeredChanceCard
+          ? `${player.name} choisit ${tilePresentation?.title ?? tile.label} comme destination après un ${pendingMovement.roll}. Carte Chance tirée : « ${triggeredChanceCard.title} ».`
         : `${player.name} choisit ${tilePresentation?.title ?? tile.label} comme destination après un ${pendingMovement.roll}.`;
 
       return {
@@ -1618,6 +1719,7 @@ const App = () => {
           roll: pendingMovement.roll,
         },
         activeObjectionCard: currentGame.trainingMode === 'objections' ? triggeredObjectionCard ?? currentGame.activeObjectionCard : null,
+        activeChanceCard: triggeredChanceCard ?? currentGame.activeChanceCard,
         history: appendHistoryEntry(currentGame.history, destinationMessage),
       };
     });
@@ -1797,10 +1899,27 @@ const App = () => {
     });
   };
 
+  const drawChanceCard = () => {
+    setGame((currentGame) => {
+      const card = drawRandomChanceCard(currentGame.activeChanceCard?.id);
+
+      if (!card) {
+        return currentGame;
+      }
+
+      return {
+        ...currentGame,
+        activeChanceCard: card,
+        history: appendHistoryEntry(currentGame.history, `Nouvelle carte Chance tirée : « ${card.title} »`),
+      };
+    });
+  };
+
   const pendingActionTilePresentation = game.pendingAction
     ? getTilePresentation(game.pendingAction.tile, game.trainingMode)
     : null;
   const canInspectObjectionCard = Boolean(game.activeObjectionCard);
+  const canInspectChanceCard = Boolean(game.activeChanceCard);
   const objectionFrontImageSource = objectionsDeckFaceImage;
   const objectionBackImageSource = game.activeObjectionCard?.image ?? null;
   const displayedObjectionImageSource = isObjectionCardShowingBack ? objectionBackImageSource : objectionFrontImageSource;
@@ -2168,10 +2287,47 @@ const App = () => {
             )}
 
             <div
-              className={`board-stage-layout ${game.trainingMode === 'objections' ? 'board-stage-layout-objections' : ''} ${
+              className={`board-stage-layout board-stage-layout-chance ${game.trainingMode === 'objections' ? 'board-stage-layout-objections' : ''} ${
                 isDeveloperMode && isBoardMappingMode ? 'board-stage-layout-mapping' : ''
               }`}
             >
+              <section className="deck-sidecar deck-panel">
+                <div className="deck-sidecar-header">
+                  <div>
+                    <p className="eyebrow">Pioche</p>
+                    <h3>Deck Chance</h3>
+                  </div>
+                  <button className="secondary-button" onClick={drawChanceCard}>
+                    {canInspectChanceCard ? 'Changer la carte' : 'Préparer une carte'}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  className="objections-deck-pile objections-deck-pile-large chance-deck-pile"
+                  onClick={drawChanceCard}
+                  aria-label="Piocher une carte Chance"
+                >
+                  <span className="objections-deck-shadow objections-deck-shadow-back" aria-hidden="true" />
+                  <span className="objections-deck-shadow objections-deck-shadow-mid" aria-hidden="true" />
+                  <span className="objections-deck-top-card">
+                    <img
+                      src={game.activeChanceCard?.backImage ?? chanceThermostatBackImage}
+                      alt="Dos d'une carte Chance"
+                    />
+                  </span>
+                </button>
+                <div className="deck-card objections-deck-copy chance-deck-copy">
+                  <p className="deck-card-label">Pile active</p>
+                  <strong>{game.activeChanceCard?.title ?? 'Aucune carte révélée'}</strong>
+                  <p>Utilisez la carte Chance comme support visuel lorsque la case Chance est validée.</p>
+                  {game.activeChanceCard && (
+                    <button className="secondary-button objections-view-button" onClick={drawChanceCard}>
+                      Tirer une autre carte
+                    </button>
+                  )}
+                </div>
+              </section>
+
               {game.trainingMode === 'objections' && (
                 <section className="deck-sidecar deck-panel">
                   <div className="deck-sidecar-header">
@@ -2686,6 +2842,32 @@ const App = () => {
                     Passer le tour
                   </button>
                 </div>
+              </div>
+            )}
+
+            {game.pendingAction.tile.type === 'chance' && (
+              <div className="deck-card modal-deck-card chance-viewer">
+                <div className="deck-card-header">
+                  <div>
+                    <p className="deck-card-label">Carte Chance</p>
+                    <strong>{game.activeChanceCard?.title ?? 'Carte en attente'}</strong>
+                  </div>
+                  <button className="secondary-button" onClick={drawChanceCard}>
+                    Changer la carte
+                  </button>
+                </div>
+                <p>Montrez la carte au participant puis validez la réponse pour attribuer les 2 clients.</p>
+                {game.activeChanceCard ? (
+                  <figure className="objection-card-viewer chance-card-viewer">
+                    <img
+                      src={game.activeChanceCard.frontImage}
+                      alt={`Carte Chance : ${game.activeChanceCard.title}`}
+                      className="objection-card-image"
+                    />
+                  </figure>
+                ) : (
+                  <p className="market-message">Aucune carte disponible. Relancez une pioche pour continuer.</p>
+                )}
               </div>
             )}
 
