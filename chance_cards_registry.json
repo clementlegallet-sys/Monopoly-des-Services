@@ -1,0 +1,16 @@
+{
+  "cards": [
+    {
+      "cardId": "chance-robinet-thermostatique",
+      "label": "Robinet thermostatique",
+      "frontImage": "chance-robinet-thermostatique-front.png",
+      "backImage": "chance-robinet-thermostatique-back.png"
+    },
+    {
+      "cardId": "chance-thermostat-connecte",
+      "label": "Thermostat connecté",
+      "frontImage": "chance-thermostat-connecte-front.png",
+      "backImage": "chance-thermostat-connecte-back.png"
+    }
+  ]
+}
