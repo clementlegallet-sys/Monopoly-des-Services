@@ -528,8 +528,12 @@ button:disabled {
   align-items: start;
 }
 
-.board-stage-layout-objections {
+.board-stage-layout-chance {
   grid-template-columns: minmax(170px, 210px) minmax(0, 1fr);
+}
+
+.board-stage-layout-objections {
+  grid-template-columns: minmax(170px, 210px) minmax(0, 1fr) minmax(170px, 210px);
 }
 
 .board-stage-layout-mapping {
@@ -537,7 +541,7 @@ button:disabled {
 }
 
 .board-stage-layout-objections.board-stage-layout-mapping {
-  grid-template-columns: minmax(170px, 210px) minmax(0, 1fr) minmax(280px, 340px);
+  grid-template-columns: minmax(170px, 210px) minmax(0, 1fr) minmax(170px, 210px) minmax(280px, 340px);
 }
 
 .board-base-image,
@@ -1399,6 +1403,15 @@ button:disabled {
   align-content: start;
 }
 
+.chance-deck-pile .objections-deck-shadow {
+  background: linear-gradient(180deg, rgba(241, 248, 255, 0.98), rgba(210, 232, 255, 0.96));
+  border-color: rgba(18, 81, 154, 0.24);
+}
+
+.chance-deck-copy {
+  background: linear-gradient(180deg, #ffffff 0%, #f2f8ff 75%, #eef7ff 100%);
+}
+
 .objections-view-button {
   justify-self: start;
 }
@@ -1622,6 +1635,10 @@ button:disabled {
   margin-top: 18px;
 }
 
+.chance-card-viewer .objection-card-image {
+  width: min(100%, 420px);
+}
+
 .market-message {
   margin-bottom: 0;
   padding: 12px 14px;
@@ -1695,7 +1712,8 @@ button:disabled {
   }
 
   .board-stage-layout-mapping,
-  .board-stage-layout-objections {
+  .board-stage-layout-objections,
+  .board-stage-layout-chance {
     grid-template-columns: 1fr;
   }
 

@@ -1,16 +1,76 @@
 {
   "cards": [
     {
-      "cardId": "chance-robinet-thermostatique",
-      "label": "Robinet thermostatique",
-      "frontImage": "chance-robinet-thermostatique-front.png",
-      "backImage": "chance-robinet-thermostatique-back.png"
+      "cardId": "chance-contact",
+      "label": "Contact sec",
+      "frontImage": "chance-contact-front.png",
+      "backImage": "chance-contact-back.png"
     },
     {
-      "cardId": "chance-thermostat-connecte",
-      "label": "Thermostat connecté",
-      "frontImage": "chance-thermostat-connecte-front.png",
-      "backImage": "chance-thermostat-connecte-back.png"
+      "cardId": "chance-contacteur",
+      "label": "Contacteur",
+      "frontImage": "chance-contacteur-front.png",
+      "backImage": "chance-contacteur-back.png"
+    },
+    {
+      "cardId": "chance-delesteur",
+      "label": "Délesteur",
+      "frontImage": "chance-delesteur-front.png",
+      "backImage": "chance-delesteur-back.png"
+    },
+    {
+      "cardId": "chance-disjoncteur",
+      "label": "Disjoncteur",
+      "frontImage": "chance-disj-front.png",
+      "backImage": "chance-disj-back.png"
+    },
+    {
+      "cardId": "chance-fil-pilote",
+      "label": "Fil pilote",
+      "frontImage": "chance-filpilote-front.png",
+      "backImage": "chance-filpilote-back.png"
+    },
+    {
+      "cardId": "chance-gestion-delestage",
+      "label": "Gestion délestage",
+      "frontImage": "chance-gestiondelest-front.png",
+      "backImage": "chance-gestiondelest-back.png"
+    },
+    {
+      "cardId": "chance-gestionnaire",
+      "label": "Gestionnaire",
+      "frontImage": "chance-gestionnaire-front.png",
+      "backImage": "chance-gestionnaire-back.png"
+    },
+    {
+      "cardId": "chance-mankelec",
+      "label": "Mankelec",
+      "frontImage": "chance-mankelec-front.png",
+      "backImage": "chance-mankelec-back.png"
+    },
+    {
+      "cardId": "chance-radiateur",
+      "label": "Radiateur",
+      "frontImage": "chance-radiateur-front.png",
+      "backImage": "chance-radiateur-back.png"
+    },
+    {
+      "cardId": "chance-tempo",
+      "label": "Tempo",
+      "frontImage": "chance-tempo-front.png",
+      "backImage": "chance-tempo-back.png"
+    },
+    {
+      "cardId": "chance-thermostat",
+      "label": "Thermostat",
+      "frontImage": "chance-thermostat-front.png",
+      "backImage": "chance-thermostat-back.png"
+    },
+    {
+      "cardId": "chance-thermostatique",
+      "label": "Robinet thermostatique",
+      "frontImage": "chance-thermostatique-front.png",
+      "backImage": "chance-thermostatique-back.png"
     }
   ]
 }
