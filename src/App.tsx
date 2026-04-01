@@ -1156,6 +1156,10 @@ const App = () => {
   const [isObjectionCardRevealed, setIsObjectionCardRevealed] = useState(false);
   const [isObjectionCardFlipping, setIsObjectionCardFlipping] = useState(false);
   const [isObjectionCardShowingBack, setIsObjectionCardShowingBack] = useState(false);
+  const [isChanceAnswerRevealed, setIsChanceAnswerRevealed] = useState(false);
+  const [isChanceCardFlipping, setIsChanceCardFlipping] = useState(false);
+  const [isChanceCardShowingBack, setIsChanceCardShowingBack] = useState(false);
+  const [chanceAnswerDecision, setChanceAnswerDecision] = useState<'validated' | 'rejected' | null>(null);
   const isDeveloperMode = useMemo(() => {
     if (typeof window === 'undefined') {
       return false;
@@ -1168,6 +1172,7 @@ const App = () => {
   const rollTimeoutRef = useRef<number | null>(null);
   const debugFlashTimeoutRef = useRef<number | null>(null);
   const objectionRevealTimeoutRef = useRef<number | null>(null);
+  const chanceRevealTimeoutRef = useRef<number | null>(null);
   const boardSurfaceRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -1213,6 +1218,32 @@ const App = () => {
     }
   }, [game.pendingAction, game.activeObjectionCard?.id, game.trainingMode]);
 
+  useEffect(() => {
+    const isChanceChallenge = game.pendingAction?.tile.type === 'chance';
+
+    if (!isChanceChallenge) {
+      setIsChanceAnswerRevealed(false);
+      setIsChanceCardFlipping(false);
+      setIsChanceCardShowingBack(false);
+      setChanceAnswerDecision(null);
+      if (chanceRevealTimeoutRef.current) {
+        window.clearTimeout(chanceRevealTimeoutRef.current);
+        chanceRevealTimeoutRef.current = null;
+      }
+      return;
+    }
+
+    setIsChanceAnswerRevealed(false);
+    setIsChanceCardFlipping(false);
+    setIsChanceCardShowingBack(false);
+    setChanceAnswerDecision(null);
+
+    if (chanceRevealTimeoutRef.current) {
+      window.clearTimeout(chanceRevealTimeoutRef.current);
+      chanceRevealTimeoutRef.current = null;
+    }
+  }, [game.pendingAction, game.activeChanceCard?.id]);
+
   useEffect(
     () => () => {
       if (rollIntervalRef.current) {
@@ -1226,6 +1257,9 @@ const App = () => {
       }
       if (objectionRevealTimeoutRef.current) {
         window.clearTimeout(objectionRevealTimeoutRef.current);
+      }
+      if (chanceRevealTimeoutRef.current) {
+        window.clearTimeout(chanceRevealTimeoutRef.current);
       }
     },
     [],
@@ -1725,25 +1759,40 @@ const App = () => {
     });
   };
 
-  const handleValidatedAction = () => {
-    if (!game.pendingAction) {
-      return;
-    }
-
+  const resolvePendingAction = (isValidated: boolean) => {
     setGame((currentGame) => {
+      if (!currentGame.pendingAction) {
+        return currentGame;
+      }
+
+      const player = currentGame.players.find(
+        (candidate) => candidate.id === currentGame.pendingAction?.playerId,
+      );
+      const pendingTilePresentation = getTilePresentation(
+        currentGame.pendingAction.tile,
+        currentGame.trainingMode,
+      );
+
+      if (!isValidated) {
+        return resolveTurn(
+          currentGame,
+          currentGame.players,
+          currentGame.centralBank,
+          `${player?.name ?? 'Le joueur'} ne valide pas la case ${pendingTilePresentation.title}.`,
+        );
+      }
+
       const pendingAction = currentGame.pendingAction;
       if (!pendingAction) {
         return currentGame;
       }
 
-      const player = currentGame.players.find((candidate) => candidate.id === pendingAction.playerId);
       if (!player) {
         return { ...currentGame, pendingMovement: null, pendingAction: null };
       }
 
       let players = currentGame.players;
       let centralBank = currentGame.centralBank;
-      const pendingTilePresentation = getTilePresentation(pendingAction.tile, currentGame.trainingMode);
       let message = `${player.name} réussit l'épreuve ${pendingTilePresentation.title}.`;
 
       if (pendingAction.tile.type === 'chance') {
@@ -1800,27 +1849,49 @@ const App = () => {
     });
   };
 
+  const revealChanceAnswer = (decision: 'validated' | 'rejected') => {
+    if (!game.pendingAction || game.pendingAction.tile.type !== 'chance' || !game.activeChanceCard) {
+      return;
+    }
+
+    if (isChanceAnswerRevealed || isChanceCardFlipping) {
+      return;
+    }
+
+    if (chanceRevealTimeoutRef.current) {
+      window.clearTimeout(chanceRevealTimeoutRef.current);
+      chanceRevealTimeoutRef.current = null;
+    }
+
+    setChanceAnswerDecision(decision);
+    setIsChanceCardFlipping(true);
+    chanceRevealTimeoutRef.current = window.setTimeout(() => {
+      setIsChanceCardShowingBack(true);
+
+      chanceRevealTimeoutRef.current = window.setTimeout(() => {
+        setIsChanceAnswerRevealed(true);
+        setIsChanceCardFlipping(false);
+        chanceRevealTimeoutRef.current = null;
+      }, 280);
+    }, 280);
+  };
+
+  const handleValidatedAction = () => {
+    if (game.pendingAction?.tile.type === 'chance') {
+      revealChanceAnswer('validated');
+      return;
+    }
+
+    resolvePendingAction(true);
+  };
+
   const handleRejectedAction = () => {
-    setGame((currentGame) => {
-      if (!currentGame.pendingAction) {
-        return currentGame;
-      }
+    if (game.pendingAction?.tile.type === 'chance') {
+      revealChanceAnswer('rejected');
+      return;
+    }
 
-      const player = currentGame.players.find(
-        (candidate) => candidate.id === currentGame.pendingAction?.playerId,
-      );
-      const pendingTilePresentation = getTilePresentation(
-        currentGame.pendingAction.tile,
-        currentGame.trainingMode,
-      );
-
-      return resolveTurn(
-        currentGame,
-        currentGame.players,
-        currentGame.centralBank,
-        `${player?.name ?? 'Le joueur'} ne valide pas la case ${pendingTilePresentation.title}.`,
-      );
-    });
+    resolvePendingAction(false);
   };
 
   const handleMarketSale = () => {
@@ -1923,6 +1994,9 @@ const App = () => {
   const objectionFrontImageSource = objectionsDeckFaceImage;
   const objectionBackImageSource = game.activeObjectionCard?.image ?? null;
   const displayedObjectionImageSource = isObjectionCardShowingBack ? objectionBackImageSource : objectionFrontImageSource;
+  const displayedChanceImageSource = isChanceCardShowingBack
+    ? game.activeChanceCard?.backImage ?? null
+    : game.activeChanceCard?.frontImage ?? null;
   const winner = game.players.find((player) => player.id === game.winnerId) ?? null;
   const focusTileActionLabel = isChoosingDestination && reachableTileIds.includes(focusTile.tileId)
     ? 'Case atteignable ce tour : cliquez pour la choisir comme destination.'
@@ -2861,11 +2935,28 @@ const App = () => {
                 <p>Montrez la carte au participant puis validez la réponse pour attribuer les 2 clients.</p>
                 {game.activeChanceCard ? (
                   <figure className="objection-card-viewer chance-card-viewer">
-                    <img
-                      src={game.activeChanceCard.frontImage}
-                      alt={`Carte Chance : ${game.activeChanceCard.title}`}
-                      className="objection-card-image"
-                    />
+                    <span
+                      className={`objection-card-flip-button${isChanceCardShowingBack ? ' is-showing-back' : ''}${isChanceAnswerRevealed ? ' is-revealed' : ''}${isChanceCardFlipping ? ' is-flipping' : ''}`}
+                      aria-label={
+                        isChanceCardShowingBack
+                          ? `Réponse de la carte Chance : ${game.activeChanceCard.title}`
+                          : `Carte Chance : ${game.activeChanceCard.title}`
+                      }
+                    >
+                      <span className="objection-card-flip-scene">
+                        <span className="objection-card-flip-illusion">
+                          <img
+                            src={displayedChanceImageSource ?? ''}
+                            alt={
+                              isChanceCardShowingBack
+                                ? `Réponse de la carte Chance : ${game.activeChanceCard.title}`
+                                : `Carte Chance : ${game.activeChanceCard.title}`
+                            }
+                            className="objection-card-image"
+                          />
+                        </span>
+                      </span>
+                    </span>
                   </figure>
                 ) : (
                   <p className="market-message">Aucune carte disponible. Relancez une pioche pour continuer.</p>
@@ -2940,12 +3031,34 @@ const App = () => {
                 !isObjectionCardRevealed
               )) && (
               <div className="modal-actions">
-                <button className="primary-button" onClick={handleValidatedAction}>
-                  Réponse validée
-                </button>
-                <button className="secondary-button" onClick={handleRejectedAction}>
-                  Réponse refusée
-                </button>
+                {game.pendingAction.tile.type === 'chance' ? (
+                  isChanceAnswerRevealed ? (
+                    <button
+                      className="primary-button"
+                      onClick={() => resolvePendingAction(chanceAnswerDecision === 'validated')}
+                    >
+                      Continuer
+                    </button>
+                  ) : (
+                    <>
+                      <button className="primary-button" onClick={handleValidatedAction} disabled={!game.activeChanceCard}>
+                        Réponse validée
+                      </button>
+                      <button className="secondary-button" onClick={handleRejectedAction} disabled={!game.activeChanceCard}>
+                        Réponse refusée
+                      </button>
+                    </>
+                  )
+                ) : (
+                  <>
+                    <button className="primary-button" onClick={handleValidatedAction}>
+                      Réponse validée
+                    </button>
+                    <button className="secondary-button" onClick={handleRejectedAction}>
+                      Réponse refusée
+                    </button>
+                  </>
+                )}
               </div>
             )}
           </section>
