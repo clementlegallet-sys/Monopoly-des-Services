@@ -2287,84 +2287,86 @@ const App = () => {
             )}
 
             <div
-              className={`board-stage-layout board-stage-layout-chance ${game.trainingMode === 'objections' ? 'board-stage-layout-objections' : ''} ${
+              className={`board-stage-layout board-stage-layout-chance ${
                 isDeveloperMode && isBoardMappingMode ? 'board-stage-layout-mapping' : ''
               }`}
             >
-              <section className="deck-sidecar deck-panel">
-                <div className="deck-sidecar-header">
-                  <div>
-                    <p className="eyebrow">Pioche</p>
-                    <h3>Deck Chance</h3>
-                  </div>
-                  <button className="secondary-button" onClick={drawChanceCard}>
-                    {canInspectChanceCard ? 'Changer la carte' : 'Préparer une carte'}
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  className="objections-deck-pile objections-deck-pile-large chance-deck-pile"
-                  onClick={drawChanceCard}
-                  aria-label="Piocher une carte Chance"
-                >
-                  <span className="objections-deck-shadow objections-deck-shadow-back" aria-hidden="true" />
-                  <span className="objections-deck-shadow objections-deck-shadow-mid" aria-hidden="true" />
-                  <span className="objections-deck-top-card">
-                    <img
-                      src={game.activeChanceCard?.backImage ?? chanceThermostatBackImage}
-                      alt="Dos d'une carte Chance"
-                    />
-                  </span>
-                </button>
-                <div className="deck-card objections-deck-copy chance-deck-copy">
-                  <p className="deck-card-label">Pile active</p>
-                  <strong>{game.activeChanceCard?.title ?? 'Aucune carte révélée'}</strong>
-                  <p>Utilisez la carte Chance comme support visuel lorsque la case Chance est validée.</p>
-                  {game.activeChanceCard && (
-                    <button className="secondary-button objections-view-button" onClick={drawChanceCard}>
-                      Tirer une autre carte
-                    </button>
-                  )}
-                </div>
-              </section>
-
-              {game.trainingMode === 'objections' && (
-                <section className="deck-sidecar deck-panel">
+              <aside className="deck-stack-column">
+                <section className="deck-sidecar deck-panel deck-sidecar-compact">
                   <div className="deck-sidecar-header">
                     <div>
                       <p className="eyebrow">Pioche</p>
-                      <h3>Deck Objections</h3>
+                      <h3>Deck Chance</h3>
                     </div>
-                    <button className="secondary-button" onClick={drawObjectionCard}>
-                      {canInspectObjectionCard ? 'Changer la carte' : 'Préparer une carte'}
+                    <button className="secondary-button" onClick={drawChanceCard}>
+                      {canInspectChanceCard ? 'Changer la carte' : 'Préparer une carte'}
                     </button>
                   </div>
                   <button
                     type="button"
-                    className="objections-deck-pile objections-deck-pile-large"
-                    onClick={drawObjectionCard}
-                    aria-label="Piocher une carte Objection"
+                    className="objections-deck-pile objections-deck-pile-large chance-deck-pile"
+                    onClick={drawChanceCard}
+                    aria-label="Piocher une carte Chance"
                   >
                     <span className="objections-deck-shadow objections-deck-shadow-back" aria-hidden="true" />
                     <span className="objections-deck-shadow objections-deck-shadow-mid" aria-hidden="true" />
                     <span className="objections-deck-top-card">
-                      <img src={objectionFrontImageSource} alt="Dos du deck Objections" />
+                      <img
+                        src={game.activeChanceCard?.backImage ?? chanceThermostatBackImage}
+                        alt="Dos d'une carte Chance"
+                      />
                     </span>
                   </button>
-                  <div className="deck-card objections-deck-copy">
+                  <div className="deck-card objections-deck-copy chance-deck-copy">
                     <p className="deck-card-label">Pile active</p>
-                    <strong>{game.activeObjectionCard?.title ?? 'Aucune carte révélée'}</strong>
-                    <p>
-                      Gardez cette pioche à portée de vue : elle alimente les défis du mode Objections et reste lisible pendant toute la partie.
-                    </p>
-                    {game.activeObjectionCard && (
-                      <button className="secondary-button objections-view-button" onClick={drawObjectionCard}>
+                    <strong>{game.activeChanceCard?.title ?? 'Aucune carte révélée'}</strong>
+                    <p>Utilisez la carte Chance comme support visuel lorsque la case Chance est validée.</p>
+                    {game.activeChanceCard && (
+                      <button className="secondary-button objections-view-button" onClick={drawChanceCard}>
                         Tirer une autre carte
                       </button>
                     )}
                   </div>
                 </section>
-              )}
+
+                {game.trainingMode === 'objections' && (
+                  <section className="deck-sidecar deck-panel deck-sidecar-compact">
+                    <div className="deck-sidecar-header">
+                      <div>
+                        <p className="eyebrow">Pioche</p>
+                        <h3>Deck Objections</h3>
+                      </div>
+                      <button className="secondary-button" onClick={drawObjectionCard}>
+                        {canInspectObjectionCard ? 'Changer la carte' : 'Préparer une carte'}
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      className="objections-deck-pile objections-deck-pile-large"
+                      onClick={drawObjectionCard}
+                      aria-label="Piocher une carte Objection"
+                    >
+                      <span className="objections-deck-shadow objections-deck-shadow-back" aria-hidden="true" />
+                      <span className="objections-deck-shadow objections-deck-shadow-mid" aria-hidden="true" />
+                      <span className="objections-deck-top-card">
+                        <img src={objectionFrontImageSource} alt="Dos du deck Objections" />
+                      </span>
+                    </button>
+                    <div className="deck-card objections-deck-copy">
+                      <p className="deck-card-label">Pile active</p>
+                      <strong>{game.activeObjectionCard?.title ?? 'Aucune carte révélée'}</strong>
+                      <p>
+                        Gardez cette pioche à portée de vue : elle alimente les défis du mode Objections et reste lisible pendant toute la partie.
+                      </p>
+                      {game.activeObjectionCard && (
+                        <button className="secondary-button objections-view-button" onClick={drawObjectionCard}>
+                          Tirer une autre carte
+                        </button>
+                      )}
+                    </div>
+                  </section>
+                )}
+              </aside>
 
               <div className="board-frame">
                 <div

@@ -529,19 +529,17 @@ button:disabled {
 }
 
 .board-stage-layout-chance {
-  grid-template-columns: minmax(170px, 210px) minmax(0, 1fr);
-}
-
-.board-stage-layout-objections {
-  grid-template-columns: minmax(170px, 210px) minmax(0, 1fr) minmax(170px, 210px);
+  grid-template-columns: minmax(170px, 220px) minmax(0, 1fr);
 }
 
 .board-stage-layout-mapping {
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+  grid-template-columns: minmax(170px, 220px) minmax(0, 1fr) minmax(280px, 340px);
 }
 
-.board-stage-layout-objections.board-stage-layout-mapping {
-  grid-template-columns: minmax(170px, 210px) minmax(0, 1fr) minmax(170px, 210px) minmax(280px, 340px);
+.deck-stack-column {
+  display: grid;
+  align-content: start;
+  gap: 12px;
 }
 
 .board-base-image,
@@ -1320,8 +1318,8 @@ button:disabled {
 .deck-sidecar {
   display: grid;
   align-content: start;
-  gap: 14px;
-  padding: 16px;
+  gap: 12px;
+  padding: 12px;
   border-radius: 22px;
   border: 1px solid #d2deef;
   background: linear-gradient(180deg, #ffffff 0%, #f4f8ff 78%, #fcf5ea 100%);
@@ -1333,11 +1331,7 @@ button:disabled {
 
 .deck-sidecar-header {
   display: grid;
-  gap: 12px;
-}
-
-.board-stage-layout-objections .deck-sidecar {
-  align-self: center;
+  gap: 8px;
 }
 
 .info-rail .panel {
@@ -1356,8 +1350,8 @@ button:disabled {
 }
 
 .objections-deck-pile-large {
-  width: min(100%, 190px);
-  margin: 4px auto 8px;
+  width: min(100%, 148px);
+  margin: 2px auto 6px;
 }
 
 .objections-deck-shadow,
@@ -1401,6 +1395,11 @@ button:disabled {
 .objections-deck-copy {
   min-height: 100%;
   align-content: start;
+  padding: 12px;
+}
+
+.deck-sidecar-compact .deck-card {
+  gap: 8px;
 }
 
 .chance-deck-pile .objections-deck-shadow {
@@ -1712,13 +1711,13 @@ button:disabled {
   }
 
   .board-stage-layout-mapping,
-  .board-stage-layout-objections,
   .board-stage-layout-chance {
     grid-template-columns: 1fr;
   }
 
-  .board-stage-layout-objections.board-stage-layout-mapping {
-    grid-template-columns: 1fr;
+  .deck-stack-column {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 10px;
   }
 
   .deck-sidecar {
@@ -1779,6 +1778,10 @@ button:disabled {
 
   .objection-card-image {
     width: 100%;
+  }
+
+  .deck-stack-column {
+    grid-template-columns: 1fr;
   }
 
   .deck-sidecar {
