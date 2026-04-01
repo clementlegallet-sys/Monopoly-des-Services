@@ -1407,10 +1407,6 @@ button:disabled {
   border-color: rgba(18, 81, 154, 0.24);
 }
 
-.chance-deck-copy {
-  background: linear-gradient(180deg, #ffffff 0%, #f2f8ff 75%, #eef7ff 100%);
-}
-
 .objections-view-button {
   justify-self: start;
 }
