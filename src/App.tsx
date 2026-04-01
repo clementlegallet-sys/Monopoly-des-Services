@@ -1990,7 +1990,6 @@ const App = () => {
     ? getTilePresentation(game.pendingAction.tile, game.trainingMode)
     : null;
   const canInspectObjectionCard = Boolean(game.activeObjectionCard);
-  const canInspectChanceCard = Boolean(game.activeChanceCard);
   const objectionFrontImageSource = objectionsDeckFaceImage;
   const objectionBackImageSource = game.activeObjectionCard?.image ?? null;
   const displayedObjectionImageSource = isObjectionCardShowingBack ? objectionBackImageSource : objectionFrontImageSource;
@@ -2373,7 +2372,7 @@ const App = () => {
                       <h3>Deck Chance</h3>
                     </div>
                     <button className="secondary-button" onClick={drawChanceCard}>
-                      {canInspectChanceCard ? 'Changer la carte' : 'Préparer une carte'}
+                      {game.activeChanceCard ? 'Changer la carte' : 'Préparer une carte'}
                     </button>
                   </div>
                   <button
@@ -2386,21 +2385,11 @@ const App = () => {
                     <span className="objections-deck-shadow objections-deck-shadow-mid" aria-hidden="true" />
                     <span className="objections-deck-top-card">
                       <img
-                        src={game.activeChanceCard?.backImage ?? chanceThermostatBackImage}
+                        src={chanceThermostatBackImage}
                         alt="Dos d'une carte Chance"
                       />
                     </span>
                   </button>
-                  <div className="deck-card objections-deck-copy chance-deck-copy">
-                    <p className="deck-card-label">Pile active</p>
-                    <strong>{game.activeChanceCard?.title ?? 'Aucune carte révélée'}</strong>
-                    <p>Utilisez la carte Chance comme support visuel lorsque la case Chance est validée.</p>
-                    {game.activeChanceCard && (
-                      <button className="secondary-button objections-view-button" onClick={drawChanceCard}>
-                        Tirer une autre carte
-                      </button>
-                    )}
-                  </div>
                 </section>
 
                 {game.trainingMode === 'objections' && (
