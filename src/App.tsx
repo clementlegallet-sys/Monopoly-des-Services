@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
 import boardReferenceImage from '../plateau-reference-bordures-epaisses.png';
-import boardMentionsLegalesReferenceImage from '../plateau-reference-mentions-legales.png';
 import boardMapJson from '../board_map_final.json';
 import objectionsDeckFaceImage from '../carte objection FACE.png';
 import objectionCardAlreadySameImage from '../objection-j-ai-deja-la-meme-chose.png';
@@ -1216,6 +1215,7 @@ const App = () => {
   const [isChanceCardShowingBack, setIsChanceCardShowingBack] = useState(false);
   const [chanceAnswerDecision, setChanceAnswerDecision] = useState<'validated' | 'rejected' | null>(null);
   const [selectedLegalMentionId, setSelectedLegalMentionId] = useState<number | null>(null);
+  const [isMentionsLegalesModeratorView, setIsMentionsLegalesModeratorView] = useState(false);
   const isDeveloperMode = useMemo(() => {
     if (typeof window === 'undefined') {
       return false;
@@ -1306,7 +1306,11 @@ const App = () => {
       (game.hasMentionsLegalesTile || haveAllPlayersLeftStart(game.players, game.playersWhoLeftStart));
     if (!isMentionsLegalesModal) {
       setSelectedLegalMentionId(null);
+      setIsMentionsLegalesModeratorView(false);
+      return;
     }
+    setSelectedLegalMentionId(null);
+    setIsMentionsLegalesModeratorView(false);
   }, [game.pendingAction, game.hasMentionsLegalesTile, game.players, game.playersWhoLeftStart]);
 
   useEffect(() => {
@@ -1345,7 +1349,7 @@ const App = () => {
   const currentPlayer = game.players[game.currentPlayerIndex] ?? null;
   const isMentionsLegalesActive =
     game.hasMentionsLegalesTile || haveAllPlayersLeftStart(game.players, game.playersWhoLeftStart);
-  const boardImageSource = isMentionsLegalesActive ? boardMentionsLegalesReferenceImage : boardReferenceImage;
+  const boardImageSource = boardReferenceImage;
   const completeSets = useMemo(() => getCompleteSets(game.players), [game.players]);
   const currentPlayerTile = currentPlayer ? BOARD_BY_TILE_ID.get(currentPlayer.position) ?? null : null;
   const pendingMovementOriginTile = game.pendingMovement
@@ -2990,52 +2994,57 @@ const App = () => {
 
             {mentionsLegalesInAction && (
               <div className="mentions-legales-box">
-                <p className="market-message">
-                  Le joueur doit citer oralement une mention légale. Le modérateur confirme ensuite la réponse.
-                </p>
-                <details className="mentions-legales-moderator" open>
-                  <summary>Zone modérateur · validation manuelle</summary>
-                  <label className="field">
-                    <span>Mention correctement citée (si validée)</span>
-                    <select
-                      value={selectedLegalMentionId ?? ''}
-                      onChange={(event) =>
-                        setSelectedLegalMentionId(event.target.value ? Number(event.target.value) : null)
-                      }
-                    >
-                      <option value="">Choisir une mention restante</option>
-                      {remainingMentions.map((mention) => (
-                        <option key={mention.id} value={mention.id}>
-                          {mention.id}. {mention.text}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </details>
-                <div className="mentions-legales-tracking">
-                  <div>
-                    <h3>Mentions restantes</h3>
-                    <ul>
-                      {remainingMentions.map((mention) => (
-                        <li key={`remaining-${mention.id}`}>{mention.id}. {mention.text}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div>
-                    <h3>Mentions validées</h3>
-                    <ul>
-                      {validatedMentions.length > 0 ? (
-                        validatedMentions.map((mention) => (
-                          <li key={`validated-${mention.id}`} className="mention-validated">
-                            {mention.id}. {mention.text}
-                          </li>
-                        ))
-                      ) : (
-                        <li>Aucune mention validée pour le moment.</li>
-                      )}
-                    </ul>
-                  </div>
-                </div>
+                {!isMentionsLegalesModeratorView ? (
+                  <p className="market-message">
+                    Citez oralement une mention légale, puis passez à la validation modérateur.
+                  </p>
+                ) : (
+                  <>
+                    <details className="mentions-legales-moderator" open>
+                      <summary>Zone modérateur · validation manuelle</summary>
+                      <label className="field">
+                        <span>Mention correctement citée (si validée)</span>
+                        <select
+                          value={selectedLegalMentionId ?? ''}
+                          onChange={(event) =>
+                            setSelectedLegalMentionId(event.target.value ? Number(event.target.value) : null)
+                          }
+                        >
+                          <option value="">Choisir une mention restante</option>
+                          {remainingMentions.map((mention) => (
+                            <option key={mention.id} value={mention.id}>
+                              {mention.id}. {mention.text}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </details>
+                    <div className="mentions-legales-tracking">
+                      <div>
+                        <h3>Mentions restantes</h3>
+                        <ul>
+                          {remainingMentions.map((mention) => (
+                            <li key={`remaining-${mention.id}`}>{mention.id}. {mention.text}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div>
+                        <h3>Mentions validées</h3>
+                        <ul>
+                          {validatedMentions.length > 0 ? (
+                            validatedMentions.map((mention) => (
+                              <li key={`validated-${mention.id}`} className="mention-validated">
+                                {mention.id}. {mention.text}
+                              </li>
+                            ))
+                          ) : (
+                            <li>Aucune mention validée pour le moment.</li>
+                          )}
+                        </ul>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
@@ -3239,16 +3248,24 @@ const App = () => {
 
             {mentionsLegalesInAction && (
               <div className="modal-actions">
-                <button
-                  className="primary-button"
-                  onClick={handleValidatedAction}
-                  disabled={remainingMentions.length > 0 && selectedLegalMentionId === null}
-                >
-                  Réponse validée
-                </button>
-                <button className="secondary-button" onClick={handleRejectedAction}>
-                  Réponse refusée
-                </button>
+                {!isMentionsLegalesModeratorView ? (
+                  <button className="primary-button" onClick={() => setIsMentionsLegalesModeratorView(true)}>
+                    Passer à la validation
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      className="primary-button"
+                      onClick={handleValidatedAction}
+                      disabled={remainingMentions.length > 0 && selectedLegalMentionId === null}
+                    >
+                      Réponse validée
+                    </button>
+                    <button className="secondary-button" onClick={handleRejectedAction}>
+                      Réponse refusée
+                    </button>
+                  </>
+                )}
               </div>
             )}
           </section>
