@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
 import boardReferenceImage from '../plateau-reference-bordures-epaisses.png';
+import boardMentionsLegalesReferenceImage from '../plateau-reference-mentions-legales.png';
 import boardMapJson from '../board_map_final.json';
 import objectionsDeckFaceImage from '../carte objection FACE.png';
 import objectionCardAlreadySameImage from '../objection-j-ai-deja-la-meme-chose.png';
@@ -34,7 +35,6 @@ import chanceThermostatFrontImage from '../chance-thermostat-front.png';
 import chanceThermostatBackImage from '../chance-thermostat-back.png';
 import chanceThermostatiqueFrontImage from '../chance-thermostatique-front.png';
 import chanceThermostatiqueBackImage from '../chance-thermostatique-back.png';
-import mentionsLegalesTileImage from '../mentions-legales-case.png';
 
 type TileType =
   | 'start'
@@ -1345,6 +1345,7 @@ const App = () => {
   const currentPlayer = game.players[game.currentPlayerIndex] ?? null;
   const isMentionsLegalesActive =
     game.hasMentionsLegalesTile || haveAllPlayersLeftStart(game.players, game.playersWhoLeftStart);
+  const boardImageSource = isMentionsLegalesActive ? boardMentionsLegalesReferenceImage : boardReferenceImage;
   const completeSets = useMemo(() => getCompleteSets(game.players), [game.players]);
   const currentPlayerTile = currentPlayer ? BOARD_BY_TILE_ID.get(currentPlayer.position) ?? null : null;
   const pendingMovementOriginTile = game.pendingMovement
@@ -2565,7 +2566,7 @@ const App = () => {
                   className={`board-surface ${isDeveloperMode && isBoardMappingMode ? 'board-surface-mapping' : ''}`}
                   ref={boardSurfaceRef}
                 >
-                  <img src={boardReferenceImage} alt="Plateau Monopoly des Services" className="board-base-image" />
+                  <img src={boardImageSource} alt="Plateau Monopoly des Services" className="board-base-image" />
                   <div className="board-image-shade" />
 
                   <svg
@@ -2625,34 +2626,6 @@ const App = () => {
                     preserveAspectRatio="none"
                     aria-label="Cases du plateau"
                   >
-                    {isMentionsLegalesActive && (
-                      (() => {
-                        const startTile = boardTiles.find(({ tile }) => tile.tileId === START_TILE_ID);
-                        if (!startTile) {
-                          return null;
-                        }
-
-                        return (
-                          <>
-                            <defs>
-                              <clipPath id="mentions-legales-clip">
-                                <polygon points={startTile.hitPoints} />
-                              </clipPath>
-                            </defs>
-                            <image
-                              href={mentionsLegalesTileImage}
-                              x="0"
-                              y="0"
-                              width="100"
-                              height="100"
-                              preserveAspectRatio="none"
-                              clipPath="url(#mentions-legales-clip)"
-                              aria-hidden="true"
-                            />
-                          </>
-                        );
-                      })()
-                    )}
                     {boardTiles.map(
                       ({
                         tile,
