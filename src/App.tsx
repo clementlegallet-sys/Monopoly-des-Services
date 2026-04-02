@@ -34,6 +34,7 @@ import chanceThermostatFrontImage from '../chance-thermostat-front.png';
 import chanceThermostatBackImage from '../chance-thermostat-back.png';
 import chanceThermostatiqueFrontImage from '../chance-thermostatique-front.png';
 import chanceThermostatiqueBackImage from '../chance-thermostatique-back.png';
+import mentionsLegalesTileImage from '../mentions-legales-case.png';
 
 type TileType =
   | 'start'
@@ -151,6 +152,9 @@ type GameState = {
   trainingMode: TrainingMode | null;
   activeObjectionCard: ObjectionCard | null;
   activeChanceCard: ChanceCard | null;
+  hasMentionsLegalesTile: boolean;
+  playersWhoLeftStart: string[];
+  validatedLegalMentions: number[];
 };
 
 type DieFaceProps = {
@@ -194,6 +198,10 @@ type TileInteractionDebugState = {
   source: 'inspection' | 'destination';
 };
 
+type LegalMention = {
+  id: number;
+  text: string;
+};
 
 const STORAGE_KEY = 'monopoly-des-services-state';
 const INITIAL_CLIENTS = 2;
@@ -292,6 +300,18 @@ const CHANCE_DECK: ChanceCard[] = (chanceCardsRegistry.cards as ChanceCardRegist
   }))
   .filter((card) => card.frontImage && card.backImage);
 const DEFAULT_AVATAR_ID = PLAYER_AVATARS[0].id;
+const START_TILE_ID = 'T0';
+const LEGAL_MENTIONS: LegalMention[] = [
+  { id: 1, text: 'Info sur les documents précontractuels présents dans le parcours de signature annoncée ?' },
+  { id: 2, text: 'Contrat assuré par AXA annoncé pour Assistance Dépannage et METLIFE pour Protection Facture' },
+  { id: 3, text: 'Commercialisé par EDF SA mandataire d’EDF Assurances annoncé ?' },
+  { id: 4, text: 'Un exemple d’exclusion est-il annoncé ?' },
+  { id: 5, text: 'Engagement d’1 an après signature annoncé ?' },
+  { id: 6, text: 'Tacite reconduction du contrat à date anniversaire annoncée ?' },
+  { id: 7, text: 'Annonce de la cotisation mensuelle facturée sur la facture d’énergie ?' },
+  { id: 8, text: 'Résiliation possible après 1 an annoncée ?' },
+  { id: 9, text: 'Délai de renonciation 30 jours annoncé ?' },
+];
 
 const BOARD_TILE_ORDER = [
   'T0',
@@ -866,6 +886,9 @@ const createInitialState = (): GameState => ({
   trainingMode: null,
   activeObjectionCard: null,
   activeChanceCard: null,
+  hasMentionsLegalesTile: false,
+  playersWhoLeftStart: [],
+  validatedLegalMentions: [],
 });
 
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -926,7 +949,16 @@ const getTokenOffset = (occupantIndex: number, occupantCount: number) => {
 const getTilePresentation = (
   tile: Tile,
   trainingMode: TrainingMode | null,
+  hasMentionsLegalesTile: boolean,
 ): TilePresentation => {
+  if (tile.tileId === START_TILE_ID && hasMentionsLegalesTile) {
+    return {
+      title: 'Mentions légales',
+      description: 'Le joueur cite oralement une mention légale. Le modérateur valide ou refuse la réponse.',
+      identityLabel: 'Mentions légales',
+    };
+  }
+
   if (tile.type === 'bubble') {
     return {
       title: tile.label,
@@ -1126,6 +1158,15 @@ const App = () => {
             : null,
         activeObjectionCard: normalizedObjectionCard,
         activeChanceCard: normalizedChanceCard,
+        hasMentionsLegalesTile: Boolean(parsedGame.hasMentionsLegalesTile),
+        playersWhoLeftStart: Array.isArray(parsedGame.playersWhoLeftStart)
+          ? parsedGame.playersWhoLeftStart.filter((entry): entry is string => typeof entry === 'string')
+          : [],
+        validatedLegalMentions: Array.isArray(parsedGame.validatedLegalMentions)
+          ? parsedGame.validatedLegalMentions.filter(
+              (entry): entry is number => typeof entry === 'number' && LEGAL_MENTIONS.some((mention) => mention.id === entry),
+            )
+          : [],
       };
     } catch {
       return createInitialState();
@@ -1160,6 +1201,7 @@ const App = () => {
   const [isChanceCardFlipping, setIsChanceCardFlipping] = useState(false);
   const [isChanceCardShowingBack, setIsChanceCardShowingBack] = useState(false);
   const [chanceAnswerDecision, setChanceAnswerDecision] = useState<'validated' | 'rejected' | null>(null);
+  const [selectedLegalMentionId, setSelectedLegalMentionId] = useState<number | null>(null);
   const isDeveloperMode = useMemo(() => {
     if (typeof window === 'undefined') {
       return false;
@@ -1244,6 +1286,13 @@ const App = () => {
     }
   }, [game.pendingAction, game.activeChanceCard?.id]);
 
+  useEffect(() => {
+    const isMentionsLegalesModal = game.pendingAction?.tile.tileId === START_TILE_ID && game.hasMentionsLegalesTile;
+    if (!isMentionsLegalesModal) {
+      setSelectedLegalMentionId(null);
+    }
+  }, [game.pendingAction, game.hasMentionsLegalesTile]);
+
   useEffect(
     () => () => {
       if (rollIntervalRef.current) {
@@ -1277,7 +1326,7 @@ const App = () => {
     pendingMovementOriginTile ??
     currentPlayerTile ??
     board[0];
-  const focusTilePresentation = getTilePresentation(focusTile, game.trainingMode);
+  const focusTilePresentation = getTilePresentation(focusTile, game.trainingMode, game.hasMentionsLegalesTile);
   const selectedMappingTile =
     boardMapDraft.tiles.find((tile) => tile.tileId === selectedMappingTileId) ?? boardMapDraft.tiles[0] ?? null;
   const isSelectedMappingTileFinalized = selectedMappingTile
@@ -1599,6 +1648,9 @@ const App = () => {
       trainingMode: selectedTrainingMode,
       activeObjectionCard: null,
       activeChanceCard: null,
+      hasMentionsLegalesTile: false,
+      playersWhoLeftStart: [],
+      validatedLegalMentions: [],
     });
   };
 
@@ -1705,11 +1757,21 @@ const App = () => {
 
       const player = currentGame.players.find((candidate) => candidate.id === pendingMovement.playerId);
       const tile = BOARD_BY_TILE_ID.get(tileId);
-      const tilePresentation = tile ? getTilePresentation(tile, currentGame.trainingMode) : null;
+      const tilePresentation = tile
+        ? getTilePresentation(tile, currentGame.trainingMode, currentGame.hasMentionsLegalesTile)
+        : null;
 
       if (!player || !tile) {
         return { ...currentGame, pendingMovement: null };
       }
+
+      const playerLeftStart =
+        pendingMovement.originTileId === START_TILE_ID && tileId !== START_TILE_ID;
+      const updatedPlayersWhoLeftStart = playerLeftStart
+        ? [...new Set([...currentGame.playersWhoLeftStart, player.id])]
+        : currentGame.playersWhoLeftStart;
+      const hasMentionsLegalesTile =
+        currentGame.hasMentionsLegalesTile || updatedPlayersWhoLeftStart.length === currentGame.players.length;
 
       const movedPlayers = currentGame.players.map((candidate) =>
         candidate.id === player.id
@@ -1746,6 +1808,8 @@ const App = () => {
       return {
         ...currentGame,
         players: movedPlayers,
+        hasMentionsLegalesTile,
+        playersWhoLeftStart: updatedPlayersWhoLeftStart,
         pendingMovement: null,
         pendingAction: {
           tile,
@@ -1771,6 +1835,7 @@ const App = () => {
       const pendingTilePresentation = getTilePresentation(
         currentGame.pendingAction.tile,
         currentGame.trainingMode,
+        currentGame.hasMentionsLegalesTile,
       );
 
       if (!isValidated) {
@@ -1843,6 +1908,25 @@ const App = () => {
         );
         const service = getService(pendingAction.tile.serviceId);
         message = `${player.name} remporte la pièce ${service?.name ?? 'service'}.`;
+      }
+
+      const isMentionsLegalesTile =
+        pendingAction.tile.tileId === START_TILE_ID && currentGame.hasMentionsLegalesTile;
+      if (isMentionsLegalesTile) {
+        if (selectedLegalMentionId !== null && !currentGame.validatedLegalMentions.includes(selectedLegalMentionId)) {
+          message = `${player.name} cite correctement une mention légale (n°${selectedLegalMentionId}).`;
+          return resolveTurn(
+            {
+              ...currentGame,
+              validatedLegalMentions: [...currentGame.validatedLegalMentions, selectedLegalMentionId],
+            },
+            players,
+            centralBank,
+            message,
+          );
+        }
+
+        message = `${player.name} valide la case Mentions légales.`;
       }
 
       return resolveTurn(currentGame, players, centralBank, message);
@@ -1987,8 +2071,11 @@ const App = () => {
   };
 
   const pendingActionTilePresentation = game.pendingAction
-    ? getTilePresentation(game.pendingAction.tile, game.trainingMode)
+    ? getTilePresentation(game.pendingAction.tile, game.trainingMode, game.hasMentionsLegalesTile)
     : null;
+  const mentionsLegalesInAction = game.pendingAction?.tile.tileId === START_TILE_ID && game.hasMentionsLegalesTile;
+  const validatedMentions = LEGAL_MENTIONS.filter((mention) => game.validatedLegalMentions.includes(mention.id));
+  const remainingMentions = LEGAL_MENTIONS.filter((mention) => !game.validatedLegalMentions.includes(mention.id));
   const canInspectObjectionCard = Boolean(game.activeObjectionCard);
   const objectionFrontImageSource = objectionsDeckFaceImage;
   const objectionBackImageSource = game.activeObjectionCard?.image ?? null;
@@ -2033,7 +2120,7 @@ const App = () => {
   const boardTiles = board.map((tile) => {
     const shape = tile.shape;
     const occupants = game.players.filter((player) => player.position === tile.tileId);
-    const tilePresentation = getTilePresentation(tile, game.trainingMode);
+    const tilePresentation = getTilePresentation(tile, game.trainingMode, game.hasMentionsLegalesTile);
     const tileLabel = tile.label;
     const isFocused = tile.tileId === focusTile.tileId;
     const isSelectedTile = tile.tileId === game.pendingAction?.tile.tileId;
@@ -2484,6 +2571,34 @@ const App = () => {
                     preserveAspectRatio="none"
                     aria-label="Cases du plateau"
                   >
+                    {game.hasMentionsLegalesTile && (
+                      (() => {
+                        const startTile = boardTiles.find(({ tile }) => tile.tileId === START_TILE_ID);
+                        if (!startTile) {
+                          return null;
+                        }
+
+                        return (
+                          <>
+                            <defs>
+                              <clipPath id="mentions-legales-clip">
+                                <polygon points={startTile.hitPoints} />
+                              </clipPath>
+                            </defs>
+                            <image
+                              href={mentionsLegalesTileImage}
+                              x="0"
+                              y="0"
+                              width="100"
+                              height="100"
+                              preserveAspectRatio="none"
+                              clipPath="url(#mentions-legales-clip)"
+                              aria-hidden="true"
+                            />
+                          </>
+                        );
+                      })()
+                    )}
                     {boardTiles.map(
                       ({
                         tile,
@@ -2846,6 +2961,57 @@ const App = () => {
             <h2>{pendingActionTilePresentation?.title ?? game.pendingAction.tile.label}</h2>
             <p>{pendingActionTilePresentation?.description ?? game.pendingAction.tile.description}</p>
 
+            {mentionsLegalesInAction && (
+              <div className="mentions-legales-box">
+                <p className="market-message">
+                  Le joueur doit citer oralement une mention légale. Le modérateur confirme ensuite la réponse.
+                </p>
+                <details className="mentions-legales-moderator" open>
+                  <summary>Zone modérateur · validation manuelle</summary>
+                  <label className="field">
+                    <span>Mention correctement citée (si validée)</span>
+                    <select
+                      value={selectedLegalMentionId ?? ''}
+                      onChange={(event) =>
+                        setSelectedLegalMentionId(event.target.value ? Number(event.target.value) : null)
+                      }
+                    >
+                      <option value="">Choisir une mention restante</option>
+                      {remainingMentions.map((mention) => (
+                        <option key={mention.id} value={mention.id}>
+                          {mention.id}. {mention.text}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </details>
+                <div className="mentions-legales-tracking">
+                  <div>
+                    <h3>Mentions restantes</h3>
+                    <ul>
+                      {remainingMentions.map((mention) => (
+                        <li key={`remaining-${mention.id}`}>{mention.id}. {mention.text}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <h3>Mentions validées</h3>
+                    <ul>
+                      {validatedMentions.length > 0 ? (
+                        validatedMentions.map((mention) => (
+                          <li key={`validated-${mention.id}`} className="mention-validated">
+                            {mention.id}. {mention.text}
+                          </li>
+                        ))
+                      ) : (
+                        <li>Aucune mention validée pour le moment.</li>
+                      )}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {game.pendingAction.tile.type === 'market' && currentPlayer && (
               <div className="market-box">
                 {currentPlayer.pieces.length === 0 && (
@@ -3006,7 +3172,8 @@ const App = () => {
                 game.trainingMode === 'objections' &&
                 (game.pendingAction.tile.type === 'bubble' || game.pendingAction.tile.type === 'objection') &&
                 !isObjectionCardRevealed
-              )) && (
+              ) &&
+              !mentionsLegalesInAction) && (
               <div className="modal-actions">
                 {game.pendingAction.tile.type === 'chance' ? (
                   isChanceAnswerRevealed ? (
@@ -3036,6 +3203,21 @@ const App = () => {
                     </button>
                   </>
                 )}
+              </div>
+            )}
+
+            {mentionsLegalesInAction && (
+              <div className="modal-actions">
+                <button
+                  className="primary-button"
+                  onClick={handleValidatedAction}
+                  disabled={remainingMentions.length > 0 && selectedLegalMentionId === null}
+                >
+                  Réponse validée
+                </button>
+                <button className="secondary-button" onClick={handleRejectedAction}>
+                  Réponse refusée
+                </button>
               </div>
             )}
           </section>
