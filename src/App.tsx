@@ -898,6 +898,15 @@ const getService = (serviceId?: string) =>
 
 const appendHistoryEntry = (history: string[], message: string) => [message, ...history].slice(0, 12);
 
+const haveAllPlayersLeftStart = (players: Player[], playersWhoLeftStart: string[]) => {
+  if (players.length === 0) {
+    return false;
+  }
+
+  const leftStartSet = new Set(playersWhoLeftStart);
+  return players.every((player) => leftStartSet.has(player.id));
+};
+
 const TOKEN_RADIUS = 2.4;
 const TOKEN_DEBUG_MARKER_RADIUS = 0.72;
 const TOKEN_STACK_SPACING = 2.8;
@@ -1125,18 +1134,25 @@ const App = () => {
           ? (parsedChanceCard as ChanceCard)
           : null;
 
+      const players = (parsedGame.players ?? []).map((player, index) => ({
+        ...player,
+        avatarId:
+          typeof player.avatarId === 'string'
+            ? player.avatarId
+            : PLAYER_AVATARS[index % PLAYER_AVATARS.length].id,
+        position: normalizeStoredTileId(player.position),
+        rollsTaken: player.rollsTaken ?? 0,
+      })) as Player[];
+      const playersWhoLeftStart = Array.isArray(parsedGame.playersWhoLeftStart)
+        ? parsedGame.playersWhoLeftStart.filter((entry): entry is string => typeof entry === 'string')
+        : [];
+      const persistedMentionsLegalesState =
+        Boolean(parsedGame.hasMentionsLegalesTile) || haveAllPlayersLeftStart(players, playersWhoLeftStart);
+
       return {
         ...createInitialState(),
         ...parsedGame,
-        players: (parsedGame.players ?? []).map((player, index) => ({
-          ...player,
-          avatarId:
-            typeof player.avatarId === 'string'
-              ? player.avatarId
-              : PLAYER_AVATARS[index % PLAYER_AVATARS.length].id,
-          position: normalizeStoredTileId(player.position),
-          rollsTaken: player.rollsTaken ?? 0,
-        })) as Player[],
+        players,
         pendingMovement: parsedGame.pendingMovement
           ? {
               ...parsedGame.pendingMovement,
@@ -1158,10 +1174,8 @@ const App = () => {
             : null,
         activeObjectionCard: normalizedObjectionCard,
         activeChanceCard: normalizedChanceCard,
-        hasMentionsLegalesTile: Boolean(parsedGame.hasMentionsLegalesTile),
-        playersWhoLeftStart: Array.isArray(parsedGame.playersWhoLeftStart)
-          ? parsedGame.playersWhoLeftStart.filter((entry): entry is string => typeof entry === 'string')
-          : [],
+        hasMentionsLegalesTile: persistedMentionsLegalesState,
+        playersWhoLeftStart,
         validatedLegalMentions: Array.isArray(parsedGame.validatedLegalMentions)
           ? parsedGame.validatedLegalMentions.filter(
               (entry): entry is number => typeof entry === 'number' && LEGAL_MENTIONS.some((mention) => mention.id === entry),
@@ -1287,11 +1301,25 @@ const App = () => {
   }, [game.pendingAction, game.activeChanceCard?.id]);
 
   useEffect(() => {
-    const isMentionsLegalesModal = game.pendingAction?.tile.tileId === START_TILE_ID && game.hasMentionsLegalesTile;
+    const isMentionsLegalesModal =
+      game.pendingAction?.tile.tileId === START_TILE_ID &&
+      (game.hasMentionsLegalesTile || haveAllPlayersLeftStart(game.players, game.playersWhoLeftStart));
     if (!isMentionsLegalesModal) {
       setSelectedLegalMentionId(null);
     }
-  }, [game.pendingAction, game.hasMentionsLegalesTile]);
+  }, [game.pendingAction, game.hasMentionsLegalesTile, game.players, game.playersWhoLeftStart]);
+
+  useEffect(() => {
+    if (!ENABLE_TILE_DEBUG) {
+      return;
+    }
+
+    const allPlayersLeftStart = haveAllPlayersLeftStart(game.players, game.playersWhoLeftStart);
+    const currentTileState = allPlayersLeftStart || game.hasMentionsLegalesTile ? 'Mentions légales' : 'Départ';
+    console.info(
+      `[depart-state] allPlayersLeftStart=${allPlayersLeftStart} persistedFlag=${game.hasMentionsLegalesTile} currentTileState=${currentTileState}`,
+    );
+  }, [game.players, game.playersWhoLeftStart, game.hasMentionsLegalesTile]);
 
   useEffect(
     () => () => {
@@ -1315,6 +1343,8 @@ const App = () => {
   );
 
   const currentPlayer = game.players[game.currentPlayerIndex] ?? null;
+  const isMentionsLegalesActive =
+    game.hasMentionsLegalesTile || haveAllPlayersLeftStart(game.players, game.playersWhoLeftStart);
   const completeSets = useMemo(() => getCompleteSets(game.players), [game.players]);
   const currentPlayerTile = currentPlayer ? BOARD_BY_TILE_ID.get(currentPlayer.position) ?? null : null;
   const pendingMovementOriginTile = game.pendingMovement
@@ -1326,7 +1356,7 @@ const App = () => {
     pendingMovementOriginTile ??
     currentPlayerTile ??
     board[0];
-  const focusTilePresentation = getTilePresentation(focusTile, game.trainingMode, game.hasMentionsLegalesTile);
+  const focusTilePresentation = getTilePresentation(focusTile, game.trainingMode, isMentionsLegalesActive);
   const selectedMappingTile =
     boardMapDraft.tiles.find((tile) => tile.tileId === selectedMappingTileId) ?? boardMapDraft.tiles[0] ?? null;
   const isSelectedMappingTileFinalized = selectedMappingTile
@@ -1757,8 +1787,11 @@ const App = () => {
 
       const player = currentGame.players.find((candidate) => candidate.id === pendingMovement.playerId);
       const tile = BOARD_BY_TILE_ID.get(tileId);
+      const currentMentionsLegalesState =
+        currentGame.hasMentionsLegalesTile ||
+        haveAllPlayersLeftStart(currentGame.players, currentGame.playersWhoLeftStart);
       const tilePresentation = tile
-        ? getTilePresentation(tile, currentGame.trainingMode, currentGame.hasMentionsLegalesTile)
+        ? getTilePresentation(tile, currentGame.trainingMode, currentMentionsLegalesState)
         : null;
 
       if (!player || !tile) {
@@ -1771,7 +1804,8 @@ const App = () => {
         ? [...new Set([...currentGame.playersWhoLeftStart, player.id])]
         : currentGame.playersWhoLeftStart;
       const hasMentionsLegalesTile =
-        currentGame.hasMentionsLegalesTile || updatedPlayersWhoLeftStart.length === currentGame.players.length;
+        currentGame.hasMentionsLegalesTile ||
+        haveAllPlayersLeftStart(currentGame.players, updatedPlayersWhoLeftStart);
 
       const movedPlayers = currentGame.players.map((candidate) =>
         candidate.id === player.id
@@ -1835,7 +1869,8 @@ const App = () => {
       const pendingTilePresentation = getTilePresentation(
         currentGame.pendingAction.tile,
         currentGame.trainingMode,
-        currentGame.hasMentionsLegalesTile,
+        currentGame.hasMentionsLegalesTile ||
+          haveAllPlayersLeftStart(currentGame.players, currentGame.playersWhoLeftStart),
       );
 
       if (!isValidated) {
@@ -1911,7 +1946,9 @@ const App = () => {
       }
 
       const isMentionsLegalesTile =
-        pendingAction.tile.tileId === START_TILE_ID && currentGame.hasMentionsLegalesTile;
+        pendingAction.tile.tileId === START_TILE_ID &&
+        (currentGame.hasMentionsLegalesTile ||
+          haveAllPlayersLeftStart(currentGame.players, currentGame.playersWhoLeftStart));
       if (isMentionsLegalesTile) {
         if (selectedLegalMentionId !== null && !currentGame.validatedLegalMentions.includes(selectedLegalMentionId)) {
           message = `${player.name} cite correctement une mention légale (n°${selectedLegalMentionId}).`;
@@ -1976,6 +2013,23 @@ const App = () => {
     }
 
     resolvePendingAction(false);
+  };
+
+  const handleDepartContinue = () => {
+    setGame((currentGame) => {
+      const pendingAction = currentGame.pendingAction;
+      if (!pendingAction || pendingAction.tile.tileId !== START_TILE_ID) {
+        return currentGame;
+      }
+
+      const player = currentGame.players.find((candidate) => candidate.id === pendingAction.playerId);
+      return resolveTurn(
+        currentGame,
+        currentGame.players,
+        currentGame.centralBank,
+        `${player?.name ?? 'Le joueur'} passe par Départ.`,
+      );
+    });
   };
 
   const handleMarketSale = () => {
@@ -2071,9 +2125,9 @@ const App = () => {
   };
 
   const pendingActionTilePresentation = game.pendingAction
-    ? getTilePresentation(game.pendingAction.tile, game.trainingMode, game.hasMentionsLegalesTile)
+    ? getTilePresentation(game.pendingAction.tile, game.trainingMode, isMentionsLegalesActive)
     : null;
-  const mentionsLegalesInAction = game.pendingAction?.tile.tileId === START_TILE_ID && game.hasMentionsLegalesTile;
+  const mentionsLegalesInAction = game.pendingAction?.tile.tileId === START_TILE_ID && isMentionsLegalesActive;
   const validatedMentions = LEGAL_MENTIONS.filter((mention) => game.validatedLegalMentions.includes(mention.id));
   const remainingMentions = LEGAL_MENTIONS.filter((mention) => !game.validatedLegalMentions.includes(mention.id));
   const canInspectObjectionCard = Boolean(game.activeObjectionCard);
@@ -2120,7 +2174,7 @@ const App = () => {
   const boardTiles = board.map((tile) => {
     const shape = tile.shape;
     const occupants = game.players.filter((player) => player.position === tile.tileId);
-    const tilePresentation = getTilePresentation(tile, game.trainingMode, game.hasMentionsLegalesTile);
+    const tilePresentation = getTilePresentation(tile, game.trainingMode, isMentionsLegalesActive);
     const tileLabel = tile.label;
     const isFocused = tile.tileId === focusTile.tileId;
     const isSelectedTile = tile.tileId === game.pendingAction?.tile.tileId;
@@ -2571,7 +2625,7 @@ const App = () => {
                     preserveAspectRatio="none"
                     aria-label="Cases du plateau"
                   >
-                    {game.hasMentionsLegalesTile && (
+                    {isMentionsLegalesActive && (
                       (() => {
                         const startTile = boardTiles.find(({ tile }) => tile.tileId === START_TILE_ID);
                         if (!startTile) {
@@ -3175,7 +3229,11 @@ const App = () => {
               ) &&
               !mentionsLegalesInAction) && (
               <div className="modal-actions">
-                {game.pendingAction.tile.type === 'chance' ? (
+                {game.pendingAction.tile.tileId === START_TILE_ID ? (
+                  <button className="primary-button" onClick={handleDepartContinue}>
+                    Continuer
+                  </button>
+                ) : game.pendingAction.tile.type === 'chance' ? (
                   isChanceAnswerRevealed ? (
                     <button
                       className="primary-button"
