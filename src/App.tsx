@@ -159,6 +159,7 @@ type GameState = {
 type DieFaceProps = {
   value: number | null;
   isRolling: boolean;
+  isSettling: boolean;
 };
 
 type Point = {
@@ -1082,11 +1083,14 @@ const getReachableTileIds = (originTileId: string, roll: number) => {
   );
 };
 
-const DieFace = ({ value, isRolling }: DieFaceProps) => {
+const DieFace = ({ value, isRolling, isSettling }: DieFaceProps) => {
   const safeValue = value && value >= 1 && value <= 6 ? value : null;
+  const dieClasses = ['die-face', isRolling ? 'die-face-rolling' : '', isSettling ? 'die-face-settling' : '']
+    .filter(Boolean)
+    .join(' ');
 
   return (
-    <div className={`die-face ${isRolling ? 'die-face-rolling' : ''}`} aria-live="polite">
+    <div className={dieClasses} aria-live="polite">
       <div className="die-inner">
         {safeValue ? (
           DIE_PIPS[safeValue].map((pip) => <span key={pip} className={`pip pip-${pip}`} />)
@@ -1195,6 +1199,7 @@ const App = () => {
   const [saleValue, setSaleValue] = useState<number>(SALE_VALUES[0]);
   const [displayRoll, setDisplayRoll] = useState<number | null>(game.lastRoll);
   const [isRolling, setIsRolling] = useState(false);
+  const [isDieSettling, setIsDieSettling] = useState(false);
   const [inspectedTileId, setInspectedTileId] = useState<string | null>(null);
   const [isTileDebugEnabled, setIsTileDebugEnabled] = useState(false);
   const [tileDebugState, setTileDebugState] = useState<TileInteractionDebugState | null>(null);
@@ -1226,6 +1231,7 @@ const App = () => {
   }, []);
   const rollIntervalRef = useRef<number | null>(null);
   const rollTimeoutRef = useRef<number | null>(null);
+  const dieSettlingTimeoutRef = useRef<number | null>(null);
   const debugFlashTimeoutRef = useRef<number | null>(null);
   const objectionRevealTimeoutRef = useRef<number | null>(null);
   const chanceRevealTimeoutRef = useRef<number | null>(null);
@@ -1332,6 +1338,9 @@ const App = () => {
       }
       if (rollTimeoutRef.current) {
         window.clearTimeout(rollTimeoutRef.current);
+      }
+      if (dieSettlingTimeoutRef.current) {
+        window.clearTimeout(dieSettlingTimeoutRef.current);
       }
       if (debugFlashTimeoutRef.current) {
         window.clearTimeout(debugFlashTimeoutRef.current);
@@ -1597,6 +1606,10 @@ const App = () => {
     if (rollTimeoutRef.current) {
       window.clearTimeout(rollTimeoutRef.current);
     }
+    if (dieSettlingTimeoutRef.current) {
+      window.clearTimeout(dieSettlingTimeoutRef.current);
+      dieSettlingTimeoutRef.current = null;
+    }
 
     setPlayerDrafts([
       { name: '', avatarId: PLAYER_AVATARS[0].id },
@@ -1608,6 +1621,7 @@ const App = () => {
     setSaleValue(SALE_VALUES[0]);
     setDisplayRoll(null);
     setIsRolling(false);
+    setIsDieSettling(false);
     setInspectedTileId(null);
     setIsTileDebugEnabled(false);
     setTileDebugState(null);
@@ -1708,8 +1722,13 @@ const App = () => {
     if (rollTimeoutRef.current) {
       window.clearTimeout(rollTimeoutRef.current);
     }
+    if (dieSettlingTimeoutRef.current) {
+      window.clearTimeout(dieSettlingTimeoutRef.current);
+      dieSettlingTimeoutRef.current = null;
+    }
 
     setIsRolling(true);
+    setIsDieSettling(false);
     setDisplayRoll(Math.floor(Math.random() * 6) + 1);
 
     rollIntervalRef.current = window.setInterval(() => {
@@ -1729,6 +1748,11 @@ const App = () => {
         inspectTile(originTile);
       }
       setIsRolling(false);
+      setIsDieSettling(true);
+      dieSettlingTimeoutRef.current = window.setTimeout(() => {
+        setIsDieSettling(false);
+        dieSettlingTimeoutRef.current = null;
+      }, 340);
       setGame((currentGame) => ({
         ...currentGame,
         lastRoll: finalRoll,
@@ -2872,7 +2896,7 @@ const App = () => {
                   </p>
                   {game.trainingMode && <p>Mode : {trainingModeLabels[game.trainingMode]}</p>}
                 </div>
-                <DieFace value={displayRoll} isRolling={isRolling} />
+                <DieFace value={displayRoll} isRolling={isRolling} isSettling={isDieSettling} />
               </div>
               <div className="turn-actions">
                 <button

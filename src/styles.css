@@ -1175,6 +1175,9 @@ button:disabled {
   display: grid;
   gap: 10px;
   justify-items: center;
+  transform: translate3d(0, 0, 0);
+  transform-origin: center 72%;
+  will-change: transform;
 }
 
 .die-inner {
@@ -1194,7 +1197,11 @@ button:disabled {
 }
 
 .die-face-rolling .die-inner {
-  animation: dieThrow 0.52s cubic-bezier(0.24, 0.72, 0.38, 1) infinite;
+  animation: dieThrow 0.9s cubic-bezier(0.2, 0.86, 0.24, 1) 1 both;
+}
+
+.die-face-rolling {
+  animation: dieTravel 0.9s cubic-bezier(0.2, 0.86, 0.24, 1) 1 both;
 }
 
 .die-face::before {
@@ -1209,7 +1216,11 @@ button:disabled {
 }
 
 .die-face-rolling::before {
-  animation: dieShadowThrow 0.52s ease-in-out infinite;
+  animation: dieShadowThrow 0.9s cubic-bezier(0.2, 0.86, 0.24, 1) 1 both;
+}
+
+.die-face-settling .die-inner {
+  animation: dieSettle 0.34s cubic-bezier(0.3, 0.85, 0.36, 1) 1;
 }
 
 .die-caption {
@@ -1692,38 +1703,81 @@ button:disabled {
 
 @keyframes dieThrow {
   0% {
-    transform: translate3d(0, 0, 0) rotate(0deg) rotateY(0deg) scale(1);
+    transform: translate3d(0, -2px, 0) rotate(-14deg) rotateX(12deg) rotateY(-20deg) scale(1.02);
   }
-  16% {
-    transform: translate3d(-4px, -7px, 0) rotate(-11deg) rotateY(-10deg) scale(1.03);
+  18% {
+    transform: translate3d(0, -18px, 0) rotate(26deg) rotateX(-18deg) rotateY(30deg) scale(1.06);
   }
   36% {
-    transform: translate3d(5px, -11px, 0) rotate(13deg) rotateY(12deg) scale(0.98);
+    transform: translate3d(0, -9px, 0) rotate(-22deg) rotateX(14deg) rotateY(-24deg) scale(0.99);
   }
-  56% {
-    transform: translate3d(-5px, -5px, 0) rotate(-8deg) rotateY(-7deg) scale(1.02);
+  57% {
+    transform: translate3d(0, 3px, 0) rotate(11deg) rotateX(-7deg) rotateY(11deg) scale(0.97);
   }
-  78% {
-    transform: translate3d(4px, 2px, 0) rotate(6deg) rotateY(6deg) scale(0.99);
+  76% {
+    transform: translate3d(0, 0, 0) rotate(-5deg) rotateX(4deg) rotateY(-6deg) scale(1.01);
+  }
+  90% {
+    transform: translate3d(0, 1px, 0) rotate(3deg) rotateX(-2deg) rotateY(3deg) scale(0.995);
   }
   100% {
-    transform: translate3d(0, 0, 0) rotate(0deg) rotateY(0deg) scale(1);
+    transform: translate3d(0, 0, 0) rotate(0deg) rotateX(0deg) rotateY(0deg) scale(1);
+  }
+}
+
+@keyframes dieTravel {
+  0% {
+    transform: translate3d(-2px, 0, 0);
+  }
+  22% {
+    transform: translate3d(11px, -2px, 0);
+  }
+  44% {
+    transform: translate3d(17px, 1px, 0);
+  }
+  70% {
+    transform: translate3d(9px, 0, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
   }
 }
 
 @keyframes dieShadowThrow {
-  0%,
+  0% {
+    opacity: 0.22;
+    transform: translateY(88px) scale(1);
+  }
+  20% {
+    opacity: 0.16;
+    transform: translate(10px, 79px) scale(0.83);
+  }
+  48% {
+    opacity: 0.24;
+    transform: translate(16px, 84px) scale(0.93);
+  }
+  74% {
+    opacity: 0.31;
+    transform: translate(7px, 90px) scale(1.06);
+  }
   100% {
     opacity: 0.28;
     transform: translateY(88px) scale(1);
   }
-  32% {
-    opacity: 0.2;
-    transform: translateY(83px) scale(0.9);
+}
+
+@keyframes dieSettle {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  36% {
+    transform: translate3d(0, 1px, 0) rotate(-2.4deg);
   }
   68% {
-    opacity: 0.34;
-    transform: translateY(90px) scale(1.08);
+    transform: translate3d(0, -1px, 0) rotate(1.7deg);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
   }
 }
 
