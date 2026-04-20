@@ -186,6 +186,60 @@ img {
   line-height: 1.35;
 }
 
+
+.game-timer {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 12px;
+  width: fit-content;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 91, 187, 0.2);
+  background: linear-gradient(180deg, rgba(0, 91, 187, 0.08), rgba(255, 255, 255, 0.9));
+  box-shadow: 0 8px 18px rgba(11, 47, 109, 0.08);
+}
+
+.game-timer-label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--edf-text-soft);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.game-timer-value {
+  font-size: 1.3rem;
+  line-height: 1;
+  color: var(--edf-blue-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.game-timer-warning {
+  border-color: rgba(255, 106, 19, 0.38);
+  background: linear-gradient(180deg, rgba(255, 106, 19, 0.16), rgba(255, 255, 255, 0.9));
+}
+
+.game-timer-warning .game-timer-value {
+  color: #b45309;
+}
+
+.game-timer-expired {
+  border-color: rgba(217, 71, 63, 0.42);
+  background: linear-gradient(180deg, rgba(217, 71, 63, 0.18), rgba(255, 255, 255, 0.9));
+}
+
+.game-timer-expired .game-timer-value {
+  color: #9f1239;
+}
+
+.game-timer-alert {
+  font-size: 0.75rem;
+  color: #9f1239;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .hero-actions {
   display: flex;
   flex-direction: row;
@@ -1955,6 +2009,11 @@ button:disabled {
 
   .hero-actions {
     min-width: 0;
+  }
+
+  .game-timer {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .board-stage {

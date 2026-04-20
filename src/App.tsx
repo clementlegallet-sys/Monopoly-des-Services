@@ -156,6 +156,13 @@ type GameState = {
   validatedLegalMentions: number[];
 };
 
+type GameTimerState = {
+  remainingSeconds: number;
+  isRunning: boolean;
+  expiresAt: number | null;
+  hasExpired: boolean;
+};
+
 type DieFaceProps = {
   value: number | null;
   isRolling: boolean;
@@ -218,7 +225,10 @@ type LegalMention = {
 
 const STORAGE_KEY = 'monopoly-des-services-state';
 const PLAYER_NOTES_STORAGE_KEY = 'monopoly-des-services-player-notes-v1';
+const GAME_TIMER_STORAGE_KEY = 'monopoly-des-services-game-timer-v1';
 const INITIAL_CLIENTS = 2;
+const GAME_DURATION_SECONDS = 45 * 60;
+const TIMER_WARNING_THRESHOLD_SECONDS = 5 * 60;
 const INITIAL_BANK = 40;
 const SALE_VALUES = [2, 3, 5] as const;
 const PLAYER_TOKEN_COLORS = ['#d9473f', '#2b6fdd', '#f59e0b', '#0f9d74'];
@@ -1161,6 +1171,80 @@ const DieFace = ({ value, isRolling, isSettling, throwProfile }: DieFaceProps) =
   );
 };
 
+
+const formatTimerDisplay = (remainingSeconds: number) => {
+  const safeSeconds = Math.max(0, remainingSeconds);
+  const minutes = Math.floor(safeSeconds / 60);
+  const seconds = safeSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+};
+
+const createInitialTimerState = (): GameTimerState => ({
+  remainingSeconds: GAME_DURATION_SECONDS,
+  isRunning: false,
+  expiresAt: null,
+  hasExpired: false,
+});
+
+const loadStoredTimerState = (): GameTimerState => {
+  if (typeof window === 'undefined') {
+    return createInitialTimerState();
+  }
+
+  const storedTimer = window.localStorage.getItem(GAME_TIMER_STORAGE_KEY);
+
+  if (!storedTimer) {
+    return createInitialTimerState();
+  }
+
+  try {
+    const parsedTimer = JSON.parse(storedTimer) as Partial<GameTimerState>;
+    const isRunning = Boolean(parsedTimer.isRunning);
+    const rawRemainingSeconds =
+      typeof parsedTimer.remainingSeconds === 'number'
+        ? Math.max(0, Math.floor(parsedTimer.remainingSeconds))
+        : GAME_DURATION_SECONDS;
+    const hasExpired = Boolean(parsedTimer.hasExpired);
+
+    if (isRunning && typeof parsedTimer.expiresAt === 'number') {
+      const remainingSeconds = Math.max(0, Math.ceil((parsedTimer.expiresAt - Date.now()) / 1000));
+      if (remainingSeconds <= 0) {
+        return {
+          remainingSeconds: 0,
+          isRunning: false,
+          expiresAt: null,
+          hasExpired: true,
+        };
+      }
+
+      return {
+        remainingSeconds,
+        isRunning: true,
+        expiresAt: parsedTimer.expiresAt,
+        hasExpired: false,
+      };
+    }
+
+    if (rawRemainingSeconds === 0 || hasExpired) {
+      return {
+        remainingSeconds: 0,
+        isRunning: false,
+        expiresAt: null,
+        hasExpired: true,
+      };
+    }
+
+    return {
+      remainingSeconds: Math.min(rawRemainingSeconds, GAME_DURATION_SECONDS),
+      isRunning: false,
+      expiresAt: null,
+      hasExpired: false,
+    };
+  } catch {
+    return createInitialTimerState();
+  }
+};
+
 const App = () => {
   const [game, setGame] = useState<GameState>(() => {
     if (typeof window === 'undefined') {
@@ -1247,6 +1331,7 @@ const App = () => {
       return createInitialState();
     }
   });
+  const [gameTimer, setGameTimer] = useState<GameTimerState>(() => loadStoredTimerState());
   const [playerDrafts, setPlayerDrafts] = useState<PlayerDraft[]>([
     { name: '', avatarId: PLAYER_AVATARS[0].id },
     { name: '', avatarId: PLAYER_AVATARS[1].id },
@@ -1330,6 +1415,7 @@ const App = () => {
   const objectionRevealTimeoutRef = useRef<number | null>(null);
   const chanceRevealTimeoutRef = useRef<number | null>(null);
   const boardSurfaceRef = useRef<HTMLDivElement | null>(null);
+  const gameTimerIntervalRef = useRef<number | null>(null);
 
   const clearRollTickTimeouts = () => {
     rollTickTimeoutsRef.current.forEach((timeoutId) => {
@@ -1341,6 +1427,60 @@ const App = () => {
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(game));
   }, [game]);
+
+
+  useEffect(() => {
+    window.localStorage.setItem(GAME_TIMER_STORAGE_KEY, JSON.stringify(gameTimer));
+  }, [gameTimer]);
+
+  useEffect(() => {
+    if (!gameTimer.isRunning || !gameTimer.expiresAt) {
+      if (gameTimerIntervalRef.current) {
+        window.clearInterval(gameTimerIntervalRef.current);
+        gameTimerIntervalRef.current = null;
+      }
+      return;
+    }
+
+    const syncTimer = () => {
+      setGameTimer((currentTimer) => {
+        if (!currentTimer.isRunning || !currentTimer.expiresAt) {
+          return currentTimer;
+        }
+
+        const remainingSeconds = Math.max(0, Math.ceil((currentTimer.expiresAt - Date.now()) / 1000));
+
+        if (remainingSeconds <= 0) {
+          return {
+            remainingSeconds: 0,
+            isRunning: false,
+            expiresAt: null,
+            hasExpired: true,
+          };
+        }
+
+        if (remainingSeconds === currentTimer.remainingSeconds) {
+          return currentTimer;
+        }
+
+        return {
+          ...currentTimer,
+          remainingSeconds,
+          hasExpired: false,
+        };
+      });
+    };
+
+    syncTimer();
+    gameTimerIntervalRef.current = window.setInterval(syncTimer, 250);
+
+    return () => {
+      if (gameTimerIntervalRef.current) {
+        window.clearInterval(gameTimerIntervalRef.current);
+        gameTimerIntervalRef.current = null;
+      }
+    };
+  }, [gameTimer.isRunning, gameTimer.expiresAt]);
 
   useEffect(() => {
     if (playerResponseNotes.length === 0) {
@@ -1461,6 +1601,9 @@ const App = () => {
       }
       if (chanceRevealTimeoutRef.current) {
         window.clearTimeout(chanceRevealTimeoutRef.current);
+      }
+      if (gameTimerIntervalRef.current) {
+        window.clearInterval(gameTimerIntervalRef.current);
       }
     },
     [],
@@ -1702,6 +1845,21 @@ const App = () => {
     inspectTile(tile, 'inspection');
   };
 
+  const resetTimerState = (shouldStart: boolean) => {
+    if (shouldStart) {
+      const expiresAt = Date.now() + GAME_DURATION_SECONDS * 1000;
+      setGameTimer({
+        remainingSeconds: GAME_DURATION_SECONDS,
+        isRunning: true,
+        expiresAt,
+        hasExpired: false,
+      });
+      return;
+    }
+
+    setGameTimer(createInitialTimerState());
+  };
+
   const startSetup = () => {
     setGame((currentGame) => ({
       ...currentGame,
@@ -1710,7 +1868,7 @@ const App = () => {
     }));
   };
 
-  const resetGame = () => {
+  const resetGame = ({ startTimer = false }: { startTimer?: boolean } = {}) => {
     if (rollIntervalRef.current) {
       window.clearInterval(rollIntervalRef.current);
     }
@@ -1739,6 +1897,7 @@ const App = () => {
     setTileDebugState(null);
     setDebugFlashTileId(null);
     setIsBoardMappingMode(false);
+    resetTimerState(startTimer);
     setGame(createInitialState());
   };
 
@@ -1804,6 +1963,7 @@ const App = () => {
       rollsTaken: 0,
     }));
 
+    resetTimerState(true);
     setDisplayRoll(null);
     setInspectedTileId(board[0]?.tileId ?? null);
     setGame({
@@ -2432,13 +2592,30 @@ const App = () => {
           <p className="hero-copy">
               Une version digitale fidèle au tapis de jeu d’origine&nbsp;: le plateau reste au centre de l’expérience, les déplacements sont lisibles et chaque case guide clairement l’animation de la partie.
           </p>
+          {(game.phase !== 'welcome' || gameTimer.isRunning || gameTimer.hasExpired) && (
+            <div
+              className={`game-timer ${
+                gameTimer.hasExpired
+                  ? 'game-timer-expired'
+                  : gameTimer.remainingSeconds <= TIMER_WARNING_THRESHOLD_SECONDS
+                    ? 'game-timer-warning'
+                    : ''
+              }`}
+              role="status"
+              aria-live="polite"
+            >
+              <span className="game-timer-label">Temps de partie</span>
+              <strong className="game-timer-value">{formatTimerDisplay(gameTimer.remainingSeconds)}</strong>
+              {gameTimer.hasExpired && <span className="game-timer-alert">Temps écoulé</span>}
+            </div>
+          )}
         </div>
         <div className="hero-actions">
           <button className="primary-button" onClick={game.phase === 'welcome' ? startSetup : resetCurrentGameSession}>
             {game.phase === 'welcome' ? 'Commencer' : 'Réinitialiser'}
           </button>
           {game.phase !== 'welcome' && (
-            <button className="secondary-button" onClick={resetGame}>
+            <button className="secondary-button" onClick={() => resetGame({ startTimer: true })}>
               Nouvelle partie
             </button>
           )}
@@ -3575,7 +3752,7 @@ const App = () => {
               La banque de clients est vide. Comparez les scores puis relancez une nouvelle partie si
               vous voulez refaire un coup bonus manuellement.
             </p>
-            <button className="primary-button" onClick={resetGame}>
+            <button className="primary-button" onClick={() => resetGame()}>
               Rejouer
             </button>
           </section>
