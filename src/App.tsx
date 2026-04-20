@@ -197,6 +197,15 @@ type ServiceBoardRevealProps = {
   zones: ServiceBoardRevealZone[];
 };
 
+type ServiceUnlockAnimationState = {
+  playerName: string;
+  title: string;
+  imageSrc: string;
+  totalPieces: number;
+  obtainedPieces: number;
+  zones: ServiceBoardRevealZone[];
+};
+
 type Point = {
   x: number;
   y: number;
@@ -274,17 +283,22 @@ const PLAYER_AVATARS = [
 const ENABLE_TILE_DEBUG = true;
 const DEVELOPER_QUERY_PARAM = 'dev';
 const TILE_DEBUG_FLASH_DURATION_MS = 950;
+const SERVICE_UNLOCK_ANIMATION_DURATION_MS = 2500;
 const BOARD_MAP_SOURCE = boardMapJson as BoardMapFile;
 const BOARD_MAP_TILE_LOOKUP = new Map(BOARD_MAP_SOURCE.tiles.map((tile) => [tile.tileId, tile]));
 const TECHNICAL_SOURCE_OF_TRUTH = {
   image: boardReferenceImage,
   boardMap: BOARD_MAP_SOURCE,
 } as const;
+const resolvePublicAssetUrl = (assetPath: string) => {
+  const normalizedAssetPath = assetPath.replace(/^\/+/, '');
+  return `${import.meta.env.BASE_URL}${normalizedAssetPath}`;
+};
 const SERVICE_BOARD_REVEALS: Record<string, ServiceBoardRevealConfig> = {
   'protection-facture': {
     serviceId: 'protection-facture',
     title: 'Protection Facture',
-    imageSrc: '/assets/services/protection-facture-enseigne-complete.png',
+    imageSrc: resolvePublicAssetUrl('/assets/services/protection-facture-enseigne-complete.png'),
     totalPieces: 3,
     zones: [
       { id: 'protection-facture-zone-1', clipPath: 'polygon(0 0, 39% 0, 35% 100%, 0 100%)' },
@@ -1487,6 +1501,7 @@ const App = () => {
   const [chanceAnswerDecision, setChanceAnswerDecision] = useState<'validated' | 'rejected' | null>(null);
   const [selectedLegalMentionId, setSelectedLegalMentionId] = useState<number | null>(null);
   const [isMentionsLegalesModeratorView, setIsMentionsLegalesModeratorView] = useState(false);
+  const [serviceUnlockAnimation, setServiceUnlockAnimation] = useState<ServiceUnlockAnimationState | null>(null);
   const [playerResponseNotes, setPlayerResponseNotes] = useState<PlayerResponseNote[]>(() => {
     if (typeof window === 'undefined') {
       return [];
@@ -1745,6 +1760,18 @@ const App = () => {
     setSelectedLegalMentionId(null);
     setIsMentionsLegalesModeratorView(false);
   }, [game.pendingAction, game.hasMentionsLegalesTile, game.players, game.playersWhoLeftStart]);
+
+  useEffect(() => {
+    if (!serviceUnlockAnimation) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setServiceUnlockAnimation(null);
+    }, SERVICE_UNLOCK_ANIMATION_DURATION_MS);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [serviceUnlockAnimation]);
 
   useEffect(() => {
     if (!ENABLE_TILE_DEBUG) {
@@ -2501,6 +2528,25 @@ const App = () => {
   };
 
   const handleValidatedAction = () => {
+    if (game.pendingAction?.tile.type === 'service' && game.pendingAction.tile.serviceId) {
+      const pendingPlayer = game.players.find((player) => player.id === game.pendingAction?.playerId);
+      const serviceId = game.pendingAction.tile.serviceId;
+      const hasAlreadyPiece = pendingPlayer?.pieces.includes(serviceId) ?? false;
+      const serviceRevealConfig = SERVICE_BOARD_REVEALS[serviceId];
+
+      if (pendingPlayer && serviceRevealConfig && !hasAlreadyPiece) {
+        const nextObtainedPiecesCount = game.players.filter((player) => player.pieces.includes(serviceId)).length + 1;
+        setServiceUnlockAnimation({
+          playerName: pendingPlayer.name,
+          title: serviceRevealConfig.title,
+          imageSrc: serviceRevealConfig.imageSrc,
+          totalPieces: serviceRevealConfig.totalPieces,
+          obtainedPieces: Math.min(serviceRevealConfig.totalPieces, nextObtainedPiecesCount),
+          zones: serviceRevealConfig.zones,
+        });
+      }
+    }
+
     if (game.pendingAction?.tile.type === 'chance') {
       revealChanceAnswer('validated');
       return;
@@ -3619,13 +3665,9 @@ const App = () => {
                   <h2>Pièces service</h2>
                 </div>
               </div>
-              <ServiceBoardReveal
-                title={protectionFactureRevealConfig.title}
-                imageSrc={protectionFactureRevealConfig.imageSrc}
-                totalPieces={protectionFactureRevealConfig.totalPieces}
-                obtainedPieces={protectionFactureRevealCount}
-                zones={protectionFactureRevealConfig.zones}
-              />
+              <p className="reserve-summary">
+                Protection Facture : <strong>{protectionFactureRevealCount}/{protectionFactureRevealConfig.totalPieces}</strong>
+              </p>
               <div className="service-list">
                 {servicePieces.map((piece) => (
                   <article className={`service-card service-${piece.color}`} key={piece.id}>
@@ -3958,6 +4000,24 @@ const App = () => {
                 )}
               </div>
             )}
+          </section>
+        </div>
+      )}
+
+      {serviceUnlockAnimation && (
+        <div className="service-unlock-overlay" role="status" aria-live="polite">
+          <section className="service-unlock-card">
+            <p className="eyebrow">Pièce service débloquée</p>
+            <h3>
+              {serviceUnlockAnimation.playerName} obtient {serviceUnlockAnimation.title}
+            </h3>
+            <ServiceBoardReveal
+              title={serviceUnlockAnimation.title}
+              imageSrc={serviceUnlockAnimation.imageSrc}
+              totalPieces={serviceUnlockAnimation.totalPieces}
+              obtainedPieces={serviceUnlockAnimation.obtainedPieces}
+              zones={serviceUnlockAnimation.zones}
+            />
           </section>
         </div>
       )}
