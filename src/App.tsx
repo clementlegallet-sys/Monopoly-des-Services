@@ -1343,6 +1343,11 @@ const App = () => {
   }, [game]);
 
   useEffect(() => {
+    if (playerResponseNotes.length === 0) {
+      window.localStorage.removeItem(PLAYER_NOTES_STORAGE_KEY);
+      return;
+    }
+
     window.localStorage.setItem(PLAYER_NOTES_STORAGE_KEY, JSON.stringify(playerResponseNotes));
   }, [playerResponseNotes]);
 
@@ -1735,6 +1740,16 @@ const App = () => {
     setDebugFlashTileId(null);
     setIsBoardMappingMode(false);
     setGame(createInitialState());
+  };
+
+  const resetCurrentGameSession = () => {
+    resetGame();
+    setPlayerResponseNotes([]);
+    setNoteDraft('');
+    setNotesFilterPlayerId('all');
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(PLAYER_NOTES_STORAGE_KEY);
+    }
   };
 
   const launchGame = () => {
@@ -2419,7 +2434,7 @@ const App = () => {
           </p>
         </div>
         <div className="hero-actions">
-          <button className="primary-button" onClick={game.phase === 'welcome' ? startSetup : resetGame}>
+          <button className="primary-button" onClick={game.phase === 'welcome' ? startSetup : resetCurrentGameSession}>
             {game.phase === 'welcome' ? 'Commencer' : 'Réinitialiser'}
           </button>
           {game.phase !== 'welcome' && (
