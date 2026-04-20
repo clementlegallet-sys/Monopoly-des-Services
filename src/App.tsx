@@ -168,6 +168,18 @@ type Point = {
   y: number;
 };
 
+type PlayerResponseNote = {
+  id: string;
+  playerId: string;
+  playerName: string;
+  squareId: string;
+  squareLabel: string;
+  squareType: TileType;
+  relatedContentText: string;
+  noteText: string;
+  createdAt: string;
+};
+
 type BoardMapTile = {
   tileId: string;
   label: string;
@@ -205,6 +217,7 @@ type LegalMention = {
 };
 
 const STORAGE_KEY = 'monopoly-des-services-state';
+const PLAYER_NOTES_STORAGE_KEY = 'monopoly-des-services-player-notes-v1';
 const INITIAL_CLIENTS = 2;
 const INITIAL_BANK = 40;
 const SALE_VALUES = [2, 3, 5] as const;
@@ -1019,6 +1032,36 @@ const getResolvedActionSummary = (tile: Tile, trainingMode: TrainingMode | null)
   return tile.action.summary;
 };
 
+const getTileRelatedContentText = (
+  tile: Tile | null,
+  trainingMode: TrainingMode | null,
+  activeObjectionCard: ObjectionCard | null,
+  activeChanceCard: ChanceCard | null,
+  isMentionsLegalesActive: boolean,
+) => {
+  if (!tile) {
+    return '';
+  }
+
+  if (tile.type === 'objection' || (tile.type === 'bubble' && trainingMode === 'objections')) {
+    if (activeObjectionCard) {
+      return `Objection en cours : ${activeObjectionCard.title} — ${activeObjectionCard.prompt}`;
+    }
+
+    return tile.description;
+  }
+
+  if (tile.type === 'chance' && activeChanceCard) {
+    return `Carte Chance active : ${activeChanceCard.title}`;
+  }
+
+  if (tile.tileId === START_TILE_ID && isMentionsLegalesActive) {
+    return 'Case Mentions légales : le joueur cite oralement une mention.';
+  }
+
+  return tile.description;
+};
+
 const getServicesByColor = () =>
   servicePieces.reduce<Record<ServiceColor, string[]>>(
     (accumulator, piece) => {
@@ -1237,6 +1280,41 @@ const App = () => {
   const [chanceAnswerDecision, setChanceAnswerDecision] = useState<'validated' | 'rejected' | null>(null);
   const [selectedLegalMentionId, setSelectedLegalMentionId] = useState<number | null>(null);
   const [isMentionsLegalesModeratorView, setIsMentionsLegalesModeratorView] = useState(false);
+  const [playerResponseNotes, setPlayerResponseNotes] = useState<PlayerResponseNote[]>(() => {
+    if (typeof window === 'undefined') {
+      return [];
+    }
+
+    const savedNotes = window.localStorage.getItem(PLAYER_NOTES_STORAGE_KEY);
+    if (!savedNotes) {
+      return [];
+    }
+
+    try {
+      const parsedNotes = JSON.parse(savedNotes) as PlayerResponseNote[];
+      if (!Array.isArray(parsedNotes)) {
+        return [];
+      }
+
+      return parsedNotes.filter(
+        (note): note is PlayerResponseNote =>
+          typeof note.id === 'string' &&
+          typeof note.playerId === 'string' &&
+          typeof note.playerName === 'string' &&
+          typeof note.squareId === 'string' &&
+          typeof note.squareLabel === 'string' &&
+          typeof note.squareType === 'string' &&
+          typeof note.relatedContentText === 'string' &&
+          typeof note.noteText === 'string' &&
+          typeof note.createdAt === 'string',
+      );
+    } catch {
+      return [];
+    }
+  });
+  const [noteDraft, setNoteDraft] = useState('');
+  const [notesFilterPlayerId, setNotesFilterPlayerId] = useState<string>('all');
+  const [isMobileNotesOpen, setIsMobileNotesOpen] = useState(false);
   const isDeveloperMode = useMemo(() => {
     if (typeof window === 'undefined') {
       return false;
@@ -1264,6 +1342,10 @@ const App = () => {
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(game));
   }, [game]);
+
+  useEffect(() => {
+    window.localStorage.setItem(PLAYER_NOTES_STORAGE_KEY, JSON.stringify(playerResponseNotes));
+  }, [playerResponseNotes]);
 
   useEffect(() => {
     if (isDeveloperMode && BOARD_REGISTRY_ISSUES.length > 0) {
@@ -2201,6 +2283,56 @@ const App = () => {
   const focusTileActionLabel = isChoosingDestination && reachableTileIds.includes(focusTile.tileId)
     ? 'Case atteignable ce tour : cliquez pour la choisir comme destination.'
     : getResolvedActionSummary(focusTile, game.trainingMode);
+  const activePlayerTile = currentPlayer ? BOARD_BY_TILE_ID.get(currentPlayer.position) ?? null : null;
+  const activeSquareTypeLabel = activePlayerTile ? tileTypeLabels[activePlayerTile.type] : 'Case inconnue';
+  const activeRelatedContentText = getTileRelatedContentText(
+    activePlayerTile,
+    game.trainingMode,
+    game.activeObjectionCard,
+    game.activeChanceCard,
+    isMentionsLegalesActive,
+  );
+  const isObjectionSquareActive =
+    activePlayerTile?.type === 'objection' ||
+    (activePlayerTile?.type === 'bubble' && game.trainingMode === 'objections');
+  const filteredPlayerResponseNotes =
+    notesFilterPlayerId === 'all'
+      ? playerResponseNotes
+      : playerResponseNotes.filter((note) => note.playerId === notesFilterPlayerId);
+
+  const clearNoteDraft = () => {
+    setNoteDraft('');
+  };
+
+  const savePlayerResponseNote = () => {
+    if (!currentPlayer || !activePlayerTile) {
+      return;
+    }
+
+    const normalizedDraft = noteDraft.trim();
+    if (!normalizedDraft) {
+      return;
+    }
+
+    const newNote: PlayerResponseNote = {
+      id: uid(),
+      playerId: currentPlayer.id,
+      playerName: currentPlayer.name,
+      squareId: activePlayerTile.tileId,
+      squareLabel: activePlayerTile.label,
+      squareType: activePlayerTile.type,
+      relatedContentText: activeRelatedContentText,
+      noteText: normalizedDraft,
+      createdAt: new Date().toISOString(),
+    };
+
+    setPlayerResponseNotes((currentNotes) => [newNote, ...currentNotes]);
+    setNoteDraft('');
+  };
+
+  const deletePlayerResponseNote = (noteId: string) => {
+    setPlayerResponseNotes((currentNotes) => currentNotes.filter((note) => note.id !== noteId));
+  };
 
   const boardMapValidation = useMemo(() => {
     const expectedLabels: Record<string, string> = {
@@ -3042,7 +3174,140 @@ const App = () => {
               </ul>
             </section>
           </aside>
+
+          <aside className="panel player-notes-panel" aria-label="Réponses joueurs">
+            <div className="panel-header compact-header">
+              <div>
+                <p className="eyebrow">Prise de notes</p>
+                <h2>Réponses joueurs</h2>
+              </div>
+            </div>
+
+            <div className="player-notes-context">
+              <p><strong>Joueur actif :</strong> {currentPlayer?.name ?? '—'}</p>
+              <p><strong>Case :</strong> {activePlayerTile?.label ?? '—'} ({activePlayerTile?.tileId ?? '—'})</p>
+              <p><strong>Type :</strong> {activeSquareTypeLabel}</p>
+              {activeRelatedContentText && (
+                <div className={`player-notes-related ${isObjectionSquareActive ? 'player-notes-related-objection' : ''}`}>
+                  <strong>{isObjectionSquareActive ? 'Objection en cours' : 'Texte associé'}</strong>
+                  <p>{activeRelatedContentText}</p>
+                </div>
+              )}
+            </div>
+
+            <label className="field player-notes-input">
+              <span>Réponse / arguments / caractéristiques / remarques</span>
+              <textarea
+                rows={5}
+                placeholder="Saisir une note pour cette case…"
+                value={noteDraft}
+                onChange={(event) => setNoteDraft(event.target.value)}
+              />
+            </label>
+
+            <div className="player-notes-actions">
+              <button
+                className="primary-button"
+                onClick={savePlayerResponseNote}
+                disabled={!currentPlayer || !activePlayerTile || !noteDraft.trim()}
+              >
+                Enregistrer la note
+              </button>
+              <button className="secondary-button" onClick={clearNoteDraft}>
+                Effacer
+              </button>
+            </div>
+
+            <label className="field player-notes-filter">
+              <span>Filtrer par joueur</span>
+              <select value={notesFilterPlayerId} onChange={(event) => setNotesFilterPlayerId(event.target.value)}>
+                <option value="all">Tous les joueurs</option>
+                {game.players.map((player) => (
+                  <option key={player.id} value={player.id}>
+                    {player.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="player-notes-history">
+              <h3>Historique des notes</h3>
+              {filteredPlayerResponseNotes.length === 0 ? (
+                <p>Aucune note enregistrée pour le filtre actuel.</p>
+              ) : (
+                <ul>
+                  {filteredPlayerResponseNotes.map((note, index) => (
+                    <li key={note.id} className="player-note-item">
+                      <div className="player-note-item-head">
+                        <strong>{note.playerName}</strong>
+                        <span>
+                          #{playerResponseNotes.length - index} · {new Date(note.createdAt).toLocaleString('fr-FR')}
+                        </span>
+                      </div>
+                      <p><strong>Case :</strong> {note.squareLabel} ({note.squareId})</p>
+                      <p><strong>Type :</strong> {tileTypeLabels[note.squareType]}</p>
+                      {note.relatedContentText && (
+                        <p><strong>Texte associé :</strong> {note.relatedContentText}</p>
+                      )}
+                      <p><strong>Note :</strong> {note.noteText}</p>
+                      <button
+                        className="secondary-button player-note-delete"
+                        onClick={() => deletePlayerResponseNote(note.id)}
+                      >
+                        Supprimer
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </aside>
         </main>
+      )}
+
+      {(game.phase === 'playing' || game.phase === 'finished') && (
+        <div className={`mobile-notes-drawer ${isMobileNotesOpen ? 'mobile-notes-drawer-open' : ''}`}>
+          <button
+            type="button"
+            className="primary-button mobile-notes-toggle"
+            onClick={() => setIsMobileNotesOpen((isOpen) => !isOpen)}
+            aria-expanded={isMobileNotesOpen}
+            aria-controls="mobile-notes-content"
+          >
+            {isMobileNotesOpen ? 'Masquer “Réponses joueurs”' : 'Afficher “Réponses joueurs”'}
+          </button>
+          <div id="mobile-notes-content" className="mobile-notes-content">
+            <div className="mobile-notes-scroll">
+              <p><strong>Joueur actif :</strong> {currentPlayer?.name ?? '—'}</p>
+              <p><strong>Case :</strong> {activePlayerTile?.label ?? '—'} ({activePlayerTile?.tileId ?? '—'})</p>
+              <p><strong>Type :</strong> {activeSquareTypeLabel}</p>
+              {activeRelatedContentText && (
+                <p><strong>Texte associé :</strong> {activeRelatedContentText}</p>
+              )}
+              <label className="field">
+                <span>Note</span>
+                <textarea
+                  rows={4}
+                  value={noteDraft}
+                  onChange={(event) => setNoteDraft(event.target.value)}
+                  placeholder="Saisir une note…"
+                />
+              </label>
+              <div className="player-notes-actions">
+                <button
+                  className="primary-button"
+                  onClick={savePlayerResponseNote}
+                  disabled={!currentPlayer || !activePlayerTile || !noteDraft.trim()}
+                >
+                  Enregistrer la note
+                </button>
+                <button className="secondary-button" onClick={clearNoteDraft}>
+                  Effacer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {game.pendingAction && (
