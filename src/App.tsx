@@ -2528,7 +2528,13 @@ const App = () => {
   const focusTileActionLabel = isChoosingDestination && reachableTileIds.includes(focusTile.tileId)
     ? 'Case atteignable ce tour : cliquez pour la choisir comme destination.'
     : getResolvedActionSummary(focusTile, game.trainingMode);
-  const activePlayerTile = currentPlayer ? BOARD_BY_TILE_ID.get(currentPlayer.position) ?? null : null;
+  const responseContextPlayer =
+    (game.pendingAction
+      ? game.players.find((player) => player.id === game.pendingAction?.playerId) ?? null
+      : null) ?? currentPlayer;
+  const activePlayerTile =
+    game.pendingAction?.tile ??
+    (responseContextPlayer ? BOARD_BY_TILE_ID.get(responseContextPlayer.position) ?? null : null);
   const activeSquareTypeLabel = activePlayerTile ? tileTypeLabels[activePlayerTile.type] : 'Case inconnue';
   const activeRelatedContentText = getTileRelatedContentText(
     activePlayerTile,
@@ -2550,7 +2556,7 @@ const App = () => {
   };
 
   const savePlayerResponseNote = () => {
-    if (!currentPlayer || !activePlayerTile) {
+    if (!responseContextPlayer || !activePlayerTile) {
       return;
     }
 
@@ -2561,8 +2567,8 @@ const App = () => {
 
     const newNote: PlayerResponseNote = {
       id: uid(),
-      playerId: currentPlayer.id,
-      playerName: currentPlayer.name,
+      playerId: responseContextPlayer.id,
+      playerName: responseContextPlayer.name,
       squareId: activePlayerTile.tileId,
       squareLabel: activePlayerTile.label,
       squareType: activePlayerTile.type,
@@ -3314,7 +3320,7 @@ const App = () => {
               </div>
 
               <div className="player-notes-context">
-                <p><strong>Joueur actif :</strong> {currentPlayer?.name ?? '—'}</p>
+                <p><strong>Joueur actif :</strong> {responseContextPlayer?.name ?? '—'}</p>
                 <p><strong>Case :</strong> {activePlayerTile?.label ?? '—'} ({activePlayerTile?.tileId ?? '—'})</p>
                 <p><strong>Type :</strong> {activeSquareTypeLabel}</p>
                 {activeRelatedContentText && (
@@ -3339,7 +3345,7 @@ const App = () => {
                 <button
                   className="primary-button"
                   onClick={savePlayerResponseNote}
-                  disabled={!currentPlayer || !activePlayerTile || !noteDraft.trim()}
+                  disabled={!responseContextPlayer || !activePlayerTile || !noteDraft.trim()}
                 >
                   Enregistrer la note
                 </button>
