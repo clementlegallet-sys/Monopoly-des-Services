@@ -3530,23 +3530,27 @@ const App = () => {
       {game.pendingAction && (
         <div className="modal-backdrop">
           <section className="modal-card">
-            <p className="eyebrow">Résolution de case</p>
-            <h2>{pendingActionTilePresentation?.title ?? game.pendingAction.tile.label}</h2>
-            <p>{pendingActionTilePresentation?.description ?? game.pendingAction.tile.description}</p>
-            <div
-              className={`response-timer ${
-                responseTimer.hasExpired
-                  ? 'response-timer-expired'
-                  : responseTimer.remainingSeconds <= RESPONSE_TIMER_WARNING_THRESHOLD_SECONDS
-                    ? 'response-timer-warning'
-                    : ''
-              }`}
-              role="status"
-              aria-live="polite"
-            >
-              <span className="response-timer-label">Temps de réponse</span>
-              <strong className="response-timer-value">{formatTimerDisplay(responseTimer.remainingSeconds)}</strong>
-              {responseTimer.hasExpired && <span className="response-timer-alert">Temps écoulé</span>}
+            <div className="modal-header">
+              <div className="modal-title-group">
+                <p className="eyebrow">Résolution de case</p>
+                <h2>{pendingActionTilePresentation?.title ?? game.pendingAction.tile.label}</h2>
+                <p>{pendingActionTilePresentation?.description ?? game.pendingAction.tile.description}</p>
+              </div>
+              <div
+                className={`response-timer ${
+                  responseTimer.hasExpired
+                    ? 'response-timer-expired'
+                    : responseTimer.remainingSeconds <= RESPONSE_TIMER_WARNING_THRESHOLD_SECONDS
+                      ? 'response-timer-warning'
+                      : ''
+                }`}
+                role="status"
+                aria-live="polite"
+              >
+                <span className="response-timer-label">Temps de réponse</span>
+                <strong className="response-timer-value">{formatTimerDisplay(responseTimer.remainingSeconds)}</strong>
+                {responseTimer.hasExpired && <span className="response-timer-alert">Temps écoulé</span>}
+              </div>
             </div>
 
             {mentionsLegalesInAction && (
