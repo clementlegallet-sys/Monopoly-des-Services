@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from 'react';
 import boardReferenceImage from '../plateau-reference-bordures-epaisses.png';
 import boardMapJson from '../board_map_final.json';
 import objectionsDeckFaceImage from '../carte objection FACE.png';
@@ -160,6 +160,7 @@ type DieFaceProps = {
   value: number | null;
   isRolling: boolean;
   isSettling: boolean;
+  throwProfile: number;
 };
 
 type Point = {
@@ -1083,14 +1084,28 @@ const getReachableTileIds = (originTileId: string, roll: number) => {
   );
 };
 
-const DieFace = ({ value, isRolling, isSettling }: DieFaceProps) => {
+const DIE_THROW_PROFILES = [
+  { x: -42, y: -20, lift: -36, tilt: -20 },
+  { x: -34, y: -24, lift: -40, tilt: -14 },
+  { x: -48, y: -16, lift: -33, tilt: -24 },
+  { x: -38, y: -22, lift: -37, tilt: -18 },
+] as const;
+
+const DieFace = ({ value, isRolling, isSettling, throwProfile }: DieFaceProps) => {
   const safeValue = value && value >= 1 && value <= 6 ? value : null;
   const dieClasses = ['die-face', isRolling ? 'die-face-rolling' : '', isSettling ? 'die-face-settling' : '']
     .filter(Boolean)
     .join(' ');
+  const profile = DIE_THROW_PROFILES[throwProfile % DIE_THROW_PROFILES.length];
+  const dieStyle = {
+    '--die-throw-x': `${profile.x}px`,
+    '--die-throw-y': `${profile.y}px`,
+    '--die-throw-lift': `${profile.lift}px`,
+    '--die-throw-tilt': `${profile.tilt}deg`,
+  } as CSSProperties;
 
   return (
-    <div className={dieClasses} aria-live="polite">
+    <div className={dieClasses} style={dieStyle} aria-live="polite">
       <div className="die-inner">
         {safeValue ? (
           DIE_PIPS[safeValue].map((pip) => <span key={pip} className={`pip pip-${pip}`} />)
@@ -1200,6 +1215,7 @@ const App = () => {
   const [displayRoll, setDisplayRoll] = useState<number | null>(game.lastRoll);
   const [isRolling, setIsRolling] = useState(false);
   const [isDieSettling, setIsDieSettling] = useState(false);
+  const [dieThrowProfile, setDieThrowProfile] = useState(0);
   const [inspectedTileId, setInspectedTileId] = useState<string | null>(null);
   const [isTileDebugEnabled, setIsTileDebugEnabled] = useState(false);
   const [tileDebugState, setTileDebugState] = useState<TileInteractionDebugState | null>(null);
@@ -1230,12 +1246,20 @@ const App = () => {
     return searchParams.get(DEVELOPER_QUERY_PARAM) === '1';
   }, []);
   const rollIntervalRef = useRef<number | null>(null);
+  const rollTickTimeoutsRef = useRef<number[]>([]);
   const rollTimeoutRef = useRef<number | null>(null);
   const dieSettlingTimeoutRef = useRef<number | null>(null);
   const debugFlashTimeoutRef = useRef<number | null>(null);
   const objectionRevealTimeoutRef = useRef<number | null>(null);
   const chanceRevealTimeoutRef = useRef<number | null>(null);
   const boardSurfaceRef = useRef<HTMLDivElement | null>(null);
+
+  const clearRollTickTimeouts = () => {
+    rollTickTimeoutsRef.current.forEach((timeoutId) => {
+      window.clearTimeout(timeoutId);
+    });
+    rollTickTimeoutsRef.current = [];
+  };
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(game));
@@ -1336,6 +1360,7 @@ const App = () => {
       if (rollIntervalRef.current) {
         window.clearInterval(rollIntervalRef.current);
       }
+      clearRollTickTimeouts();
       if (rollTimeoutRef.current) {
         window.clearTimeout(rollTimeoutRef.current);
       }
@@ -1603,6 +1628,7 @@ const App = () => {
     if (rollIntervalRef.current) {
       window.clearInterval(rollIntervalRef.current);
     }
+    clearRollTickTimeouts();
     if (rollTimeoutRef.current) {
       window.clearTimeout(rollTimeoutRef.current);
     }
@@ -1719,6 +1745,7 @@ const App = () => {
     if (rollIntervalRef.current) {
       window.clearInterval(rollIntervalRef.current);
     }
+    clearRollTickTimeouts();
     if (rollTimeoutRef.current) {
       window.clearTimeout(rollTimeoutRef.current);
     }
@@ -1729,16 +1756,20 @@ const App = () => {
 
     setIsRolling(true);
     setIsDieSettling(false);
+    setDieThrowProfile(Math.floor(Math.random() * DIE_THROW_PROFILES.length));
     setDisplayRoll(Math.floor(Math.random() * 6) + 1);
-
-    rollIntervalRef.current = window.setInterval(() => {
-      setDisplayRoll(Math.floor(Math.random() * 6) + 1);
-    }, 110);
+    const rollTickDelays = [65, 132, 206, 292, 396, 524, 686, 892];
+    rollTickTimeoutsRef.current = rollTickDelays.map((delay) =>
+      window.setTimeout(() => {
+        setDisplayRoll(Math.floor(Math.random() * 6) + 1);
+      }, delay),
+    );
 
     rollTimeoutRef.current = window.setTimeout(() => {
       if (rollIntervalRef.current) {
         window.clearInterval(rollIntervalRef.current);
       }
+      clearRollTickTimeouts();
 
       const reachableDestinations = getReachableTileIds(currentPlayer.position, finalRoll);
 
@@ -1767,7 +1798,7 @@ const App = () => {
           `${currentPlayer.name} lance un ${finalRoll}. Choisissez maintenant une case de destination.`,
         ),
       }));
-    }, 900);
+    }, 1180);
   };
 
   const resolveTurn = (state: GameState, players: Player[], centralBank: number, message: string): GameState => {
@@ -2896,7 +2927,12 @@ const App = () => {
                   </p>
                   {game.trainingMode && <p>Mode : {trainingModeLabels[game.trainingMode]}</p>}
                 </div>
-                <DieFace value={displayRoll} isRolling={isRolling} isSettling={isDieSettling} />
+                <DieFace
+                  value={displayRoll}
+                  isRolling={isRolling}
+                  isSettling={isDieSettling}
+                  throwProfile={dieThrowProfile}
+                />
               </div>
               <div className="turn-actions">
                 <button

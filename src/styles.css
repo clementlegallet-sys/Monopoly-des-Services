@@ -1175,6 +1175,10 @@ button:disabled {
   display: grid;
   gap: 10px;
   justify-items: center;
+  --die-throw-x: -40px;
+  --die-throw-y: -20px;
+  --die-throw-lift: -36px;
+  --die-throw-tilt: -18deg;
   transform: translate3d(0, 0, 0);
   transform-origin: center 72%;
   will-change: transform;
@@ -1197,11 +1201,11 @@ button:disabled {
 }
 
 .die-face-rolling .die-inner {
-  animation: dieThrow 0.9s cubic-bezier(0.2, 0.86, 0.24, 1) 1 both;
+  animation: dieThrow 1.18s cubic-bezier(0.14, 0.86, 0.2, 1) 1 both;
 }
 
 .die-face-rolling {
-  animation: dieTravel 0.9s cubic-bezier(0.2, 0.86, 0.24, 1) 1 both;
+  animation: dieTravel 1.18s cubic-bezier(0.14, 0.86, 0.2, 1) 1 both;
 }
 
 .die-face::before {
@@ -1216,11 +1220,11 @@ button:disabled {
 }
 
 .die-face-rolling::before {
-  animation: dieShadowThrow 0.9s cubic-bezier(0.2, 0.86, 0.24, 1) 1 both;
+  animation: dieShadowThrow 1.18s cubic-bezier(0.14, 0.86, 0.2, 1) 1 both;
 }
 
 .die-face-settling .die-inner {
-  animation: dieSettle 0.34s cubic-bezier(0.3, 0.85, 0.36, 1) 1;
+  animation: dieSettle 0.42s cubic-bezier(0.27, 0.82, 0.3, 1) 1;
 }
 
 .die-caption {
@@ -1703,22 +1707,25 @@ button:disabled {
 
 @keyframes dieThrow {
   0% {
-    transform: translate3d(0, -2px, 0) rotate(-14deg) rotateX(12deg) rotateY(-20deg) scale(1.02);
+    transform: translate3d(0, 0, 0) rotate(-10deg) rotateX(8deg) rotateY(-14deg) scale(1);
   }
-  18% {
-    transform: translate3d(0, -18px, 0) rotate(26deg) rotateX(-18deg) rotateY(30deg) scale(1.06);
+  16% {
+    transform: translate3d(0, var(--die-throw-lift), 0) rotate(-44deg) rotateX(42deg) rotateY(-54deg) scale(1.08);
   }
-  36% {
-    transform: translate3d(0, -9px, 0) rotate(-22deg) rotateX(14deg) rotateY(-24deg) scale(0.99);
+  34% {
+    transform: translate3d(0, -14px, 0) rotate(38deg) rotateX(-28deg) rotateY(44deg) scale(1.03);
   }
-  57% {
-    transform: translate3d(0, 3px, 0) rotate(11deg) rotateX(-7deg) rotateY(11deg) scale(0.97);
+  54% {
+    transform: translate3d(0, -4px, 0) rotate(-24deg) rotateX(16deg) rotateY(-22deg) scale(0.995);
   }
-  76% {
-    transform: translate3d(0, 0, 0) rotate(-5deg) rotateX(4deg) rotateY(-6deg) scale(1.01);
+  72% {
+    transform: translate3d(0, 1px, 0) rotate(12deg) rotateX(-8deg) rotateY(10deg) scale(0.985);
   }
-  90% {
-    transform: translate3d(0, 1px, 0) rotate(3deg) rotateX(-2deg) rotateY(3deg) scale(0.995);
+  86% {
+    transform: translate3d(0, 0, 0) rotate(-6deg) rotateX(3deg) rotateY(-5deg) scale(1.01);
+  }
+  94% {
+    transform: translate3d(0, 1px, 0) rotate(3deg) rotateX(-2deg) rotateY(2deg) scale(0.995);
   }
   100% {
     transform: translate3d(0, 0, 0) rotate(0deg) rotateX(0deg) rotateY(0deg) scale(1);
@@ -1727,16 +1734,19 @@ button:disabled {
 
 @keyframes dieTravel {
   0% {
-    transform: translate3d(-2px, 0, 0);
+    transform: translate3d(0, 0, 0);
   }
-  22% {
-    transform: translate3d(11px, -2px, 0);
+  20% {
+    transform: translate3d(calc(var(--die-throw-x) * 0.5), calc(var(--die-throw-y) * 0.35), 0);
   }
-  44% {
-    transform: translate3d(17px, 1px, 0);
+  42% {
+    transform: translate3d(var(--die-throw-x), var(--die-throw-y), 0);
   }
-  70% {
-    transform: translate3d(9px, 0, 0);
+  63% {
+    transform: translate3d(calc(var(--die-throw-x) * 0.68), calc(var(--die-throw-y) * 0.18), 0);
+  }
+  80% {
+    transform: translate3d(calc(var(--die-throw-x) * 0.2), 2px, 0);
   }
   100% {
     transform: translate3d(0, 0, 0);
@@ -1745,20 +1755,24 @@ button:disabled {
 
 @keyframes dieShadowThrow {
   0% {
-    opacity: 0.22;
+    opacity: 0.28;
     transform: translateY(88px) scale(1);
   }
-  20% {
-    opacity: 0.16;
-    transform: translate(10px, 79px) scale(0.83);
+  18% {
+    opacity: 0.12;
+    transform: translate(calc(var(--die-throw-x) * 0.35), 74px) scale(0.76);
   }
-  48% {
-    opacity: 0.24;
-    transform: translate(16px, 84px) scale(0.93);
+  40% {
+    opacity: 0.18;
+    transform: translate(calc(var(--die-throw-x) * 0.88), 80px) scale(0.86);
   }
-  74% {
-    opacity: 0.31;
-    transform: translate(7px, 90px) scale(1.06);
+  64% {
+    opacity: 0.26;
+    transform: translate(calc(var(--die-throw-x) * 0.56), 87px) scale(0.96);
+  }
+  84% {
+    opacity: 0.34;
+    transform: translate(calc(var(--die-throw-x) * 0.15), 91px) scale(1.08);
   }
   100% {
     opacity: 0.28;
