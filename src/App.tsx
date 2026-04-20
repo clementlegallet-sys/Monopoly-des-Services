@@ -1314,7 +1314,6 @@ const App = () => {
   });
   const [noteDraft, setNoteDraft] = useState('');
   const [notesFilterPlayerId, setNotesFilterPlayerId] = useState<string>('all');
-  const [isMobileNotesOpen, setIsMobileNotesOpen] = useState(false);
   const isDeveloperMode = useMemo(() => {
     if (typeof window === 'undefined') {
       return false;
@@ -3042,6 +3041,94 @@ const App = () => {
                 </aside>
               )}
             </div>
+
+            <section className="panel player-notes-panel board-notes-panel" aria-label="Réponses joueurs">
+              <div className="panel-header compact-header">
+                <div>
+                  <p className="eyebrow">Prise de notes</p>
+                  <h2>Réponses joueurs</h2>
+                </div>
+              </div>
+
+              <div className="player-notes-context">
+                <p><strong>Joueur actif :</strong> {currentPlayer?.name ?? '—'}</p>
+                <p><strong>Case :</strong> {activePlayerTile?.label ?? '—'} ({activePlayerTile?.tileId ?? '—'})</p>
+                <p><strong>Type :</strong> {activeSquareTypeLabel}</p>
+                {activeRelatedContentText && (
+                  <div className={`player-notes-related ${isObjectionSquareActive ? 'player-notes-related-objection' : ''}`}>
+                    <strong>{isObjectionSquareActive ? 'Objection en cours' : 'Texte associé'}</strong>
+                    <p>{activeRelatedContentText}</p>
+                  </div>
+                )}
+              </div>
+
+              <label className="field player-notes-input">
+                <span>Réponse / arguments / caractéristiques / remarques</span>
+                <textarea
+                  rows={5}
+                  placeholder="Saisir une note pour cette case…"
+                  value={noteDraft}
+                  onChange={(event) => setNoteDraft(event.target.value)}
+                />
+              </label>
+
+              <div className="player-notes-actions">
+                <button
+                  className="primary-button"
+                  onClick={savePlayerResponseNote}
+                  disabled={!currentPlayer || !activePlayerTile || !noteDraft.trim()}
+                >
+                  Enregistrer la note
+                </button>
+                <button className="secondary-button" onClick={clearNoteDraft}>
+                  Effacer
+                </button>
+              </div>
+
+              <label className="field player-notes-filter">
+                <span>Filtrer par joueur</span>
+                <select value={notesFilterPlayerId} onChange={(event) => setNotesFilterPlayerId(event.target.value)}>
+                  <option value="all">Tous les joueurs</option>
+                  {game.players.map((player) => (
+                    <option key={player.id} value={player.id}>
+                      {player.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="player-notes-history">
+                <h3>Historique des notes</h3>
+                {filteredPlayerResponseNotes.length === 0 ? (
+                  <p>Aucune note enregistrée pour le filtre actuel.</p>
+                ) : (
+                  <ul>
+                    {filteredPlayerResponseNotes.map((note, index) => (
+                      <li key={note.id} className="player-note-item">
+                        <div className="player-note-item-head">
+                          <strong>{note.playerName}</strong>
+                          <span>
+                            #{playerResponseNotes.length - index} · {new Date(note.createdAt).toLocaleString('fr-FR')}
+                          </span>
+                        </div>
+                        <p><strong>Case :</strong> {note.squareLabel} ({note.squareId})</p>
+                        <p><strong>Type :</strong> {tileTypeLabels[note.squareType]}</p>
+                        {note.relatedContentText && (
+                          <p><strong>Texte associé :</strong> {note.relatedContentText}</p>
+                        )}
+                        <p><strong>Note :</strong> {note.noteText}</p>
+                        <button
+                          className="secondary-button player-note-delete"
+                          onClick={() => deletePlayerResponseNote(note.id)}
+                        >
+                          Supprimer
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </section>
           </section>
 
           <aside className="info-rail">
@@ -3174,140 +3261,7 @@ const App = () => {
               </ul>
             </section>
           </aside>
-
-          <aside className="panel player-notes-panel" aria-label="Réponses joueurs">
-            <div className="panel-header compact-header">
-              <div>
-                <p className="eyebrow">Prise de notes</p>
-                <h2>Réponses joueurs</h2>
-              </div>
-            </div>
-
-            <div className="player-notes-context">
-              <p><strong>Joueur actif :</strong> {currentPlayer?.name ?? '—'}</p>
-              <p><strong>Case :</strong> {activePlayerTile?.label ?? '—'} ({activePlayerTile?.tileId ?? '—'})</p>
-              <p><strong>Type :</strong> {activeSquareTypeLabel}</p>
-              {activeRelatedContentText && (
-                <div className={`player-notes-related ${isObjectionSquareActive ? 'player-notes-related-objection' : ''}`}>
-                  <strong>{isObjectionSquareActive ? 'Objection en cours' : 'Texte associé'}</strong>
-                  <p>{activeRelatedContentText}</p>
-                </div>
-              )}
-            </div>
-
-            <label className="field player-notes-input">
-              <span>Réponse / arguments / caractéristiques / remarques</span>
-              <textarea
-                rows={5}
-                placeholder="Saisir une note pour cette case…"
-                value={noteDraft}
-                onChange={(event) => setNoteDraft(event.target.value)}
-              />
-            </label>
-
-            <div className="player-notes-actions">
-              <button
-                className="primary-button"
-                onClick={savePlayerResponseNote}
-                disabled={!currentPlayer || !activePlayerTile || !noteDraft.trim()}
-              >
-                Enregistrer la note
-              </button>
-              <button className="secondary-button" onClick={clearNoteDraft}>
-                Effacer
-              </button>
-            </div>
-
-            <label className="field player-notes-filter">
-              <span>Filtrer par joueur</span>
-              <select value={notesFilterPlayerId} onChange={(event) => setNotesFilterPlayerId(event.target.value)}>
-                <option value="all">Tous les joueurs</option>
-                {game.players.map((player) => (
-                  <option key={player.id} value={player.id}>
-                    {player.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <div className="player-notes-history">
-              <h3>Historique des notes</h3>
-              {filteredPlayerResponseNotes.length === 0 ? (
-                <p>Aucune note enregistrée pour le filtre actuel.</p>
-              ) : (
-                <ul>
-                  {filteredPlayerResponseNotes.map((note, index) => (
-                    <li key={note.id} className="player-note-item">
-                      <div className="player-note-item-head">
-                        <strong>{note.playerName}</strong>
-                        <span>
-                          #{playerResponseNotes.length - index} · {new Date(note.createdAt).toLocaleString('fr-FR')}
-                        </span>
-                      </div>
-                      <p><strong>Case :</strong> {note.squareLabel} ({note.squareId})</p>
-                      <p><strong>Type :</strong> {tileTypeLabels[note.squareType]}</p>
-                      {note.relatedContentText && (
-                        <p><strong>Texte associé :</strong> {note.relatedContentText}</p>
-                      )}
-                      <p><strong>Note :</strong> {note.noteText}</p>
-                      <button
-                        className="secondary-button player-note-delete"
-                        onClick={() => deletePlayerResponseNote(note.id)}
-                      >
-                        Supprimer
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </aside>
         </main>
-      )}
-
-      {(game.phase === 'playing' || game.phase === 'finished') && (
-        <div className={`mobile-notes-drawer ${isMobileNotesOpen ? 'mobile-notes-drawer-open' : ''}`}>
-          <button
-            type="button"
-            className="primary-button mobile-notes-toggle"
-            onClick={() => setIsMobileNotesOpen((isOpen) => !isOpen)}
-            aria-expanded={isMobileNotesOpen}
-            aria-controls="mobile-notes-content"
-          >
-            {isMobileNotesOpen ? 'Masquer “Réponses joueurs”' : 'Afficher “Réponses joueurs”'}
-          </button>
-          <div id="mobile-notes-content" className="mobile-notes-content">
-            <div className="mobile-notes-scroll">
-              <p><strong>Joueur actif :</strong> {currentPlayer?.name ?? '—'}</p>
-              <p><strong>Case :</strong> {activePlayerTile?.label ?? '—'} ({activePlayerTile?.tileId ?? '—'})</p>
-              <p><strong>Type :</strong> {activeSquareTypeLabel}</p>
-              {activeRelatedContentText && (
-                <p><strong>Texte associé :</strong> {activeRelatedContentText}</p>
-              )}
-              <label className="field">
-                <span>Note</span>
-                <textarea
-                  rows={4}
-                  value={noteDraft}
-                  onChange={(event) => setNoteDraft(event.target.value)}
-                  placeholder="Saisir une note…"
-                />
-              </label>
-              <div className="player-notes-actions">
-                <button
-                  className="primary-button"
-                  onClick={savePlayerResponseNote}
-                  disabled={!currentPlayer || !activePlayerTile || !noteDraft.trim()}
-                >
-                  Enregistrer la note
-                </button>
-                <button className="secondary-button" onClick={clearNoteDraft}>
-                  Effacer
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
       )}
 
       {game.pendingAction && (
