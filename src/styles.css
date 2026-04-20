@@ -1844,11 +1844,11 @@ button:disabled {
 }
 
 .service-board-zone.is-newly-unlocked {
-  animation: serviceBoardUnlockPulse 0.82s cubic-bezier(0.2, 0.78, 0.23, 1) 1;
+  animation: serviceBoardUnlockPulse 1.2s cubic-bezier(0.2, 0.78, 0.23, 1) 1;
 }
 
 .service-board-zone.is-newly-unlocked .service-board-zone-glow {
-  animation: serviceBoardUnlockGlow 0.82s ease 1;
+  animation: serviceBoardUnlockGlow 1.2s ease 1;
 }
 
 .service-board-zone-status {
@@ -1937,7 +1937,7 @@ button:disabled {
   display: grid;
   place-items: center;
   padding: 24px;
-  animation: serviceUnlockOverlayFade 2.5s ease forwards;
+  animation: serviceUnlockOverlayFade 4.6s cubic-bezier(0.23, 0.76, 0.24, 1) forwards;
 }
 
 .service-unlock-card {
@@ -1960,7 +1960,7 @@ button:disabled {
 
 @keyframes serviceUnlockOverlayFade {
   0%,
-  75% {
+  80% {
     opacity: 1;
   }
   100% {
