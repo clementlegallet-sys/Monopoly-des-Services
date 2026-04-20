@@ -163,6 +163,12 @@ type GameTimerState = {
   hasExpired: boolean;
 };
 
+type ResponseTimerState = {
+  remainingSeconds: number;
+  isRunning: boolean;
+  hasExpired: boolean;
+};
+
 type DieFaceProps = {
   value: number | null;
   isRolling: boolean;
@@ -229,6 +235,8 @@ const GAME_TIMER_STORAGE_KEY = 'monopoly-des-services-game-timer-v1';
 const INITIAL_CLIENTS = 2;
 const GAME_DURATION_SECONDS = 45 * 60;
 const TIMER_WARNING_THRESHOLD_SECONDS = 5 * 60;
+const RESPONSE_TIMER_DURATION_SECONDS = 60;
+const RESPONSE_TIMER_WARNING_THRESHOLD_SECONDS = 10;
 const INITIAL_BANK = 40;
 const SALE_VALUES = [2, 3, 5] as const;
 const PLAYER_TOKEN_COLORS = ['#d9473f', '#2b6fdd', '#f59e0b', '#0f9d74'];
@@ -1186,6 +1194,12 @@ const createInitialTimerState = (): GameTimerState => ({
   hasExpired: false,
 });
 
+const createInitialResponseTimerState = (): ResponseTimerState => ({
+  remainingSeconds: RESPONSE_TIMER_DURATION_SECONDS,
+  isRunning: false,
+  hasExpired: false,
+});
+
 const loadStoredTimerState = (): GameTimerState => {
   if (typeof window === 'undefined') {
     return createInitialTimerState();
@@ -1332,6 +1346,7 @@ const App = () => {
     }
   });
   const [gameTimer, setGameTimer] = useState<GameTimerState>(() => loadStoredTimerState());
+  const [responseTimer, setResponseTimer] = useState<ResponseTimerState>(() => createInitialResponseTimerState());
   const [playerDrafts, setPlayerDrafts] = useState<PlayerDraft[]>([
     { name: '', avatarId: PLAYER_AVATARS[0].id },
     { name: '', avatarId: PLAYER_AVATARS[1].id },
@@ -1416,6 +1431,7 @@ const App = () => {
   const chanceRevealTimeoutRef = useRef<number | null>(null);
   const boardSurfaceRef = useRef<HTMLDivElement | null>(null);
   const gameTimerIntervalRef = useRef<number | null>(null);
+  const responseTimerIntervalRef = useRef<number | null>(null);
 
   const clearRollTickTimeouts = () => {
     rollTickTimeoutsRef.current.forEach((timeoutId) => {
@@ -1481,6 +1497,60 @@ const App = () => {
       }
     };
   }, [gameTimer.isRunning, gameTimer.expiresAt]);
+
+  useEffect(() => {
+    const pendingAction = game.pendingAction;
+    if (!pendingAction) {
+      setResponseTimer(createInitialResponseTimerState());
+      return;
+    }
+
+    setResponseTimer({
+      remainingSeconds: RESPONSE_TIMER_DURATION_SECONDS,
+      isRunning: true,
+      hasExpired: false,
+    });
+  }, [game.pendingAction?.playerId, game.pendingAction?.tile.tileId, game.pendingAction?.roll]);
+
+  useEffect(() => {
+    if (!responseTimer.isRunning) {
+      if (responseTimerIntervalRef.current) {
+        window.clearInterval(responseTimerIntervalRef.current);
+        responseTimerIntervalRef.current = null;
+      }
+      return;
+    }
+
+    const tick = () => {
+      setResponseTimer((currentTimer) => {
+        if (!currentTimer.isRunning) {
+          return currentTimer;
+        }
+
+        if (currentTimer.remainingSeconds <= 1) {
+          return {
+            remainingSeconds: 0,
+            isRunning: false,
+            hasExpired: true,
+          };
+        }
+
+        return {
+          ...currentTimer,
+          remainingSeconds: currentTimer.remainingSeconds - 1,
+        };
+      });
+    };
+
+    responseTimerIntervalRef.current = window.setInterval(tick, 1000);
+
+    return () => {
+      if (responseTimerIntervalRef.current) {
+        window.clearInterval(responseTimerIntervalRef.current);
+        responseTimerIntervalRef.current = null;
+      }
+    };
+  }, [responseTimer.isRunning]);
 
   useEffect(() => {
     if (playerResponseNotes.length === 0) {
@@ -1898,6 +1968,7 @@ const App = () => {
     setDebugFlashTileId(null);
     setIsBoardMappingMode(false);
     resetTimerState(startTimer);
+    setResponseTimer(createInitialResponseTimerState());
     setGame(createInitialState());
   };
 
@@ -3462,6 +3533,21 @@ const App = () => {
             <p className="eyebrow">Résolution de case</p>
             <h2>{pendingActionTilePresentation?.title ?? game.pendingAction.tile.label}</h2>
             <p>{pendingActionTilePresentation?.description ?? game.pendingAction.tile.description}</p>
+            <div
+              className={`response-timer ${
+                responseTimer.hasExpired
+                  ? 'response-timer-expired'
+                  : responseTimer.remainingSeconds <= RESPONSE_TIMER_WARNING_THRESHOLD_SECONDS
+                    ? 'response-timer-warning'
+                    : ''
+              }`}
+              role="status"
+              aria-live="polite"
+            >
+              <span className="response-timer-label">Temps de réponse</span>
+              <strong className="response-timer-value">{formatTimerDisplay(responseTimer.remainingSeconds)}</strong>
+              {responseTimer.hasExpired && <span className="response-timer-alert">Temps écoulé</span>}
+            </div>
 
             {mentionsLegalesInAction && (
               <div className="mentions-legales-box">
