@@ -283,7 +283,7 @@ const PLAYER_AVATARS = [
 const ENABLE_TILE_DEBUG = true;
 const DEVELOPER_QUERY_PARAM = 'dev';
 const TILE_DEBUG_FLASH_DURATION_MS = 950;
-const SERVICE_UNLOCK_ANIMATION_DURATION_MS = 2500;
+const SERVICE_UNLOCK_ANIMATION_DURATION_MS = 4600;
 const BOARD_MAP_SOURCE = boardMapJson as BoardMapFile;
 const BOARD_MAP_TILE_LOOKUP = new Map(BOARD_MAP_SOURCE.tiles.map((tile) => [tile.tileId, tile]));
 const TECHNICAL_SOURCE_OF_TRUTH = {
@@ -301,9 +301,21 @@ const SERVICE_BOARD_REVEALS: Record<string, ServiceBoardRevealConfig> = {
     imageSrc: resolvePublicAssetUrl('/assets/services/protection-facture-enseigne-complete.png'),
     totalPieces: 3,
     zones: [
-      { id: 'protection-facture-zone-1', clipPath: 'polygon(0 0, 39% 0, 35% 100%, 0 100%)' },
-      { id: 'protection-facture-zone-2', clipPath: 'polygon(35% 0, 74% 0, 67% 100%, 31% 100%)' },
-      { id: 'protection-facture-zone-3', clipPath: 'polygon(67% 0, 100% 0, 100% 100%, 63% 100%)' },
+      {
+        id: 'protection-facture-zone-1',
+        clipPath:
+          'polygon(0 24%, 5% 23%, 11% 22%, 18% 21%, 26% 20%, 34% 19%, 40.5% 18.5%, 37% 82%, 31.5% 83%, 24% 84.5%, 16% 86%, 9% 87.2%, 3% 88%, 0 88%)',
+      },
+      {
+        id: 'protection-facture-zone-2',
+        clipPath:
+          'polygon(40.5% 18.5%, 47.5% 17.6%, 55% 16.6%, 62.5% 15.8%, 69.5% 14.8%, 75% 14.2%, 71% 80.2%, 65.5% 81.1%, 58% 82.2%, 50.5% 83.2%, 43% 84.3%, 37% 85.1%)',
+      },
+      {
+        id: 'protection-facture-zone-3',
+        clipPath:
+          'polygon(75% 14.2%, 81% 13.3%, 87.5% 12.4%, 94.5% 11.3%, 100% 10.5%, 100% 76.6%, 97% 77.3%, 91% 78.3%, 84% 79.5%, 77.5% 80.6%, 71% 81.6%)',
+      },
     ],
   },
 };
@@ -1250,7 +1262,7 @@ const ServiceBoardReveal = ({
 
     const timeoutId = window.setTimeout(() => {
       setNewlyUnlockedZoneIds([]);
-    }, 900);
+    }, 1300);
 
     return () => window.clearTimeout(timeoutId);
   }, [safeObtainedPieces, zones]);
