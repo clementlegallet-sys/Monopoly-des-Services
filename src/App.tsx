@@ -176,6 +176,27 @@ type DieFaceProps = {
   throwProfile: number;
 };
 
+type ServiceBoardRevealZone = {
+  id: string;
+  clipPath: string;
+};
+
+type ServiceBoardRevealConfig = {
+  serviceId: string;
+  title: string;
+  imageSrc: string;
+  totalPieces: number;
+  zones: ServiceBoardRevealZone[];
+};
+
+type ServiceBoardRevealProps = {
+  title: string;
+  imageSrc: string;
+  totalPieces: number;
+  obtainedPieces: number;
+  zones: ServiceBoardRevealZone[];
+};
+
 type Point = {
   x: number;
   y: number;
@@ -259,6 +280,19 @@ const TECHNICAL_SOURCE_OF_TRUTH = {
   image: boardReferenceImage,
   boardMap: BOARD_MAP_SOURCE,
 } as const;
+const SERVICE_BOARD_REVEALS: Record<string, ServiceBoardRevealConfig> = {
+  'protection-facture': {
+    serviceId: 'protection-facture',
+    title: 'Protection Facture',
+    imageSrc: '/assets/services/protection-facture-enseigne-complete.png',
+    totalPieces: 3,
+    zones: [
+      { id: 'protection-facture-zone-1', clipPath: 'polygon(0 0, 39% 0, 35% 100%, 0 100%)' },
+      { id: 'protection-facture-zone-2', clipPath: 'polygon(35% 0, 74% 0, 67% 100%, 31% 100%)' },
+      { id: 'protection-facture-zone-3', clipPath: 'polygon(67% 0, 100% 0, 100% 100%, 63% 100%)' },
+    ],
+  },
+};
 const OBJECTION_DECK: ObjectionCard[] = [
   {
     id: 'already-equipped',
@@ -1179,6 +1213,79 @@ const DieFace = ({ value, isRolling, isSettling, throwProfile }: DieFaceProps) =
   );
 };
 
+const ServiceBoardReveal = ({
+  title,
+  imageSrc,
+  totalPieces,
+  obtainedPieces,
+  zones,
+}: ServiceBoardRevealProps) => {
+  const safeObtainedPieces = Math.max(0, Math.min(totalPieces, obtainedPieces));
+  const previousCountRef = useRef(safeObtainedPieces);
+  const [newlyUnlockedZoneIds, setNewlyUnlockedZoneIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (safeObtainedPieces <= previousCountRef.current) {
+      previousCountRef.current = safeObtainedPieces;
+      return;
+    }
+
+    const unlockedNow = zones.slice(previousCountRef.current, safeObtainedPieces).map((zone) => zone.id);
+    setNewlyUnlockedZoneIds(unlockedNow);
+    previousCountRef.current = safeObtainedPieces;
+
+    const timeoutId = window.setTimeout(() => {
+      setNewlyUnlockedZoneIds([]);
+    }, 900);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [safeObtainedPieces, zones]);
+
+  return (
+    <article className="service-board-reveal" aria-label={`Révélation enseigne ${title}`}>
+      <div className="service-board-reveal-head">
+        <div>
+          <p className="eyebrow">Animation V1 · pièces service</p>
+          <h3>{title}</h3>
+        </div>
+        <strong className="service-board-progress">
+          {safeObtainedPieces}/{totalPieces}
+        </strong>
+      </div>
+      <div className="service-board-stage">
+        <img src={imageSrc} alt={`Enseigne ${title}`} className="service-board-image service-board-image-base" />
+        <div className="service-board-mask" aria-hidden />
+        {zones.map((zone, index) => {
+          const isUnlocked = index < safeObtainedPieces;
+          const isNewlyUnlocked = newlyUnlockedZoneIds.includes(zone.id);
+
+          return (
+            <div
+              className={`service-board-zone ${isUnlocked ? 'is-unlocked' : ''} ${
+                isNewlyUnlocked ? 'is-newly-unlocked' : ''
+              }`}
+              style={{ '--zone-clip-path': zone.clipPath } as CSSProperties}
+              key={zone.id}
+              aria-hidden
+            >
+              <img src={imageSrc} alt="" className="service-board-image" />
+              <span className="service-board-zone-glow" />
+            </div>
+          );
+        })}
+      </div>
+      <div className="service-board-zone-status" aria-hidden>
+        {zones.map((zone, index) => (
+          <span
+            key={`status-${zone.id}`}
+            className={`service-board-zone-dot ${index < safeObtainedPieces ? 'is-unlocked' : ''}`}
+          />
+        ))}
+      </div>
+    </article>
+  );
+};
+
 
 const formatTimerDisplay = (remainingSeconds: number) => {
   const safeSeconds = Math.max(0, remainingSeconds);
@@ -1684,6 +1791,15 @@ const App = () => {
     game.hasMentionsLegalesTile || haveAllPlayersLeftStart(game.players, game.playersWhoLeftStart);
   const boardImageSource = boardReferenceImage;
   const completeSets = useMemo(() => getCompleteSets(game.players), [game.players]);
+  const protectionFactureOwnersCount = useMemo(
+    () => game.players.filter((player) => player.pieces.includes('protection-facture')).length,
+    [game.players],
+  );
+  const protectionFactureRevealConfig = SERVICE_BOARD_REVEALS['protection-facture'];
+  const protectionFactureRevealCount = Math.min(
+    protectionFactureRevealConfig.totalPieces,
+    protectionFactureOwnersCount,
+  );
   const currentPlayerTile = currentPlayer ? BOARD_BY_TILE_ID.get(currentPlayer.position) ?? null : null;
   const pendingMovementOriginTile = game.pendingMovement
     ? BOARD_BY_TILE_ID.get(game.pendingMovement.originTileId) ?? null
@@ -3503,6 +3619,13 @@ const App = () => {
                   <h2>Pièces service</h2>
                 </div>
               </div>
+              <ServiceBoardReveal
+                title={protectionFactureRevealConfig.title}
+                imageSrc={protectionFactureRevealConfig.imageSrc}
+                totalPieces={protectionFactureRevealConfig.totalPieces}
+                obtainedPieces={protectionFactureRevealCount}
+                zones={protectionFactureRevealConfig.zones}
+              />
               <div className="service-list">
                 {servicePieces.map((piece) => (
                   <article className={`service-card service-${piece.color}`} key={piece.id}>

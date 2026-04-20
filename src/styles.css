@@ -1745,6 +1745,148 @@ button:disabled {
   border-left: 8px solid var(--edf-orange);
 }
 
+.service-board-reveal {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 14px;
+  border-radius: 18px;
+  padding: 13px;
+  border: 1px solid #cfddf1;
+  background: linear-gradient(180deg, #f7fbff 0%, #eff5ff 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 12px 22px -19px rgba(12, 57, 120, 0.45);
+}
+
+.service-board-reveal-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.service-board-reveal h3 {
+  margin-bottom: 0;
+}
+
+.service-board-progress {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 64px;
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: rgba(0, 91, 187, 0.12);
+  color: var(--edf-blue-ink);
+  font-size: 0.94rem;
+}
+
+.service-board-stage {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  isolation: isolate;
+  aspect-ratio: 16 / 6.2;
+  background: radial-gradient(circle at 50% 40%, #f8fbff 0%, #dde8f8 100%);
+}
+
+.service-board-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.service-board-image-base {
+  filter: grayscale(0.28) saturate(0.74) brightness(0.75);
+}
+
+.service-board-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, rgba(12, 25, 44, 0.18) 0%, rgba(12, 25, 44, 0.42) 100%);
+}
+
+.service-board-zone {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  opacity: 0;
+  clip-path: var(--zone-clip-path);
+  transform: scale(0.99);
+  transition:
+    opacity 0.36s ease,
+    transform 0.45s ease;
+}
+
+.service-board-zone.is-unlocked {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.service-board-zone-glow {
+  position: absolute;
+  inset: 0;
+  clip-path: var(--zone-clip-path);
+  background: radial-gradient(circle at 50% 48%, rgba(158, 217, 255, 0.38), rgba(158, 217, 255, 0) 72%);
+  opacity: 0;
+}
+
+.service-board-zone.is-newly-unlocked {
+  animation: serviceBoardUnlockPulse 0.82s cubic-bezier(0.2, 0.78, 0.23, 1) 1;
+}
+
+.service-board-zone.is-newly-unlocked .service-board-zone-glow {
+  animation: serviceBoardUnlockGlow 0.82s ease 1;
+}
+
+.service-board-zone-status {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.service-board-zone-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #a9b9ce;
+  transition:
+    transform 0.25s ease,
+    background-color 0.3s ease;
+}
+
+.service-board-zone-dot.is-unlocked {
+  background: #1486ff;
+  transform: scale(1.24);
+}
+
+@keyframes serviceBoardUnlockGlow {
+  0% {
+    opacity: 0;
+  }
+  22% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes serviceBoardUnlockPulse {
+  0% {
+    transform: scale(0.975);
+  }
+  40% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 .history-panel ul {
   display: grid;
   gap: 10px;
