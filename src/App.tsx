@@ -9,6 +9,7 @@ import objectionCardBudgetImage from '../objection-j-ai-un-budget-restreint.png'
 import objectionCardSpouseImage from '../objection-je-dois-en-parler-a-mon-conjoint.png';
 import objectionCardReflectImage from '../objection-je-souhaite-reflechir.png';
 import edfOfficialLogo from '../logo-edf-officiel.png';
+import serviceBoardsImage from '../PIECES SERVICES.png';
 import chanceCardsRegistry from '../chance_cards_registry.json';
 import chanceContactFrontImage from '../chance-contact-front.png';
 import chanceContactBackImage from '../chance-contact-back.png';
@@ -186,6 +187,8 @@ type ServiceBoardRevealConfig = {
   serviceId: string;
   title: string;
   imageSrc: string;
+  spriteColumn: number;
+  spriteRow: number;
   totalPieces: number;
   zones: ServiceBoardRevealZone[];
 };
@@ -193,6 +196,8 @@ type ServiceBoardRevealConfig = {
 type ServiceBoardRevealProps = {
   title: string;
   imageSrc: string;
+  spriteColumn: number;
+  spriteRow: number;
   totalPieces: number;
   obtainedPieces: number;
   zones: ServiceBoardRevealZone[];
@@ -202,6 +207,8 @@ type ServiceUnlockAnimationState = {
   playerName: string;
   title: string;
   imageSrc: string;
+  spriteColumn: number;
+  spriteRow: number;
   totalPieces: number;
   obtainedPieces: number;
   zones: ServiceBoardRevealZone[];
@@ -291,73 +298,75 @@ const TECHNICAL_SOURCE_OF_TRUTH = {
   image: boardReferenceImage,
   boardMap: BOARD_MAP_SOURCE,
 } as const;
-const resolvePublicAssetUrl = (assetPath: string) => {
-  const normalizedAssetPath = assetPath.replace(/^\/+/, '');
-  return `${import.meta.env.BASE_URL}${normalizedAssetPath}`;
-};
 const createServiceRevealZones = (serviceId: string): ServiceBoardRevealZone[] => [
-  { id: `${serviceId}-zone-1`, clipPath: 'inset(0 66.666% 0 0)' },
-  { id: `${serviceId}-zone-2`, clipPath: 'inset(0 33.333% 0 33.333%)' },
-  { id: `${serviceId}-zone-3`, clipPath: 'inset(0 0 0 66.666%)' },
+  {
+    id: `${serviceId}-zone-1`,
+    clipPath: 'polygon(0 0, 26% 0, 58% 29%, 40% 58%, 19% 46%, 0 80%)',
+  },
+  {
+    id: `${serviceId}-zone-2`,
+    clipPath: 'polygon(26% 0, 100% 0, 100% 82%, 60% 67%, 73% 44%, 58% 29%)',
+  },
+  {
+    id: `${serviceId}-zone-3`,
+    clipPath: 'polygon(0 80%, 19% 46%, 40% 58%, 58% 29%, 73% 44%, 60% 67%, 100% 82%, 100% 100%, 0 100%)',
+  },
 ];
+
 const SERVICE_BOARD_REVEALS: Record<string, ServiceBoardRevealConfig> = {
   'protection-facture': {
     serviceId: 'protection-facture',
     title: 'Protection Facture',
-    imageSrc: resolvePublicAssetUrl('/assets/services/protection-facture-enseigne-complete.png'),
+    imageSrc: serviceBoardsImage,
+    spriteColumn: 0,
+    spriteRow: 0,
     totalPieces: 3,
-    zones: [
-      {
-        id: 'protection-facture-zone-1',
-        clipPath:
-          'polygon(0 24%, 5% 23%, 11% 22%, 18% 21%, 26% 20%, 34% 19%, 40.5% 18.5%, 37% 82%, 31.5% 83%, 24% 84.5%, 16% 86%, 9% 87.2%, 3% 88%, 0 88%)',
-      },
-      {
-        id: 'protection-facture-zone-2',
-        clipPath:
-          'polygon(40.5% 18.5%, 47.5% 17.6%, 55% 16.6%, 62.5% 15.8%, 69.5% 14.8%, 75% 14.2%, 71% 80.2%, 65.5% 81.1%, 58% 82.2%, 50.5% 83.2%, 43% 84.3%, 37% 85.1%)',
-      },
-      {
-        id: 'protection-facture-zone-3',
-        clipPath:
-          'polygon(75% 14.2%, 81% 13.3%, 87.5% 12.4%, 94.5% 11.3%, 100% 10.5%, 100% 76.6%, 97% 77.3%, 91% 78.3%, 84% 79.5%, 77.5% 80.6%, 71% 81.6%)',
-      },
-    ],
-  },
-  'assistance-depannage': {
-    serviceId: 'assistance-depannage',
-    title: 'Assistance Dépannage',
-    imageSrc: resolvePublicAssetUrl('/assets/services/assistance-depannage-enseigne.svg'),
-    totalPieces: 3,
-    zones: createServiceRevealZones('assistance-depannage'),
-  },
-  'izi-by-edf': {
-    serviceId: 'izi-by-edf',
-    title: 'IZI by EDF',
-    imageSrc: resolvePublicAssetUrl('/assets/services/izi-by-edf-enseigne.svg'),
-    totalPieces: 3,
-    zones: createServiceRevealZones('izi-by-edf'),
-  },
-  'thermostat-connecte-sowee': {
-    serviceId: 'thermostat-connecte-sowee',
-    title: 'Thermostat connecté Sowee',
-    imageSrc: resolvePublicAssetUrl('/assets/services/thermostat-connecte-sowee-enseigne.svg'),
-    totalPieces: 3,
-    zones: createServiceRevealZones('thermostat-connecte-sowee'),
-  },
-  'izi-confort': {
-    serviceId: 'izi-confort',
-    title: 'IZI Confort',
-    imageSrc: resolvePublicAssetUrl('/assets/services/izi-confort-enseigne.svg'),
-    totalPieces: 3,
-    zones: createServiceRevealZones('izi-confort'),
+    zones: createServiceRevealZones('protection-facture'),
   },
   homiris: {
     serviceId: 'homiris',
     title: 'Homiris',
-    imageSrc: resolvePublicAssetUrl('/assets/services/homiris-enseigne.svg'),
+    imageSrc: serviceBoardsImage,
+    spriteColumn: 1,
+    spriteRow: 0,
     totalPieces: 3,
     zones: createServiceRevealZones('homiris'),
+  },
+  'izi-confort': {
+    serviceId: 'izi-confort',
+    title: 'IZI Confort',
+    imageSrc: serviceBoardsImage,
+    spriteColumn: 2,
+    spriteRow: 0,
+    totalPieces: 3,
+    zones: createServiceRevealZones('izi-confort'),
+  },
+  'thermostat-connecte-sowee': {
+    serviceId: 'thermostat-connecte-sowee',
+    title: 'Thermostat connecté Sowee',
+    imageSrc: serviceBoardsImage,
+    spriteColumn: 0,
+    spriteRow: 1,
+    totalPieces: 3,
+    zones: createServiceRevealZones('thermostat-connecte-sowee'),
+  },
+  'izi-by-edf': {
+    serviceId: 'izi-by-edf',
+    title: 'IZI by EDF',
+    imageSrc: serviceBoardsImage,
+    spriteColumn: 1,
+    spriteRow: 1,
+    totalPieces: 3,
+    zones: createServiceRevealZones('izi-by-edf'),
+  },
+  'assistance-depannage': {
+    serviceId: 'assistance-depannage',
+    title: 'Assistance Dépannage',
+    imageSrc: serviceBoardsImage,
+    spriteColumn: 2,
+    spriteRow: 1,
+    totalPieces: 3,
+    zones: createServiceRevealZones('assistance-depannage'),
   },
 };
 const OBJECTION_DECK: ObjectionCard[] = [
@@ -1029,6 +1038,45 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const getService = (serviceId?: string) =>
   servicePieces.find((piece) => piece.id === serviceId) ?? null;
 
+const MAX_SERVICE_PIECES = 3;
+
+const countPlayerServicePieces = (player: Player, serviceId: string) =>
+  Math.min(MAX_SERVICE_PIECES, player.pieces.filter((pieceId) => pieceId === serviceId).length);
+
+const normalizeStoredPieces = (value: unknown): string[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const counts = new Map<string, number>();
+  const normalized: string[] = [];
+
+  value.forEach((entry) => {
+    if (typeof entry !== 'string' || !getService(entry)) {
+      return;
+    }
+
+    const currentCount = counts.get(entry) ?? 0;
+    if (currentCount >= MAX_SERVICE_PIECES) {
+      return;
+    }
+
+    counts.set(entry, currentCount + 1);
+    normalized.push(entry);
+  });
+
+  return normalized;
+};
+
+const removeSingleServicePiece = (pieces: string[], serviceId: string) => {
+  const index = pieces.indexOf(serviceId);
+  if (index < 0) {
+    return pieces;
+  }
+
+  return [...pieces.slice(0, index), ...pieces.slice(index + 1)];
+};
+
 const appendHistoryEntry = (history: string[], message: string) => [message, ...history].slice(0, 12);
 
 const haveAllPlayersLeftStart = (players: Player[], playersWhoLeftStart: string[]) => {
@@ -1283,48 +1331,47 @@ const DieFace = ({ value, isRolling, isSettling, throwProfile }: DieFaceProps) =
 const ServiceBoardReveal = ({
   title,
   imageSrc,
+  spriteColumn,
+  spriteRow,
   totalPieces,
   obtainedPieces,
   zones,
 }: ServiceBoardRevealProps) => {
   const safeObtainedPieces = Math.max(0, Math.min(totalPieces, obtainedPieces));
-  const previousCountRef = useRef(safeObtainedPieces);
-  const [newlyUnlockedZoneIds, setNewlyUnlockedZoneIds] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (safeObtainedPieces <= previousCountRef.current) {
-      previousCountRef.current = safeObtainedPieces;
-      return;
-    }
-
-    const unlockedNow = zones.slice(previousCountRef.current, safeObtainedPieces).map((zone) => zone.id);
-    setNewlyUnlockedZoneIds(unlockedNow);
-    previousCountRef.current = safeObtainedPieces;
-
-    const timeoutId = window.setTimeout(() => {
-      setNewlyUnlockedZoneIds([]);
-    }, 1300);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [safeObtainedPieces, zones]);
+  const newlyUnlockedIndex = safeObtainedPieces > 0 ? safeObtainedPieces - 1 : -1;
+  const isComplete = safeObtainedPieces === totalPieces;
+  const spriteStyle = {
+    '--service-sprite-x': `${spriteColumn * 50}%`,
+    '--service-sprite-y': `${spriteRow * 100}%`,
+    backgroundImage: `url("${imageSrc}")`,
+  } as CSSProperties;
 
   return (
-    <article className="service-board-reveal" aria-label={`Révélation enseigne ${title}`}>
+    <article
+      className={`service-board-reveal ${isComplete ? 'is-complete' : ''}`}
+      aria-label={`Révélation enseigne ${title}`}
+    >
       <div className="service-board-reveal-head">
         <div>
-          <p className="eyebrow">Animation V1 · pièces service</p>
+          <p className="eyebrow">Pièces service</p>
           <h3>{title}</h3>
+          {isComplete && <p className="service-board-complete-label">Service complété !</p>}
         </div>
         <strong className="service-board-progress">
           {safeObtainedPieces}/{totalPieces}
         </strong>
       </div>
       <div className="service-board-stage">
-        <img src={imageSrc} alt={`Enseigne ${title}`} className="service-board-image service-board-image-base" />
+        <div
+          className="service-board-sprite service-board-image-base"
+          style={spriteStyle}
+          role="img"
+          aria-label={`Enseigne ${title}`}
+        />
         <div className="service-board-mask" aria-hidden />
         {zones.map((zone, index) => {
           const isUnlocked = index < safeObtainedPieces;
-          const isNewlyUnlocked = newlyUnlockedZoneIds.includes(zone.id);
+          const isNewlyUnlocked = index === newlyUnlockedIndex;
 
           return (
             <div
@@ -1335,7 +1382,7 @@ const ServiceBoardReveal = ({
               key={zone.id}
               aria-hidden
             >
-              <img src={imageSrc} alt="" className="service-board-image" />
+              <div className="service-board-sprite" style={spriteStyle} />
               <span className="service-board-zone-glow" />
             </div>
           );
@@ -1352,7 +1399,6 @@ const ServiceBoardReveal = ({
     </article>
   );
 };
-
 
 const formatTimerDisplay = (remainingSeconds: number) => {
   const safeSeconds = Math.max(0, remainingSeconds);
@@ -1474,6 +1520,7 @@ const App = () => {
             ? player.avatarId
             : PLAYER_AVATARS[index % PLAYER_AVATARS.length].id,
         position: normalizeStoredTileId(player.position),
+        pieces: normalizeStoredPieces(player.pieces),
         rollsTaken: player.rollsTaken ?? 0,
       })) as Player[];
       const playersWhoLeftStart = Array.isArray(parsedGame.playersWhoLeftStart)
@@ -1876,13 +1923,10 @@ const App = () => {
       Object.fromEntries(
         servicePieces.map((service) => [
           service.id,
-          Math.min(
-            SERVICE_BOARD_REVEALS[service.id].totalPieces,
-            game.players.filter((player) => player.pieces.includes(service.id)).length,
-          ),
+          currentPlayer ? countPlayerServicePieces(currentPlayer, service.id) : 0,
         ]),
       ),
-    [game.players],
+    [currentPlayer],
   );
   const currentPlayerTile = currentPlayer ? BOARD_BY_TILE_ID.get(currentPlayer.position) ?? null : null;
   const pendingMovementOriginTile = game.pendingMovement
@@ -2525,13 +2569,21 @@ const App = () => {
       }
 
       if (pendingAction.tile.type === 'service' && pendingAction.tile.serviceId) {
-        players = players.map((candidate) =>
-          candidate.id === player.id && !candidate.pieces.includes(pendingAction.tile.serviceId as string)
-            ? { ...candidate, pieces: [...candidate.pieces, pendingAction.tile.serviceId as string] }
-            : candidate,
-        );
-        const service = getService(pendingAction.tile.serviceId);
-        message = `${player.name} remporte la pièce ${service?.name ?? 'service'}.`;
+        const serviceId = pendingAction.tile.serviceId;
+        const currentCount = countPlayerServicePieces(player, serviceId);
+        const service = getService(serviceId);
+
+        if (currentCount < MAX_SERVICE_PIECES) {
+          players = players.map((candidate) =>
+            candidate.id === player.id
+              ? { ...candidate, pieces: [...candidate.pieces, serviceId] }
+              : candidate,
+          );
+          const nextCount = currentCount + 1;
+          message = `${player.name} remporte une pièce ${service?.name ?? 'service'} (${nextCount}/${MAX_SERVICE_PIECES}).`;
+        } else {
+          message = `${player.name} possède déjà le service ${service?.name ?? 'service'} au complet (3/3).`;
+        }
       }
 
       const isMentionsLegalesTile =
@@ -2590,19 +2642,22 @@ const App = () => {
     if (game.pendingAction?.tile.type === 'service' && game.pendingAction.tile.serviceId) {
       const pendingPlayer = game.players.find((player) => player.id === game.pendingAction?.playerId);
       const serviceId = game.pendingAction.tile.serviceId;
-      const hasAlreadyPiece = pendingPlayer?.pieces.includes(serviceId) ?? false;
       const serviceRevealConfig = SERVICE_BOARD_REVEALS[serviceId];
 
-      if (pendingPlayer && serviceRevealConfig && !hasAlreadyPiece) {
-        const nextObtainedPiecesCount = game.players.filter((player) => player.pieces.includes(serviceId)).length + 1;
-        setServiceUnlockAnimation({
-          playerName: pendingPlayer.name,
-          title: serviceRevealConfig.title,
-          imageSrc: serviceRevealConfig.imageSrc,
-          totalPieces: serviceRevealConfig.totalPieces,
-          obtainedPieces: Math.min(serviceRevealConfig.totalPieces, nextObtainedPiecesCount),
-          zones: serviceRevealConfig.zones,
-        });
+      if (pendingPlayer && serviceRevealConfig) {
+        const currentCount = countPlayerServicePieces(pendingPlayer, serviceId);
+        if (currentCount < MAX_SERVICE_PIECES) {
+          setServiceUnlockAnimation({
+            playerName: pendingPlayer.name,
+            title: serviceRevealConfig.title,
+            imageSrc: serviceRevealConfig.imageSrc,
+            spriteColumn: serviceRevealConfig.spriteColumn,
+            spriteRow: serviceRevealConfig.spriteRow,
+            totalPieces: serviceRevealConfig.totalPieces,
+            obtainedPieces: currentCount + 1,
+            zones: serviceRevealConfig.zones,
+          });
+        }
       }
     }
 
@@ -2662,7 +2717,7 @@ const App = () => {
         candidate.id === player.id
           ? {
               ...candidate,
-              pieces: candidate.pieces.filter((pieceId) => pieceId !== selectedPieceId),
+              pieces: removeSingleServicePiece(candidate.pieces, selectedPieceId),
               clients: candidate.clients + awarded,
             }
           : candidate,
@@ -3884,9 +3939,9 @@ const App = () => {
                   <span>Pièce à vendre</span>
                   <select value={selectedPieceId} onChange={(event) => setSelectedPieceId(event.target.value)}>
                     <option value="">Choisir une pièce</option>
-                    {currentPlayer.pieces.map((pieceId) => (
+                    {[...new Set(currentPlayer.pieces)].map((pieceId) => (
                       <option key={pieceId} value={pieceId}>
-                        {getService(pieceId)?.name}
+                        {getService(pieceId)?.name} ({countPlayerServicePieces(currentPlayer, pieceId)}/3)
                       </option>
                     ))}
                   </select>
@@ -4102,6 +4157,8 @@ const App = () => {
             <ServiceBoardReveal
               title={serviceUnlockAnimation.title}
               imageSrc={serviceUnlockAnimation.imageSrc}
+              spriteColumn={serviceUnlockAnimation.spriteColumn}
+              spriteRow={serviceUnlockAnimation.spriteRow}
               totalPieces={serviceUnlockAnimation.totalPieces}
               obtainedPieces={serviceUnlockAnimation.obtainedPieces}
               zones={serviceUnlockAnimation.zones}
