@@ -98,6 +98,7 @@ type Player = {
 };
 
 type PlayerDraft = {
+  id: string;
   name: string;
   avatarId: string;
 };
@@ -1481,8 +1482,8 @@ const App = () => {
   const [gameTimer, setGameTimer] = useState<GameTimerState>(() => loadStoredTimerState());
   const [responseTimer, setResponseTimer] = useState<ResponseTimerState>(() => createInitialResponseTimerState());
   const [playerDrafts, setPlayerDrafts] = useState<PlayerDraft[]>([
-    { name: '', avatarId: PLAYER_AVATARS[0].id },
-    { name: '', avatarId: PLAYER_AVATARS[1].id },
+    { id: uid(), name: '', avatarId: PLAYER_AVATARS[0].id },
+    { id: uid(), name: '', avatarId: PLAYER_AVATARS[1].id },
   ]);
   const [allowAvatarReuse, setAllowAvatarReuse] = useState(false);
   const [selectedTrainingMode, setSelectedTrainingMode] = useState<TrainingMode | null>(null);
@@ -2107,8 +2108,8 @@ const App = () => {
     }
 
     setPlayerDrafts([
-      { name: '', avatarId: PLAYER_AVATARS[0].id },
-      { name: '', avatarId: PLAYER_AVATARS[1].id },
+      { id: uid(), name: '', avatarId: PLAYER_AVATARS[0].id },
+      { id: uid(), name: '', avatarId: PLAYER_AVATARS[1].id },
     ]);
     setAllowAvatarReuse(false);
     setSelectedTrainingMode(null);
@@ -2885,13 +2886,19 @@ const App = () => {
             <button
               className="secondary-button"
               onClick={() =>
-                setPlayerDrafts((current) => [
-                  ...current,
-                  {
-                    name: '',
-                    avatarId: PLAYER_AVATARS[current.length % PLAYER_AVATARS.length].id,
-                  },
-                ])
+                setPlayerDrafts((current) => {
+                  const usedAvatarIds = new Set(current.map((draft) => draft.avatarId));
+                  const availableAvatar = PLAYER_AVATARS.find((avatar) => !usedAvatarIds.has(avatar.id));
+
+                  return [
+                    ...current,
+                    {
+                      id: uid(),
+                      name: '',
+                      avatarId: availableAvatar?.id ?? DEFAULT_AVATAR_ID,
+                    },
+                  ];
+                })
               }
               disabled={playerDrafts.length >= 4}
             >
@@ -2900,15 +2907,32 @@ const App = () => {
           </div>
           <div className="setup-grid">
             {playerDrafts.map((draft, index) => (
-              <div className="player-setup-card" key={`player-${index}`}>
+              <div className="player-setup-card" key={draft.id}>
+                <div className="player-setup-card-header">
+                  <h3>Joueur {index + 1}</h3>
+                  {playerDrafts.length > 2 && (
+                    <button
+                      type="button"
+                      className="player-delete-button"
+                      onClick={() =>
+                        setPlayerDrafts((current) => current.filter((currentDraft) => currentDraft.id !== draft.id))
+                      }
+                      aria-label={`Supprimer le joueur ${index + 1}`}
+                      title={`Supprimer le joueur ${index + 1}`}
+                    >
+                      <span aria-hidden="true">×</span>
+                      <span>Supprimer</span>
+                    </button>
+                  )}
+                </div>
                 <label className="field">
-                  <span>Joueur {index + 1}</span>
+                  <span>Nom</span>
                   <input
                     value={draft.name}
                     onChange={(event) => {
                       setPlayerDrafts((current) =>
-                        current.map((currentDraft, currentIndex) =>
-                          currentIndex === index ? { ...currentDraft, name: event.target.value } : currentDraft,
+                        current.map((currentDraft) =>
+                          currentDraft.id === draft.id ? { ...currentDraft, name: event.target.value } : currentDraft,
                         ),
                       );
                     }}
@@ -2922,8 +2946,7 @@ const App = () => {
                       const isTakenByAnotherPlayer =
                         !allowAvatarReuse &&
                         playerDrafts.some(
-                          (playerDraft, playerDraftIndex) =>
-                            playerDraftIndex !== index && playerDraft.avatarId === avatar.id,
+                          (playerDraft) => playerDraft.id !== draft.id && playerDraft.avatarId === avatar.id,
                         );
                       const isSelected = draft.avatarId === avatar.id;
 
@@ -2934,8 +2957,8 @@ const App = () => {
                           className={`avatar-option ${isSelected ? 'avatar-option-selected' : ''}`}
                           onClick={() => {
                             setPlayerDrafts((current) =>
-                              current.map((currentDraft, currentIndex) =>
-                                currentIndex === index ? { ...currentDraft, avatarId: avatar.id } : currentDraft,
+                              current.map((currentDraft) =>
+                                currentDraft.id === draft.id ? { ...currentDraft, avatarId: avatar.id } : currentDraft,
                               ),
                             );
                           }}

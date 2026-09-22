@@ -349,6 +349,48 @@ button:disabled {
   background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
 }
 
+.player-setup-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.player-setup-card-header h3 {
+  margin: 0;
+  color: var(--edf-blue-ink);
+  font-size: 1rem;
+}
+
+.player-delete-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 32px;
+  padding: 5px 9px;
+  border: 1px solid rgba(190, 45, 45, 0.2);
+  border-radius: 10px;
+  background: rgba(190, 45, 45, 0.07);
+  color: #a52828;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.player-delete-button:hover {
+  border-color: rgba(190, 45, 45, 0.38);
+  background: rgba(190, 45, 45, 0.12);
+}
+
+.player-delete-button:focus-visible {
+  outline: 3px solid rgba(0, 91, 187, 0.25);
+  outline-offset: 2px;
+}
+
+.player-delete-button [aria-hidden='true'] {
+  font-size: 1.15rem;
+  line-height: 0.8;
+}
+
 .field {
   display: flex;
   flex-direction: column;
