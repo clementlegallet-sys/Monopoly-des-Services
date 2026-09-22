@@ -3,3 +3,6 @@ dist/
 .vite/
 *.log
 .DS_Store
+
+# Fichier source de création, non requis par le jeu
+services-enseigne-source.png
