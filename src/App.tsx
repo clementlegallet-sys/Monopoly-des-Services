@@ -2366,6 +2366,8 @@ const App = () => {
           {
             ...currentGame,
             players: movedPlayers,
+            hasMentionsLegalesTile,
+            playersWhoLeftStart: updatedPlayersWhoLeftStart,
             pendingMovement: null,
             pendingAction: null,
           },
