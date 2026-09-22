@@ -295,6 +295,11 @@ const resolvePublicAssetUrl = (assetPath: string) => {
   const normalizedAssetPath = assetPath.replace(/^\/+/, '');
   return `${import.meta.env.BASE_URL}${normalizedAssetPath}`;
 };
+const createServiceRevealZones = (serviceId: string): ServiceBoardRevealZone[] => [
+  { id: `${serviceId}-zone-1`, clipPath: 'inset(0 66.666% 0 0)' },
+  { id: `${serviceId}-zone-2`, clipPath: 'inset(0 33.333% 0 33.333%)' },
+  { id: `${serviceId}-zone-3`, clipPath: 'inset(0 0 0 66.666%)' },
+];
 const SERVICE_BOARD_REVEALS: Record<string, ServiceBoardRevealConfig> = {
   'protection-facture': {
     serviceId: 'protection-facture',
@@ -318,6 +323,41 @@ const SERVICE_BOARD_REVEALS: Record<string, ServiceBoardRevealConfig> = {
           'polygon(75% 14.2%, 81% 13.3%, 87.5% 12.4%, 94.5% 11.3%, 100% 10.5%, 100% 76.6%, 97% 77.3%, 91% 78.3%, 84% 79.5%, 77.5% 80.6%, 71% 81.6%)',
       },
     ],
+  },
+  'assistance-depannage': {
+    serviceId: 'assistance-depannage',
+    title: 'Assistance Dépannage',
+    imageSrc: resolvePublicAssetUrl('/assets/services/assistance-depannage-enseigne.svg'),
+    totalPieces: 3,
+    zones: createServiceRevealZones('assistance-depannage'),
+  },
+  'izi-by-edf': {
+    serviceId: 'izi-by-edf',
+    title: 'IZI by EDF',
+    imageSrc: resolvePublicAssetUrl('/assets/services/izi-by-edf-enseigne.svg'),
+    totalPieces: 3,
+    zones: createServiceRevealZones('izi-by-edf'),
+  },
+  'thermostat-connecte-sowee': {
+    serviceId: 'thermostat-connecte-sowee',
+    title: 'Thermostat connecté Sowee',
+    imageSrc: resolvePublicAssetUrl('/assets/services/thermostat-connecte-sowee-enseigne.svg'),
+    totalPieces: 3,
+    zones: createServiceRevealZones('thermostat-connecte-sowee'),
+  },
+  'izi-confort': {
+    serviceId: 'izi-confort',
+    title: 'IZI Confort',
+    imageSrc: resolvePublicAssetUrl('/assets/services/izi-confort-enseigne.svg'),
+    totalPieces: 3,
+    zones: createServiceRevealZones('izi-confort'),
+  },
+  homiris: {
+    serviceId: 'homiris',
+    title: 'Homiris',
+    imageSrc: resolvePublicAssetUrl('/assets/services/homiris-enseigne.svg'),
+    totalPieces: 3,
+    zones: createServiceRevealZones('homiris'),
   },
 };
 const OBJECTION_DECK: ObjectionCard[] = [
@@ -1831,14 +1871,18 @@ const App = () => {
     game.hasMentionsLegalesTile || haveAllPlayersLeftStart(game.players, game.playersWhoLeftStart);
   const boardImageSource = boardReferenceImage;
   const completeSets = useMemo(() => getCompleteSets(game.players), [game.players]);
-  const protectionFactureOwnersCount = useMemo(
-    () => game.players.filter((player) => player.pieces.includes('protection-facture')).length,
+  const serviceRevealCounts = useMemo(
+    () =>
+      Object.fromEntries(
+        servicePieces.map((service) => [
+          service.id,
+          Math.min(
+            SERVICE_BOARD_REVEALS[service.id].totalPieces,
+            game.players.filter((player) => player.pieces.includes(service.id)).length,
+          ),
+        ]),
+      ),
     [game.players],
-  );
-  const protectionFactureRevealConfig = SERVICE_BOARD_REVEALS['protection-facture'];
-  const protectionFactureRevealCount = Math.min(
-    protectionFactureRevealConfig.totalPieces,
-    protectionFactureOwnersCount,
   );
   const currentPlayerTile = currentPlayer ? BOARD_BY_TILE_ID.get(currentPlayer.position) ?? null : null;
   const pendingMovementOriginTile = game.pendingMovement
@@ -3702,9 +3746,16 @@ const App = () => {
                   <h2>Pièces service</h2>
                 </div>
               </div>
-              <p className="reserve-summary">
-                Protection Facture : <strong>{protectionFactureRevealCount}/{protectionFactureRevealConfig.totalPieces}</strong>
-              </p>
+              <div className="reserve-summary" aria-label="Progression des enseignes service">
+                {servicePieces.map((service) => (
+                  <span key={`progress-${service.id}`}>
+                    {service.name} :{' '}
+                    <strong>
+                      {serviceRevealCounts[service.id]}/{SERVICE_BOARD_REVEALS[service.id].totalPieces}
+                    </strong>
+                  </span>
+                ))}
+              </div>
               <div className="service-list">
                 {servicePieces.map((piece) => (
                   <article className={`service-card service-${piece.color}`} key={piece.id}>
