@@ -1788,12 +1788,21 @@ button:disabled {
 }
 
 .reserve-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 6px 12px;
   margin: 4px 0 12px;
   padding: 8px 10px;
   border-radius: 10px;
   background: rgba(0, 91, 187, 0.08);
   color: var(--edf-text-soft);
   font-size: 0.9rem;
+}
+
+.reserve-summary span {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .service-board-reveal {
