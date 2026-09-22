@@ -298,10 +298,6 @@ const TECHNICAL_SOURCE_OF_TRUTH = {
   image: boardReferenceImage,
   boardMap: BOARD_MAP_SOURCE,
 } as const;
-const resolvePublicAssetUrl = (assetPath: string) => {
-  const normalizedAssetPath = assetPath.replace(/^\/+/, '');
-  return `${import.meta.env.BASE_URL}${normalizedAssetPath}`;
-};
 const createServiceRevealZones = (serviceId: string): ServiceBoardRevealZone[] => [
   {
     id: `${serviceId}-zone-1`,
